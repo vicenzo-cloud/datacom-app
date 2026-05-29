@@ -1,0 +1,53 @@
+{
+  "projeto": "Chandon - Câmeras Temporárias BoM",
+  "data": "2026-05-29",
+  "resumo": {
+    "total_tipos": 3,
+    "total_unidades": 40,
+    "valor_previsto": 11963.79,
+    "valor_real": 13355.34,
+    "diferenca": -1391.55,
+    "economia_percentual": -11.63
+  },
+  "materiais": [
+    {
+      "id": "CHD-01",
+      "quantidade": 17,
+      "equipamento": "Câmera IM5 - 2MP | WiFi",
+      "marca": "Intelbras",
+      "modelo": "CAMERA DE SEGURANCA 2MP WI-FI - IM5 SC - MIBO SMART",
+      "valor_unitario": 350.81,
+      "valor_total_previsto": 5963.77,
+      "valor_total_real": 4894.81,
+      "categoria": "CFTV",
+      "projeto": "Chandon",
+      "status": "ativo"
+    },
+    {
+      "id": "CHD-02",
+      "quantidade": 17,
+      "equipamento": "Cartão micro SD | 128Gb",
+      "marca": "Intelbras",
+      "modelo": "CARTAO DE MEMORIA MICRO SD 128GB - WD PURPLE - MIBO",
+      "valor_unitario": 123.46,
+      "valor_total_previsto": 2098.8199999999997,
+      "valor_total_real": 3704.81,
+      "categoria": "CFTV",
+      "projeto": "Chandon",
+      "status": "ativo"
+    },
+    {
+      "id": "CHD-03",
+      "quantidade": 6,
+      "equipamento": "Access Point",
+      "marca": "Intelbras",
+      "modelo": "ACCESS POINT DUAL BAND AC 1350 - WIFI 5 - GIGABIT",
+      "valor_unitario": 650.2,
+      "valor_total_previsto": 3901.2000000000003,
+      "valor_total_real": 4755.72,
+      "categoria": "CFTV",
+      "projeto": "Chandon",
+      "status": "ativo"
+    }
+  ]
+}
