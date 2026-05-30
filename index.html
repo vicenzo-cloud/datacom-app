@@ -2917,16 +2917,22 @@ function exportarSugestoes(){
 
 // ── GASTOS POR UNIDADE (dashboard) ──
 var _gastoCharts = {};
+var _dadosGasto = null;
 function renderGastos(){
   var alvo = document.getElementById('gastos-content');
   alvo.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center">Carregando gastos...</div>';
   fetch('gasto_por_unidade.json?t='+Date.now())
     .then(function(r){return r.json();})
-    .then(function(d){ construirGastos(d, alvo); })
+    .then(function(d){ _dadosGasto = d; construirGastos(d, alvo, '__TODAS__'); })
     .catch(function(e){ alvo.innerHTML = '<div style="color:var(--red);padding:40px;text-align:center">Erro ao carregar: '+e.message+'</div>'; });
 }
+function mudarUnidadeGasto(){
+  var u = (document.getElementById('gasto-unidade')||{}).value || '__TODAS__';
+  construirGastos(_dadosGasto, document.getElementById('gastos-content'), u);
+}
 
-function construirGastos(d, alvo){
+function construirGastos(d, alvo, unidadeSel){
+  unidadeSel = unidadeSel || '__TODAS__';
   var meses = d.meses || [];
   var fmtMes = function(m){ var p=m.split('/'); var nomes=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return nomes[parseInt(p[0],10)]+'/'+p[1].slice(2); };
   var kbrl = function(v){ return 'R$ '+(v/1000).toFixed(0)+'k'; };
@@ -2934,33 +2940,46 @@ function construirGastos(d, alvo){
   // Unidades ordenadas por total
   var unis = Object.keys(d.unidades).sort(function(a,b){return d.unidades[b].total - d.unidades[a].total;});
   var maiorUni = unis[0];
+  var ehTodas = unidadeSel==='__TODAS__';
+  var escopo = ehTodas ? 'Todas as unidades' : unidadeSel;
 
-  // Variacao mes a mes (total)
-  var serieMes = meses.map(function(m){return d.totais_mes[m]||0;});
+  // Serie mensal conforme escopo (todas = totais_mes; senao = a unidade)
+  var serieMes = meses.map(function(m){ return ehTodas ? (d.totais_mes[m]||0) : ((d.unidades[unidadeSel]||{})[m]||0); });
+  var totalEscopo = serieMes.reduce(function(a,b){return a+b;},0);
   var ultIdx = serieMes.length-1;
   var varUlt = ultIdx>0 ? serieMes[ultIdx]-serieMes[ultIdx-1] : 0;
   var varUltPct = (ultIdx>0 && serieMes[ultIdx-1]) ? (varUlt/serieMes[ultIdx-1]*100) : 0;
-  var mediaMensal = serieMes.length ? d.total_geral/serieMes.length : 0;
+  var mediaMensal = serieMes.length ? totalEscopo/serieMes.length : 0;
+  // mes de maior gasto (para card quando unidade especifica)
+  var idxMaiorMes = 0; serieMes.forEach(function(v,i){ if(v>serieMes[idxMaiorMes]) idxMaiorMes=i; });
 
   var html = '';
+  // Seletor de unidade
+  html += '<div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap">';
+  html += '<label style="font-size:12px;color:var(--muted);font-weight:bold">🏢 Unidade:</label>';
+  html += '<select id="gasto-unidade" onchange="mudarUnidadeGasto()" style="padding:9px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;min-width:240px">';
+  html += '<option value="__TODAS__"'+(ehTodas?' selected':'')+'>Todas as unidades</option>';
+  unis.forEach(function(u){ html += '<option value="'+u.replace(/"/g,'&quot;')+'"'+(u===unidadeSel?' selected':'')+'>'+u+'</option>'; });
+  html += '</select></div>';
   // Cards
   html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">';
-  html += cardG('Total no período', brl(d.total_geral), 'var(--text)', meses.length+' meses');
+  html += cardG('Total no período', brl(totalEscopo), 'var(--text)', escopo+' · '+meses.length+' meses');
   html += cardG('Média mensal', brl(mediaMensal), 'var(--accent)', 'por mês');
-  html += cardG('Maior unidade', brl(d.unidades[maiorUni].total), 'var(--amber)', maiorUni);
+  if(ehTodas) html += cardG('Maior unidade', brl(d.unidades[maiorUni].total), 'var(--amber)', maiorUni);
+  else html += cardG('Mês de maior gasto', brl(serieMes[idxMaiorMes]), 'var(--amber)', fmtMes(meses[idxMaiorMes]));
   var corV = varUlt>0?'var(--red)':'var(--green)';
   var setaV = varUlt>0?'▲':'▼';
-  html += cardG('Último mês vs anterior', (varUlt>0?'+':'')+brl(varUlt).replace('R$ ','R$ '), corV, setaV+' '+Math.abs(varUltPct).toFixed(1)+'% ('+fmtMes(meses[ultIdx])+')');
+  html += cardG('Último mês vs anterior', (varUlt>0?'+':'')+brl(varUlt), corV, setaV+' '+Math.abs(varUltPct).toFixed(1)+'% ('+fmtMes(meses[ultIdx])+')');
   html += '</div>';
 
   // Graficos lado a lado
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">';
-  html += '<div class="card" style="padding:18px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:10px">Gasto por Unidade</div><div style="height:340px"><canvas id="gasto-chart-uni"></canvas></div></div>';
-  html += '<div class="card" style="padding:18px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:10px">Gasto Mês a Mês</div><div style="height:340px"><canvas id="gasto-chart-mes"></canvas></div></div>';
+  html += '<div class="card" style="padding:18px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:10px">Gasto por Unidade (comparativo)</div><div style="height:340px"><canvas id="gasto-chart-uni"></canvas></div></div>';
+  html += '<div class="card" style="padding:18px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:10px">Gasto Mês a Mês — '+escopo+'</div><div style="height:340px"><canvas id="gasto-chart-mes"></canvas></div></div>';
   html += '</div>';
 
   // Tabela variacao mes a mes
-  html += '<div class="card" style="padding:18px;margin-bottom:24px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:12px">Variação Mês a Mês (total)</div>';
+  html += '<div class="card" style="padding:18px;margin-bottom:24px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:12px">Variação Mês a Mês — '+escopo+'</div>';
   html += '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="border-bottom:2px solid var(--border);color:var(--muted);font-size:10px;text-transform:uppercase;text-align:right"><th style="padding:8px;text-align:left">Mês</th><th style="padding:8px">Gasto</th><th style="padding:8px">Δ vs mês anterior</th><th style="padding:8px">Δ %</th></tr></thead><tbody>';
   meses.forEach(function(m,i){
     var v=serieMes[i];
@@ -2999,7 +3018,7 @@ function construirGastos(d, alvo){
   var topUnis = unis.slice(0,12);
   _gastoCharts.uni = new Chart(document.getElementById('gasto-chart-uni'), {
     type:'bar',
-    data:{ labels: topUnis, datasets:[{ data: topUnis.map(function(u){return d.unidades[u].total;}), backgroundColor:'rgba(240,165,0,0.75)', borderRadius:4 }] },
+    data:{ labels: topUnis, datasets:[{ data: topUnis.map(function(u){return d.unidades[u].total;}), backgroundColor: topUnis.map(function(u){ return (!ehTodas && u===unidadeSel) ? 'rgba(0,212,138,0.9)' : 'rgba(240,165,0,0.7)'; }), borderRadius:4 }] },
     options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+brl(c.parsed.x);}}}}, scales:{ x:{ticks:{color:'var(--muted)',font:{size:9},callback:function(v){return kbrl(v);}},grid:{color:'var(--border)'}}, y:{ticks:{color:'var(--text)',font:{size:10}},grid:{display:false}} } }
   });
   _gastoCharts.mes = new Chart(document.getElementById('gasto-chart-mes'), {
