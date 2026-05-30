@@ -295,6 +295,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
     <div class="nav-item" id="nav-alertas" onclick="switchView('alertas')"><span class="icon">🔔</span><span class="lbl">Alertas</span></div>
     <div class="nav-item" id="nav-timeline" onclick="switchView('timeline')"><span class="icon">⟳</span><span class="lbl">Timeline</span></div>
     <div class="nav-item" id="nav-sugestoes" onclick="switchView('sugestoes')"><span class="icon">🛒</span><span class="lbl">Sugestões</span></div>
+    <div class="nav-item" id="nav-gastos" onclick="switchView('gastos')"><span class="icon">💰</span><span class="lbl">Gastos/Unidade</span></div>
     <p class="sidebar-section">Projetos</p>
     <div id="proj-list"></div>
     <button class="btn-new-proj" onclick="openModal('modal-proj')">+ Novo projeto</button>
@@ -516,6 +517,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
         <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">🛒 Sugestões de Compra</h2>
         <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Recomendações baseadas no histórico de compras dos últimos 18 meses</p>
         <div id="sugestoes-content"></div>
+      </div>
+
+      <!-- GASTOS POR UNIDADE -->
+      <div class="page" id="page-gastos">
+        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">💰 Gastos por Unidade de Negócio</h2>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Quanto cada unidade gastou e a variação mês a mês</p>
+        <div id="gastos-content"></div>
       </div>
 
     </div>
@@ -814,6 +822,7 @@ function renderTopbar(){
   else if(S.view==='audit'){document.getElementById('nav-audit').classList.add('active');title.childNodes[0].textContent='Auditoria ';sub.textContent='Integridade de dados';}
   else if(S.view==='preco'){document.getElementById('nav-preco').classList.add('active');title.childNodes[0].textContent='Análise de Preços ';sub.textContent='Inteligência comercial';}
   else if(S.view==='sugestoes'){title.childNodes[0].textContent='Sugestões de Compra ';sub.textContent='Baseado em 18 meses de histórico';}
+  else if(S.view==='gastos'){title.childNodes[0].textContent='Gastos por Unidade ';sub.textContent='Por unidade e mês a mês';}
   if(S.view==='dashboard'){document.getElementById('nav-dashboard').classList.add('active');title.childNodes[0].textContent='Dashboard ';sub.textContent='Visão geral';}
   else if(S.view==='nf'){document.getElementById('nav-nf').classList.add('active');title.childNodes[0].textContent='Notas Fiscais ';sub.textContent='Relatório';btnNF.style.display='flex';}
   else if(S.view==='projeto'){
@@ -980,6 +989,7 @@ function renderPages(){
   document.getElementById('page-alertas').classList.toggle('active',S.view==='alertas');
   document.getElementById('page-timeline').classList.toggle('active',S.view==='timeline');
   document.getElementById('page-sugestoes').classList.toggle('active',S.view==='sugestoes');
+  document.getElementById('page-gastos').classList.toggle('active',S.view==='gastos');
   if(S.view==='dashboard')renderDashboard();
   if(S.view==='projeto')renderProjeto();
   if(S.view==='nf')renderNFPage();
@@ -990,6 +1000,7 @@ function renderPages(){
   if(S.view==='alertas')renderAlertas();
   if(S.view==='timeline')renderTimeline();
   if(S.view==='sugestoes')renderSugestoes();
+  if(S.view==='gastos')renderGastos();
 }
 
 // ── DASHBOARD ──
@@ -2902,6 +2913,107 @@ function exportarSugestoes(){
       var a=document.createElement('a'); a.href=url; a.download=nome; document.body.appendChild(a); a.click();
       window.URL.revokeObjectURL(url); document.body.removeChild(a); toast('Lista baixada (Downloads)');
     });
+}
+
+// ── GASTOS POR UNIDADE (dashboard) ──
+var _gastoCharts = {};
+function renderGastos(){
+  var alvo = document.getElementById('gastos-content');
+  alvo.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center">Carregando gastos...</div>';
+  fetch('gasto_por_unidade.json?t='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(d){ construirGastos(d, alvo); })
+    .catch(function(e){ alvo.innerHTML = '<div style="color:var(--red);padding:40px;text-align:center">Erro ao carregar: '+e.message+'</div>'; });
+}
+
+function construirGastos(d, alvo){
+  var meses = d.meses || [];
+  var fmtMes = function(m){ var p=m.split('/'); var nomes=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return nomes[parseInt(p[0],10)]+'/'+p[1].slice(2); };
+  var kbrl = function(v){ return 'R$ '+(v/1000).toFixed(0)+'k'; };
+
+  // Unidades ordenadas por total
+  var unis = Object.keys(d.unidades).sort(function(a,b){return d.unidades[b].total - d.unidades[a].total;});
+  var maiorUni = unis[0];
+
+  // Variacao mes a mes (total)
+  var serieMes = meses.map(function(m){return d.totais_mes[m]||0;});
+  var ultIdx = serieMes.length-1;
+  var varUlt = ultIdx>0 ? serieMes[ultIdx]-serieMes[ultIdx-1] : 0;
+  var varUltPct = (ultIdx>0 && serieMes[ultIdx-1]) ? (varUlt/serieMes[ultIdx-1]*100) : 0;
+  var mediaMensal = serieMes.length ? d.total_geral/serieMes.length : 0;
+
+  var html = '';
+  // Cards
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">';
+  html += cardG('Total no período', brl(d.total_geral), 'var(--text)', meses.length+' meses');
+  html += cardG('Média mensal', brl(mediaMensal), 'var(--accent)', 'por mês');
+  html += cardG('Maior unidade', brl(d.unidades[maiorUni].total), 'var(--amber)', maiorUni);
+  var corV = varUlt>0?'var(--red)':'var(--green)';
+  var setaV = varUlt>0?'▲':'▼';
+  html += cardG('Último mês vs anterior', (varUlt>0?'+':'')+brl(varUlt).replace('R$ ','R$ '), corV, setaV+' '+Math.abs(varUltPct).toFixed(1)+'% ('+fmtMes(meses[ultIdx])+')');
+  html += '</div>';
+
+  // Graficos lado a lado
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">';
+  html += '<div class="card" style="padding:18px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:10px">Gasto por Unidade</div><div style="height:340px"><canvas id="gasto-chart-uni"></canvas></div></div>';
+  html += '<div class="card" style="padding:18px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:10px">Gasto Mês a Mês</div><div style="height:340px"><canvas id="gasto-chart-mes"></canvas></div></div>';
+  html += '</div>';
+
+  // Tabela variacao mes a mes
+  html += '<div class="card" style="padding:18px;margin-bottom:24px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:12px">Variação Mês a Mês (total)</div>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="border-bottom:2px solid var(--border);color:var(--muted);font-size:10px;text-transform:uppercase;text-align:right"><th style="padding:8px;text-align:left">Mês</th><th style="padding:8px">Gasto</th><th style="padding:8px">Δ vs mês anterior</th><th style="padding:8px">Δ %</th></tr></thead><tbody>';
+  meses.forEach(function(m,i){
+    var v=serieMes[i];
+    var delta = i>0 ? v-serieMes[i-1] : null;
+    var pct = (i>0 && serieMes[i-1]) ? (delta/serieMes[i-1]*100) : null;
+    var cor = delta===null?'var(--muted)':(delta>0?'var(--red)':'var(--green)');
+    var txtDelta = delta===null?'—':((delta>0?'+':'')+brl(delta));
+    var txtPct = pct===null?'—':((pct>0?'+':'')+pct.toFixed(1)+'%');
+    html += '<tr style="border-bottom:1px solid var(--border);text-align:right">';
+    html += '<td style="padding:8px;text-align:left;color:var(--text)">'+fmtMes(m)+'</td>';
+    html += '<td style="padding:8px;color:var(--text)">'+brl(v)+'</td>';
+    html += '<td style="padding:8px;color:'+cor+';font-weight:bold">'+txtDelta+'</td>';
+    html += '<td style="padding:8px;color:'+cor+'">'+txtPct+'</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // Tabela matriz unidade x mes
+  html += '<div class="card" style="padding:18px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:12px">Gasto por Unidade × Mês</div>';
+  html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:2px solid var(--border);color:var(--muted);font-size:10px;text-transform:uppercase">';
+  html += '<th style="padding:8px;text-align:left">Unidade</th>';
+  meses.forEach(function(m){ html += '<th style="padding:8px;text-align:right">'+fmtMes(m)+'</th>'; });
+  html += '<th style="padding:8px;text-align:right;color:var(--accent)">Total</th></tr></thead><tbody>';
+  unis.forEach(function(u){
+    html += '<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px;color:var(--text)">'+u+'</td>';
+    meses.forEach(function(m){ var v=d.unidades[u][m]||0; html += '<td style="padding:8px;text-align:right;color:'+(v>0?'var(--muted)':'var(--border2)')+'">'+(v>0?brl(v).replace('R$ ',''):'—')+'</td>'; });
+    html += '<td style="padding:8px;text-align:right;color:var(--text);font-weight:bold">'+brl(d.unidades[u].total).replace('R$ ','')+'</td></tr>';
+  });
+  html += '</tbody></table></div></div>';
+
+  alvo.innerHTML = html;
+
+  // Charts
+  if(_gastoCharts.uni) _gastoCharts.uni.destroy();
+  if(_gastoCharts.mes) _gastoCharts.mes.destroy();
+  var topUnis = unis.slice(0,12);
+  _gastoCharts.uni = new Chart(document.getElementById('gasto-chart-uni'), {
+    type:'bar',
+    data:{ labels: topUnis, datasets:[{ data: topUnis.map(function(u){return d.unidades[u].total;}), backgroundColor:'rgba(240,165,0,0.75)', borderRadius:4 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+brl(c.parsed.x);}}}}, scales:{ x:{ticks:{color:'var(--muted)',font:{size:9},callback:function(v){return kbrl(v);}},grid:{color:'var(--border)'}}, y:{ticks:{color:'var(--text)',font:{size:10}},grid:{display:false}} } }
+  });
+  _gastoCharts.mes = new Chart(document.getElementById('gasto-chart-mes'), {
+    type:'bar',
+    data:{ labels: meses.map(fmtMes), datasets:[{ data: serieMes, backgroundColor: serieMes.map(function(v,i){ return i>0 && v>serieMes[i-1] ? 'rgba(255,82,82,0.75)' : 'rgba(0,212,138,0.75)'; }), borderRadius:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+brl(c.parsed.y);}}}}, scales:{ y:{ticks:{color:'var(--muted)',font:{size:9},callback:function(v){return kbrl(v);}},grid:{color:'var(--border)'}}, x:{ticks:{color:'var(--text)',font:{size:10}},grid:{display:false}} } }
+  });
+
+  function cardG(lbl,val,cor,sub){
+    return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px">'
+      +'<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">'+lbl+'</div>'
+      +'<div style="font-family:var(--serif);font-size:20px;font-weight:800;color:'+cor+'">'+val+'</div>'
+      +'<div style="font-size:10px;color:var(--muted);margin-top:4px">'+sub+'</div></div>';
+  }
 }
 
 // ── EXPORTAR PDF ──

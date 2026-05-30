@@ -147,3 +147,39 @@ for uni in sorted(resultado, key=lambda u: -len(resultado[u])):
 with open(SAIDA, 'w', encoding='utf-8') as f:
     json.dump(resultado, f, ensure_ascii=False)
 print('\nSalvo em: %s (%d unidades)' % (SAIDA, len(resultado)))
+
+# ── GASTO POR UNIDADE x MES (valores exatos = soma dos totais de linha) ──
+def chave_mes(m):
+    p = m.split('/'); return p[1] + p[0]   # AAAA + MM
+
+gasto = defaultdict(lambda: defaultdict(float))   # gasto[unidade][mes]
+meses_set = set()
+for uni, itens in compras.items():
+    if uni == '__TODAS__':
+        continue
+    for nome, regs in itens.items():
+        for r in regs:
+            if r['mes']:
+                gasto[uni][r['mes']] += r['total']
+                meses_set.add(r['mes'])
+
+meses = sorted(meses_set, key=chave_mes)
+unidades_out = {}
+for uni in gasto:
+    linha = {m: round(gasto[uni].get(m, 0.0), 2) for m in meses}
+    linha['total'] = round(sum(gasto[uni].values()), 2)
+    unidades_out[uni] = linha
+
+totais_mes = {m: round(sum(gasto[u].get(m, 0.0) for u in gasto), 2) for m in meses}
+
+gasto_saida = {
+    'meses': meses,
+    'unidades': unidades_out,
+    'totais_mes': totais_mes,
+    'total_geral': round(sum(totais_mes.values()), 2),
+}
+SAIDA_GASTO = Path(__file__).parent / 'gasto_por_unidade.json'
+with open(SAIDA_GASTO, 'w', encoding='utf-8') as f:
+    json.dump(gasto_saida, f, ensure_ascii=False)
+print('Salvo gasto_por_unidade.json: %d meses, %d unidades, total R$ %.2f'
+      % (len(meses), len(unidades_out), gasto_saida['total_geral']))
