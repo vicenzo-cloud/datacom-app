@@ -183,3 +183,58 @@ with open(SAIDA_GASTO, 'w', encoding='utf-8') as f:
     json.dump(gasto_saida, f, ensure_ascii=False)
 print('Salvo gasto_por_unidade.json: %d meses, %d unidades, total R$ %.2f'
       % (len(meses), len(unidades_out), gasto_saida['total_geral']))
+
+# ── CLASSIFICACAO POR CATEGORIA (palavras-chave no nome do item) ──
+def categoria(nome):
+    n = (nome or '').upper()
+    def tem(*ws): return any(w in n for w in ws)
+    if tem('GASOLINA', 'DIESEL', 'COMBUST', 'ETANOL', 'ALCOOL', 'PNEU', 'OLEO MOTOR'):
+        return 'Combustível/Veículos'
+    if tem('FACIAL', 'CATRACA', 'FECHADURA', 'ELETROIMA', 'ELETROÍMÃ', 'LEITOR', 'SMART ID',
+           'MOLA AEREA', 'MOLA AÉREA', 'BOTOEIRA', 'CONTROLADORA', 'ACIONADOR', 'BIOMETR',
+           'TORNIQUETE', 'CANCELA', 'TAG '):
+        return 'Controle de Acesso'
+    if tem('CAMERA', 'CÂMERA', 'NVR', 'DVR', 'SPEED DOME', 'DASHCAM', 'GRAVACAO', 'GRAVAÇÃO',
+           'DISCO RIGIDO', 'DISCO RÍGIDO', 'SERVIDOR', 'MIBO', 'BULLET', 'DOME', 'HIKVISION', 'INVU'):
+        return 'CFTV'
+    if re.search(r'\bHD\s?\d', n):
+        return 'CFTV'
+    if tem('SENSOR', 'SIRENE', 'CENTRAL', 'TECLADO', 'IRPET', ' AMT', 'GPRS', 'IVP', 'INFRAVERMELHO'):
+        return 'Alarme'
+    if tem('CABO', 'PATCH', 'SWITCH', 'RACK', 'CONECTOR', 'RJ45', 'RJ 45', 'ROTEADOR',
+           'ROUTERBOARD', 'KEYSTONE', 'GBIC', 'FIBRA', 'ORGANIZADOR', 'PATCH PANEL'):
+        return 'Rede/Infraestrutura'
+    if tem('BATERIA', 'NOBREAK', 'FONTE', 'OFF GRID', 'CARREGADOR', 'SOLAR', 'ENERGIA'):
+        return 'Energia'
+    return 'Material/Diversos'
+
+gasto_cat = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))  # [uni][cat][mes]
+cats_set = set()
+for uni, itens in compras.items():
+    if uni == '__TODAS__':
+        continue
+    for nome, regs in itens.items():
+        cat = categoria(nome)
+        cats_set.add(cat)
+        for r in regs:
+            if r['mes']:
+                gasto_cat[uni][cat][r['mes']] += r['total']
+                gasto_cat['__TODAS__'][cat][r['mes']] += r['total']
+
+cat_unidades = {}
+for uni in gasto_cat:
+    bloco = {}
+    for cat in gasto_cat[uni]:
+        linha = {m: round(gasto_cat[uni][cat].get(m, 0.0), 2) for m in meses}
+        linha['total'] = round(sum(gasto_cat[uni][cat].values()), 2)
+        bloco[cat] = linha
+    cat_unidades[uni] = bloco
+
+cat_saida = {'meses': meses, 'categorias': sorted(cats_set), 'unidades': cat_unidades}
+SAIDA_CAT = Path(__file__).parent / 'gasto_por_categoria.json'
+with open(SAIDA_CAT, 'w', encoding='utf-8') as f:
+    json.dump(cat_saida, f, ensure_ascii=False)
+print('Salvo gasto_por_categoria.json: %d categorias' % len(cats_set))
+for c in sorted(cats_set):
+    tot = sum(cat_unidades['__TODAS__'][c].values()) - cat_unidades['__TODAS__'][c]['total']
+    print('   %-22s R$ %12.2f' % (c, cat_unidades['__TODAS__'][c]['total']))

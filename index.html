@@ -2918,13 +2918,17 @@ function exportarSugestoes(){
 // ── GASTOS POR UNIDADE (dashboard) ──
 var _gastoCharts = {};
 var _dadosGasto = null;
+var _dadosCat = null;
 function renderGastos(){
   var alvo = document.getElementById('gastos-content');
   alvo.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center">Carregando gastos...</div>';
-  fetch('gasto_por_unidade.json?t='+Date.now())
-    .then(function(r){return r.json();})
-    .then(function(d){ _dadosGasto = d; construirGastos(d, alvo, '__TODAS__'); })
-    .catch(function(e){ alvo.innerHTML = '<div style="color:var(--red);padding:40px;text-align:center">Erro ao carregar: '+e.message+'</div>'; });
+  Promise.all([
+    fetch('gasto_por_unidade.json?t='+Date.now()).then(function(r){return r.json();}),
+    fetch('gasto_por_categoria.json?t='+Date.now()).then(function(r){return r.json();}).catch(function(){return null;})
+  ]).then(function(res){
+    _dadosGasto = res[0]; _dadosCat = res[1];
+    construirGastos(_dadosGasto, alvo, '__TODAS__');
+  }).catch(function(e){ alvo.innerHTML = '<div style="color:var(--red);padding:40px;text-align:center">Erro ao carregar: '+e.message+'</div>'; });
 }
 function mudarUnidadeGasto(){
   var u = (document.getElementById('gasto-unidade')||{}).value || '__TODAS__';
@@ -3010,11 +3014,41 @@ function construirGastos(d, alvo, unidadeSel){
   });
   html += '</tbody></table></div></div>';
 
+  // ── Categorias + Comparar meses ──
+  var catBloco = (_dadosCat && _dadosCat.unidades && _dadosCat.unidades[unidadeSel]) ? _dadosCat.unidades[unidadeSel] : null;
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px">';
+  // Categoria (doughnut)
+  html += '<div class="card" style="padding:18px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:10px">Gasto por Categoria — '+escopo+'</div>';
+  if(catBloco){ html += '<div style="height:300px"><canvas id="gasto-chart-cat"></canvas></div>'; }
+  else { html += '<div style="color:var(--muted);padding:30px;text-align:center;font-size:12px">Sem dados de categoria.</div>'; }
+  html += '</div>';
+  // Comparar dois meses
+  html += '<div class="card" style="padding:18px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:10px">Comparar Dois Meses — '+escopo+'</div>';
+  html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;font-size:12px">';
+  var optMes = function(sel){ return meses.map(function(m){return '<option value="'+m+'"'+(m===sel?' selected':'')+'>'+fmtMes(m)+'</option>';}).join(''); };
+  html += '<span style="color:var(--muted)">De</span><select id="cmp-mesA" onchange="compararMeses()" style="padding:7px;border:1px solid var(--border);border-radius:5px;background:var(--bg2);color:var(--text)">'+optMes(meses[0])+'</select>';
+  html += '<span style="color:var(--muted)">para</span><select id="cmp-mesB" onchange="compararMeses()" style="padding:7px;border:1px solid var(--border);border-radius:5px;background:var(--bg2);color:var(--text)">'+optMes(meses[meses.length-1])+'</select>';
+  html += '</div><div id="cmp-resultado"></div></div>';
+  html += '</div>';
+
   alvo.innerHTML = html;
 
   // Charts
   if(_gastoCharts.uni) _gastoCharts.uni.destroy();
   if(_gastoCharts.mes) _gastoCharts.mes.destroy();
+  if(_gastoCharts.cat) { _gastoCharts.cat.destroy(); _gastoCharts.cat=null; }
+  // Doughnut de categorias
+  if(catBloco){
+    var cats = Object.keys(catBloco).filter(function(c){return catBloco[c].total>0;}).sort(function(a,b){return catBloco[b].total-catBloco[a].total;});
+    var coresCat=['rgba(255,82,82,0.85)','rgba(77,159,255,0.85)','rgba(240,165,0,0.85)','rgba(0,212,138,0.85)','rgba(192,132,252,0.85)','rgba(56,189,248,0.85)','rgba(148,163,184,0.85)'];
+    _gastoCharts.cat = new Chart(document.getElementById('gasto-chart-cat'), {
+      type:'doughnut',
+      data:{ labels:cats, datasets:[{ data:cats.map(function(c){return catBloco[c].total;}), backgroundColor:coresCat, borderColor:'#0b0e0d', borderWidth:2 }] },
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'58%', plugins:{ legend:{position:'right',labels:{color:'var(--muted)',font:{size:10},padding:8,boxWidth:11}}, tooltip:{callbacks:{label:function(c){ var tot=cats.reduce(function(a,k){return a+catBloco[k].total;},0); return ' '+brl(c.parsed)+' ('+(c.parsed/tot*100).toFixed(1)+'%)'; }}} } }
+    });
+  }
+  // Comparativo inicial
+  compararMeses();
   var topUnis = unis.slice(0,12);
   _gastoCharts.uni = new Chart(document.getElementById('gasto-chart-uni'), {
     type:'bar',
@@ -3033,6 +3067,47 @@ function construirGastos(d, alvo, unidadeSel){
       +'<div style="font-family:var(--serif);font-size:20px;font-weight:800;color:'+cor+'">'+val+'</div>'
       +'<div style="font-size:10px;color:var(--muted);margin-top:4px">'+sub+'</div></div>';
   }
+}
+
+// Compara dois meses por categoria, para a unidade selecionada
+function compararMeses(){
+  var wrap = document.getElementById('cmp-resultado');
+  if(!wrap) return;
+  var mA = (document.getElementById('cmp-mesA')||{}).value;
+  var mB = (document.getElementById('cmp-mesB')||{}).value;
+  var uni = (document.getElementById('gasto-unidade')||{}).value || '__TODAS__';
+  var fmtMes = function(m){ var p=m.split('/'); var nomes=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return nomes[parseInt(p[0],10)]+'/'+p[1].slice(2); };
+  var bloco = (_dadosCat && _dadosCat.unidades && _dadosCat.unidades[uni]) ? _dadosCat.unidades[uni] : null;
+  if(!bloco){ wrap.innerHTML = '<div style="color:var(--muted);font-size:12px">Sem dados.</div>'; return; }
+
+  var cats = Object.keys(bloco);
+  var linhas = cats.map(function(c){
+    var a = bloco[c][mA]||0, b = bloco[c][mB]||0;
+    return {cat:c, a:a, b:b, delta:b-a};
+  }).filter(function(l){ return l.a>0 || l.b>0; });
+  linhas.sort(function(x,y){ return Math.abs(y.delta)-Math.abs(x.delta); });
+
+  var totA = linhas.reduce(function(s,l){return s+l.a;},0);
+  var totB = linhas.reduce(function(s,l){return s+l.b;},0);
+  var totD = totB-totA;
+
+  var html = '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="border-bottom:2px solid var(--border);color:var(--muted);font-size:10px;text-transform:uppercase;text-align:right">';
+  html += '<th style="padding:7px;text-align:left">Categoria</th><th style="padding:7px">'+fmtMes(mA)+'</th><th style="padding:7px">'+fmtMes(mB)+'</th><th style="padding:7px">Δ</th></tr></thead><tbody>';
+  linhas.forEach(function(l){
+    var cor = l.delta>0?'var(--red)':(l.delta<0?'var(--green)':'var(--muted)');
+    var seta = l.delta>0?'▲':(l.delta<0?'▼':'');
+    html += '<tr style="border-bottom:1px solid var(--border);text-align:right">';
+    html += '<td style="padding:7px;text-align:left;color:var(--text)">'+l.cat+'</td>';
+    html += '<td style="padding:7px;color:var(--muted)">'+brl(l.a).replace('R$ ','')+'</td>';
+    html += '<td style="padding:7px;color:var(--muted)">'+brl(l.b).replace('R$ ','')+'</td>';
+    html += '<td style="padding:7px;color:'+cor+';font-weight:bold">'+seta+' '+(l.delta>0?'+':'')+brl(l.delta).replace('R$ ','')+'</td></tr>';
+  });
+  var corT = totD>0?'var(--red)':'var(--green)';
+  html += '<tr style="border-top:2px solid var(--border);text-align:right;font-weight:bold"><td style="padding:7px;text-align:left">TOTAL</td>';
+  html += '<td style="padding:7px">'+brl(totA).replace('R$ ','')+'</td><td style="padding:7px">'+brl(totB).replace('R$ ','')+'</td>';
+  html += '<td style="padding:7px;color:'+corT+'">'+(totD>0?'+':'')+brl(totD).replace('R$ ','')+'</td></tr>';
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
 }
 
 // ── EXPORTAR PDF ──
