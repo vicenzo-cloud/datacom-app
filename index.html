@@ -1060,15 +1060,20 @@ function renderDashboard(){
     const totalRealAll=realVals.reduce(function(a,b){return a+b;},0);
     const sobra=Math.max(0,totalPrevAll-totalRealAll);
     const estouro=Math.max(0,totalRealAll-totalPrevAll);
-    const CC=['#4d9fff','#00d48a','#f0a500','#ff5252','#c084fc','#38bdf8','#fb7185','#34d399','#fbbf24','#a78bfa','#f472b6','#6b7c72'];
-    const dLabels=S.projects.map(function(p){return p.nome.length>18?p.nome.slice(0,18)+'…':p.nome;});
-    const dVals=realVals;
-    const donutTotal=dVals.reduce(function(a,b){return a+b;},0);
-    charts['dash-donut'] = new Chart(document.getElementById('dash-donut-chart'),{type:'doughnut',data:{labels:dLabels,datasets:[{data:dVals,backgroundColor:CC.slice(0,dLabels.length),borderWidth:0,hoverOffset:6}]},
-      options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{
-        legend:{position:'bottom',labels:{color:'#ffffff',font:{size:10,family:"'IBM Plex Mono',monospace"},padding:10,boxWidth:9,textAlign:'center',
-          generateLabels:function(chart){return dLabels.map(function(lbl,i){const val=dVals[i];const pct=donutTotal>0?((val/donutTotal)*100).toFixed(1):'0';return {text:lbl+' ('+pct+'%)',fillStyle:CC[i]||'#6b7c72',strokeStyle:'transparent',fontColor:'#ffffff',color:'#ffffff',index:i};});}
-        }},tooltip:{backgroundColor:'#1a1f1d',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8e4',bodyColor:'#6b7c72',titleFont:{family:"'IBM Plex Mono',monospace",size:11},bodyFont:{family:"'IBM Plex Mono',monospace",size:11},callbacks:{label:function(ctx){return ' '+brl(ctx.raw)+' ('+(donutTotal>0?(ctx.raw/donutTotal*100).toFixed(1):0)+'%)';}}}
+    const donutTotal=realVals.reduce(function(a,b){return a+b;},0);
+    // Barras horizontais ordenadas por gasto real (maior -> menor)
+    const ordenado = S.projects.map(function(p,i){return {nome:p.nome, val:realVals[i]};})
+      .sort(function(a,b){return b.val-a.val;});
+    const hLabels = ordenado.map(function(o){return o.nome.length>22?o.nome.slice(0,22)+'…':o.nome;});
+    const hVals = ordenado.map(function(o){return o.val;});
+    charts['dash-donut'] = new Chart(document.getElementById('dash-donut-chart'),{type:'bar',
+      data:{labels:hLabels,datasets:[{data:hVals,backgroundColor:'rgba(77,159,255,0.8)',borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'#1a1f1d',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8e4',bodyColor:'#6b7c72',titleFont:{family:"'IBM Plex Mono',monospace",size:11},bodyFont:{family:"'IBM Plex Mono',monospace",size:11},callbacks:{label:function(ctx){return ' '+brl(ctx.raw)+' ('+(donutTotal>0?(ctx.raw/donutTotal*100).toFixed(1):0)+'%)';}}}
+      },scales:{
+        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7c72',font:{size:9,family:"'IBM Plex Mono',monospace"},callback:function(v){return 'R$'+(v/1000).toFixed(0)+'k';}}},
+        y:{grid:{display:false},ticks:{color:'#e2e8e4',font:{size:10,family:"'IBM Plex Mono',monospace"}}}
       }}});
   }
 
