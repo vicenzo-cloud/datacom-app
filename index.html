@@ -2677,14 +2677,32 @@ function renderTimeline(){
   document.getElementById('timeline-content').innerHTML = html;
 }
 
-// ── SUGESTOES DE COMPRA (baseado em 18 meses de historico) ──
+// ── SUGESTOES DE COMPRA (por unidade de negocio) ──
+var _dadosPorUnidade = null;
 function renderSugestoes(){
   var alvo = document.getElementById('sugestoes-content');
   alvo.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center">Analisando histórico...</div>';
-  fetch('analise_precos.json?t='+Date.now())
+  fetch('analise_por_unidade.json?t='+Date.now())
     .then(function(r){return r.json();})
-    .then(function(dados){ construirSugestoes(dados, alvo); })
-    .catch(function(e){ alvo.innerHTML = '<div style="color:var(--red);padding:40px;text-align:center">Erro ao carregar dados: '+e.message+'</div>'; });
+    .then(function(dados){
+      _dadosPorUnidade = dados;
+      var unidades = Object.keys(dados).filter(function(u){return u!=='__TODAS__';});
+      unidades.sort(function(a,b){return Object.keys(dados[b]).length - Object.keys(dados[a]).length;});
+      var sel = '<div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap">';
+      sel += '<label style="font-size:12px;color:var(--muted);font-weight:bold">🏢 Unidade de negócio:</label>';
+      sel += '<select id="sug-unidade" onchange="mudarUnidadeSugestao()" style="padding:9px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;min-width:240px">';
+      var totItens = Object.keys(dados['__TODAS__']||{}).length;
+      sel += '<option value="__TODAS__">Todas as unidades ('+totItens+' itens)</option>';
+      unidades.forEach(function(u){ sel += '<option value="'+u.replace(/"/g,'&quot;')+'">'+u+' ('+Object.keys(dados[u]).length+' itens)</option>'; });
+      sel += '</select></div>';
+      alvo.innerHTML = sel + '<div id="sug-corpo"></div>';
+      construirSugestoes(dados['__TODAS__']||{}, document.getElementById('sug-corpo'));
+    })
+    .catch(function(e){ alvo.innerHTML = '<div style="color:var(--red);padding:40px;text-align:center">Erro ao carregar dados: '+e.message+'<br><span style="font-size:11px">Verifique se o arquivo analise_por_unidade.json existe.</span></div>'; });
+}
+function mudarUnidadeSugestao(){
+  var u = (document.getElementById('sug-unidade')||{}).value || '__TODAS__';
+  construirSugestoes((_dadosPorUnidade && _dadosPorUnidade[u]) || {}, document.getElementById('sug-corpo'));
 }
 
 var _sugestoesData = [];
@@ -2847,10 +2865,13 @@ function exportarSugestoes(){
   });
   if(!lista.length){ toast('Nada para exportar','error'); return; }
 
+  var unidadeSel = (document.getElementById('sug-unidade')||{}).value || '__TODAS__';
+  var unidadeLabel = unidadeSel==='__TODAS__' ? 'Todas as unidades' : unidadeSel;
+  var unidadeSlug = unidadeSel==='__TODAS__' ? 'todas' : unidadeSel.replace(/[^a-zA-Z0-9]/g,'-');
   var nomeRec = {SUBINDO:'Comprar agora', CAINDO:'Pode aguardar', ESTAVEL:'Repor normal'};
   var csv = 'LISTA DE COMPRAS SUGERIDA\n';
-  csv += 'Gerado em: '+new Date().toLocaleString('pt-BR')+'\n';
-  csv += 'Baseado em 18 meses de historico\n\n';
+  csv += 'Unidade de negocio: '+unidadeLabel+'\n';
+  csv += 'Gerado em: '+new Date().toLocaleString('pt-BR')+'\n\n';
   csv += 'Item;Recomendacao;Variacao Preco %;Consumo Mensal;Qtd a Comprar;Melhor Fornecedor;Preco Unit;Investimento;Economia\n';
   lista.forEach(function(s){
     csv += [
@@ -2869,7 +2890,7 @@ function exportarSugestoes(){
   var totEco = lista.reduce(function(a,s){return a+s.economiaTotal;},0);
   csv += '\nTOTAL;;;;;;;'+totInv.toFixed(2)+';'+totEco.toFixed(2)+'\n';
 
-  var nome = 'lista-compras-'+new Date().toISOString().slice(0,10)+'-'+new Date().getTime()+'.csv';
+  var nome = 'lista-compras-'+unidadeSlug+'-'+new Date().toISOString().slice(0,10)+'-'+new Date().getTime()+'.csv';
   fetch('/save-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:nome, content:csv})})
     .then(function(r){return r.json();})
     .then(function(res){
