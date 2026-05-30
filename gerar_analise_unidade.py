@@ -88,6 +88,34 @@ for x in D:
     linhas += 1
 print('Linhas de item casadas: %d (sem unidade: %d)' % (linhas, sem_uni))
 
+# ── FILTRO DE VALORES EXTREMOS (erros do relatorio do sistema) ──
+# Remove registros cujo preco unitario foge muito da mediana do item
+# (mais de 5x acima ou abaixo), ex: R$ 0,01 ou precos inflados.
+BANDA_BAIXA, BANDA_ALTA = 0.2, 5.0  # 5x abaixo / 5x acima da mediana
+medianas = {}
+for nome, regs in compras['__TODAS__'].items():
+    pus = sorted(r['preco_unit'] for r in regs if r['preco_unit'] > 0)
+    if pus:
+        medianas[nome] = pus[len(pus)//2]
+
+def preco_ok(nome, r):
+    med = medianas.get(nome, 0)
+    if med <= 0:
+        return True
+    pu = r['preco_unit']
+    return (pu >= med * BANDA_BAIXA) and (pu <= med * BANDA_ALTA)
+
+removidos = 0
+for uni in list(compras.keys()):
+    for nome in list(compras[uni].keys()):
+        antes = len(compras[uni][nome])
+        compras[uni][nome] = [r for r in compras[uni][nome] if preco_ok(nome, r)]
+        if uni != '__TODAS__':
+            removidos += antes - len(compras[uni][nome])
+        if not compras[uni][nome]:
+            del compras[uni][nome]
+print('Registros com preco extremo removidos: %d' % removidos)
+
 def stats_item(regs):
     precos = [r['preco_unit'] for r in regs if r['preco_unit'] > 0]
     if not precos: return None
