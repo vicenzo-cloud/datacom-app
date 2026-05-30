@@ -1,0 +1,19 @@
+# Dados de runtime (estado do usuário — local, não versionar)
+dados.json
+dados.backup.json
+Relatorios/
+
+# Arquivos arquivados (entulho movido na limpeza)
+_arquivo_morto/
+
+# Config local do Claude/preview
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store

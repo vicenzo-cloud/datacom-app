@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Projeto Datacom</title>
+<title>Projetos Suprimentos ⚡</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Playfair+Display:wght@600;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -264,6 +264,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
 .toast.show{transform:translateY(0);opacity:1}
 .toast.success{border-color:rgba(0,212,138,.3);color:var(--accent)}
 .toast.error{border-color:rgba(255,82,82,.3);color:var(--red)}
+
+/* COMPARATIVO SELECTOR */
+.proj-check-card{background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.proj-check-card:hover{border-color:var(--accent);background:var(--bg3)}
+.proj-check-card.selected{background:var(--accent-dim);border-color:var(--accent);box-shadow:0 0 12px rgba(0,212,138,0.2)}
+.proj-check-card.selected::before{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,rgba(0,212,138,0.1),transparent);pointer-events:none}
+.pcc-tick{position:absolute;top:8px;right:8px;width:20px;height:20px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#0b0e0d;opacity:0;transition:opacity .2s}
+.proj-check-card.selected .pcc-tick{opacity:1}
+.pcc-name{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px}
+.proj-check-card.selected .pcc-name{color:var(--accent)}
+.pcc-sub{display:block;font-size:10px;color:var(--muted);font-family:var(--mono)}
+.proj-check-card.selected .pcc-sub{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -271,12 +283,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
   <aside class="sidebar">
     <div class="sidebar-logo">
       <p class="eyebrow">Gestão de Projetos</p>
-      <h1 id="sl1">Projeto</h1><h1 id="sl2" style="color:var(--accent)">Datacom</h1>
+      <h1 id="sl1">Projetos</h1><h1 id="sl2" style="color:var(--accent)">Suprimentos</h1>
     </div>
     <p class="sidebar-section">Navegação</p>
     <div class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard')"><span class="icon">◈</span><span class="lbl">Dashboard</span></div>
     <div class="nav-item" id="nav-nf" onclick="switchView('nf')"><span class="icon">◉</span><span class="lbl">Notas Fiscais</span><span class="cnt" id="nf-count">0</span></div>
     <div class="nav-item" id="nav-comp" onclick="switchView('comp')"><span class="icon">⊞</span><span class="lbl">Comparativo</span></div>
+    <div class="nav-item" id="nav-audit" onclick="switchView('audit')"><span class="icon">✓</span><span class="lbl">Auditoria</span><span class="cnt" id="audit-count">0</span></div>
+    <div class="nav-item" id="nav-preco" onclick="switchView('preco')"><span class="icon">📊</span><span class="lbl">Preços</span></div>
+    <div class="nav-item" id="nav-compras-dash" onclick="switchView('compras-dash')"><span class="icon">📈</span><span class="lbl">Compras</span></div>
+    <div class="nav-item" id="nav-alertas" onclick="switchView('alertas')"><span class="icon">🔔</span><span class="lbl">Alertas</span></div>
+    <div class="nav-item" id="nav-timeline" onclick="switchView('timeline')"><span class="icon">⟳</span><span class="lbl">Timeline</span></div>
+    <div class="nav-item" id="nav-sugestoes" onclick="switchView('sugestoes')"><span class="icon">🛒</span><span class="lbl">Sugestões</span></div>
     <p class="sidebar-section">Projetos</p>
     <div id="proj-list"></div>
     <button class="btn-new-proj" onclick="openModal('modal-proj')">+ Novo projeto</button>
@@ -285,6 +303,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
     <div class="topbar">
       <div class="topbar-title" id="topbar-title">Dashboard <span id="topbar-sub">Visão geral</span></div>
       <div class="topbar-actions">
+        <button class="btn btn-secondary btn-sm" onclick="location.reload()" style="font-size:11px">🔄 Recarregar</button>
         <div class="tabs" id="proj-tabs" style="display:none">
           <button class="tab" id="tab-resumo" onclick="switchTab('resumo')">Resumo</button>
           <button class="tab" id="tab-materiais" onclick="switchTab('materiais')">Materiais</button>
@@ -299,6 +318,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
 
       <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+          <button class="btn btn-secondary btn-sm" onclick="buscaGlobal()" style="flex:1">🔍 Busca Global</button>
+          <button class="btn btn-secondary btn-sm" onclick="abrirModalMeta()" style="flex:1">📌 Metas de Orçamento</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportarPDF()" style="flex:1">📄 Exportar PDF</button>
+        </div>
         <div class="metrics-row">
           <div class="mc blue"><div class="mc-lbl">Projetos</div><div class="mc-val blue" id="d-nproj">0</div></div>
           <div class="mc"><div class="mc-lbl">Previsto total</div><div class="mc-val neu" id="d-prev">R$ 0</div></div>
@@ -352,7 +376,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
         </div>
 
         <!-- Project selector grid -->
-        <div id="comp-selector" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:28px"></div>
+        <div id="comp-selector" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:28px"></div>
 
         <!-- Results -->
         <div id="comp-results"></div>
@@ -424,8 +448,85 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
         </div>
       </div>
 
+      <!-- AUDITORIA PAGE -->
+      <div class="page" id="page-audit">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div><p class="eyebrow" style="margin-bottom:6px">Integridade de Dados</p><h2 style="font-family:var(--serif);font-size:24px;font-weight:800;letter-spacing:-.01em">🔍 Auditoria</h2></div>
+          <div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm" onclick="runAuditoria()">🔄 Executar Auditoria</button><button class="btn btn-primary btn-sm" onclick="fixAllIssues()">✓ Corrigir Tudo</button></div>
+        </div>
+
+        <!-- FILTRO DE PESQUISA -->
+        <div style="margin-bottom:20px;display:flex;gap:8px;align-items:center">
+          <input type="text" id="audit-filtro" placeholder="🔎 Pesquisar por NF, fornecedor ou categoria..." style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;flex:1;font-family:var(--mono);font-size:12px;color:var(--text)" onkeyup="filtrarAuditoria()">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('audit-filtro').value=''; filtrarAuditoria()">✕ Limpar</button>
+        </div>
+
+        <div class="metrics-row">
+          <div class="mc blue"><div class="mc-lbl">Total de Verificações</div><div class="mc-val blue" id="audit-total">0</div></div>
+          <div class="mc red"><div class="mc-lbl">Problemas Encontrados</div><div class="mc-val red" id="audit-issues">0</div></div>
+          <div class="mc amber"><div class="mc-lbl">Avisos</div><div class="mc-val amber" id="audit-warns">0</div></div>
+          <div class="mc green"><div class="mc-lbl">Status Geral</div><div class="mc-val green" id="audit-status">✓ OK</div></div>
+        </div>
+        <div id="audit-content"></div>
+      </div>
+
+      <!-- ANALISE DE PRECOS PAGE -->
+      <div class="page" id="page-preco">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div><p class="eyebrow" style="margin-bottom:6px">Inteligencia Comercial</p><h2 style="font-family:var(--serif);font-size:24px;font-weight:800;letter-spacing:-.01em">📊 Análise de Preços</h2></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="exportarAnalise()">⬇️ Exportar PDF</button>
+            <button class="btn btn-secondary btn-sm" onclick="carregarAnalisePrecos()">🔄 Recarregar</button>
+          </div>
+        </div>
+
+        <!-- ABAS -->
+        <div class="tabs" style="margin-bottom:20px;background:var(--bg3);border-radius:10px;padding:4px">
+          <button class="tab active" id="aba-resumo" onclick="mudarAbaPreco('resumo')">📊 Resumo</button>
+          <button class="tab" id="aba-fornecedores" onclick="mudarAbaPreco('fornecedores')">🏢 Fornecedores</button>
+          <button class="tab" id="aba-temporal" onclick="mudarAbaPreco('temporal')">📈 Série Temporal</button>
+          <button class="tab" id="aba-previsao" onclick="mudarAbaPreco('previsao')">🔮 Previsão</button>
+          <button class="tab" id="aba-margem" onclick="mudarAbaPreco('margem')">💰 Margem</button>
+          <button class="tab" id="aba-negociacao" onclick="mudarAbaPreco('negociacao')">🤝 Negociação</button>
+        </div>
+
+        <div id="preco-content"></div>
+      </div>
+
+      <!-- DASHBOARD COMPRAS -->
+      <div class="page" id="page-compras-dash">
+        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:20px">📈 Dashboard de Compras</h2>
+        <div id="compras-content"></div>
+      </div>
+
+      <!-- ALERTAS -->
+      <div class="page" id="page-alertas">
+        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:20px">🔔 Alertas de Preço</h2>
+        <div id="alertas-content"></div>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="page" id="page-timeline">
+        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:20px">⟳ Timeline dos Projetos</h2>
+        <div id="timeline-content"></div>
+      </div>
+
+      <!-- SUGESTOES DE COMPRA -->
+      <div class="page" id="page-sugestoes">
+        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">🛒 Sugestões de Compra</h2>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Recomendações baseadas no histórico de compras dos últimos 18 meses</p>
+        <div id="sugestoes-content"></div>
+      </div>
+
     </div>
   </main>
+</div>
+
+<!-- MODAL METAS -->
+<div class="modal-overlay" id="modal-metas" onclick="closeOut(event,'modal-metas')">
+  <div class="modal"><div class="modal-hd"><div class="modal-title">Metas de Orçamento</div><button class="modal-x" onclick="closeModal('modal-metas')">✕</button></div>
+  <div id="metas-content" style="padding:20px;max-height:600px;overflow-y:auto"></div>
+  </div>
 </div>
 
 <!-- MODAL PROJETO -->
@@ -456,6 +557,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
   <div class="form-actions"><button class="btn btn-ghost" onclick="closeModal('modal-svc')">Cancelar</button><button class="btn btn-primary" onclick="saveSvc()">Adicionar</button></div></div>
 </div>
 
+<!-- MODAL PRECO DISCREPANCIA -->
+<div class="modal-overlay" id="modal-preco-discrepancia" onclick="closeOut(event,'modal-preco-discrepancia')">
+  <div class="modal" style="max-width:600px"><div class="modal-hd"><div class="modal-title" id="modal-preco-titulo">Item</div><button class="modal-x" onclick="closeModal('modal-preco-discrepancia')">✕</button></div>
+  <div id="modal-preco-content" style="padding:20px;max-height:600px;overflow-y:auto"></div>
+  </div>
+</div>
+
 <!-- MODAL NF -->
 <div class="modal-overlay" id="modal-nf" onclick="closeOut(event,'modal-nf')">
   <div class="modal"><div class="modal-hd"><div class="modal-title">Nova Nota Fiscal</div><button class="modal-x" onclick="closeModal('modal-nf')">✕</button></div>
@@ -475,8 +583,22 @@ function trackUsage(type,key){if(!usageData[type])usageData[type]={};usageData[t
 // ── STATE ──
 let S={projects:[],nfs:[],curProj:null,view:'dashboard',tab:'resumo'};
 let charts={};
-function persist(){localStorage.setItem('dc_v5',JSON.stringify(S));}
-function load(){const d=localStorage.getItem('dc_v5');if(d)try{S=JSON.parse(d);}catch(e){}}
+var _saveFileTimer=null;
+function salvarEmArquivo(){
+  clearTimeout(_saveFileTimer);
+  _saveFileTimer=setTimeout(function(){
+    fetch('/save-data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(S)}).catch(function(){});
+  },800);
+}
+function persist(){
+  S._savedAt=Date.now();
+  localStorage.setItem('dc_v5',JSON.stringify(S));
+  salvarEmArquivo();
+}
+function load(){
+  var d=localStorage.getItem('dc_v5');
+  if(d){try{S=JSON.parse(d);}catch(e){S={projects:[],nfs:[],curProj:null,view:'dashboard',tab:'resumo'};}}
+}
 
 // ── INTEL STATE ──
 let intelFindings=JSON.parse(localStorage.getItem('dc_findings')||'{}');
@@ -662,12 +784,12 @@ function switchNFTab(t){
 }
 
 // ── RENDER ALL ──
-function renderAll(){renderSidebar();updateSidebarLogo();renderTopbar();renderPages();populateNFFilters();document.getElementById('nf-count').textContent=S.nfs.length;}
+function renderAll(){renderSidebar();renderTopbar();updateSidebarLogo();renderPages();populateNFFilters();document.getElementById('nf-count').textContent=S.nfs.length;}
 
 function updateSidebarLogo(){
   const l1=document.getElementById('sl1'),l2=document.getElementById('sl2');if(!l1||!l2)return;
   if(S.curProj){const p=S.projects.find(function(p){return p.id===S.curProj;});if(p){const w=p.nome.trim().split(' ');l1.textContent=w.length===1?'':w[0];l2.textContent=w.length===1?w[0]:w.slice(1).join(' ');return;}}
-  l1.textContent='Projeto';l2.textContent='Datacom';
+  l1.textContent='Projetos';l2.textContent='Suprimentos';
 }
 
 function renderSidebar(){
@@ -683,12 +805,15 @@ function renderSidebar(){
 }
 
 function renderTopbar(){
-  ['dashboard','nf','comp'].forEach(function(v){document.getElementById('nav-'+v).classList.remove('active');});
+  ['dashboard','nf','comp','audit','preco'].forEach(function(v){document.getElementById('nav-'+v).classList.remove('active');});
   const tabs=document.getElementById('proj-tabs');
   const btnItem=document.getElementById('btn-add-item');const btnSvc=document.getElementById('btn-add-svc');const btnNF=document.getElementById('btn-add-nf');
   tabs.style.display='none';btnItem.style.display='none';btnSvc.style.display='none';btnNF.style.display='none';
   const title=document.getElementById('topbar-title');const sub=document.getElementById('topbar-sub');
   if(S.view==='comp'){document.getElementById('nav-comp').classList.add('active');title.childNodes[0].textContent='Comparativo ';sub.textContent='Análise de redução';}
+  else if(S.view==='audit'){document.getElementById('nav-audit').classList.add('active');title.childNodes[0].textContent='Auditoria ';sub.textContent='Integridade de dados';}
+  else if(S.view==='preco'){document.getElementById('nav-preco').classList.add('active');title.childNodes[0].textContent='Análise de Preços ';sub.textContent='Inteligência comercial';}
+  else if(S.view==='sugestoes'){title.childNodes[0].textContent='Sugestões de Compra ';sub.textContent='Baseado em 18 meses de histórico';}
   if(S.view==='dashboard'){document.getElementById('nav-dashboard').classList.add('active');title.childNodes[0].textContent='Dashboard ';sub.textContent='Visão geral';}
   else if(S.view==='nf'){document.getElementById('nav-nf').classList.add('active');title.childNodes[0].textContent='Notas Fiscais ';sub.textContent='Relatório';btnNF.style.display='flex';}
   else if(S.view==='projeto'){
@@ -849,26 +974,55 @@ function renderPages(){
   document.getElementById('page-projeto').classList.toggle('active',S.view==='projeto');
   document.getElementById('page-nf').classList.toggle('active',S.view==='nf');
   document.getElementById('page-comp').classList.toggle('active',S.view==='comp');
+  document.getElementById('page-audit').classList.toggle('active',S.view==='audit');
+  document.getElementById('page-preco').classList.toggle('active',S.view==='preco');
+  document.getElementById('page-compras-dash').classList.toggle('active',S.view==='compras-dash');
+  document.getElementById('page-alertas').classList.toggle('active',S.view==='alertas');
+  document.getElementById('page-timeline').classList.toggle('active',S.view==='timeline');
+  document.getElementById('page-sugestoes').classList.toggle('active',S.view==='sugestoes');
   if(S.view==='dashboard')renderDashboard();
   if(S.view==='projeto')renderProjeto();
   if(S.view==='nf')renderNFPage();
   if(S.view==='comp')renderComparativo();
+  if(S.view==='audit')runAuditoria();
+  if(S.view==='preco')carregarAnalisePrecos();
+  if(S.view==='compras-dash')renderComprasDash();
+  if(S.view==='alertas')renderAlertas();
+  if(S.view==='timeline')renderTimeline();
+  if(S.view==='sugestoes')renderSugestoes();
 }
 
 // ── DASHBOARD ──
 function renderDashboard(){
-  const tPrev=S.projects.reduce(function(s,p){return (p.items||[]).reduce(function(a,i){return a+i.prev;},s)+(p.services||[]).reduce(function(a,i){return a+i.prev;},s);},0);
-  const tReal=S.projects.reduce(function(s,p){return (p.items||[]).reduce(function(a,i){return a+i.real;},s)+(p.services||[]).reduce(function(a,i){return a+i.real;},s);},0);
+  const tPrev=S.projects.reduce(function(s,p){
+    var pPrev=0;
+    (p.items||[]).forEach(function(i){if(!i.extra) pPrev+=Number(i.prev)||0;});
+    (p.services||[]).forEach(function(i){if(!i.extra) pPrev+=Number(i.prev)||0;});
+    return s+pPrev;
+  },0);
+  const tReal=S.projects.reduce(function(s,p){
+    var pReal=0;
+    (p.items||[]).forEach(function(i){pReal+=Number(i.real)||0;});
+    (p.services||[]).forEach(function(i){pReal+=Number(i.real)||0;});
+    return s+pReal;
+  },0);
   document.getElementById('d-nproj').textContent=S.projects.length;
   document.getElementById('d-prev').textContent=brl(tPrev);
   document.getElementById('d-real').textContent=brl(tReal);
   document.getElementById('d-nf').textContent=S.nfs.length;
+  console.log('DEBUG renderDashboard:', {tPrev, tReal, nProj:S.projects.length});
   // Dashboard charts
   destroyChart('dash-bar'); destroyChart('dash-donut');
   if(S.projects.length){
     const labels = S.projects.map(function(p){return p.nome.length>14?p.nome.slice(0,14)+'…':p.nome;});
-    const prevVals = S.projects.map(function(p){return (p.items||[]).reduce(function(s,i){return s+(i.prev||0);},0)+(p.services||[]).reduce(function(s,i){return s+(i.prev||0);},0);});
-    const realVals = S.projects.map(function(p){return (p.items||[]).reduce(function(s,i){return s+(i.real||0);},0)+(p.services||[]).reduce(function(s,i){return s+(i.real||0);},0);});
+    const prevVals = S.projects.map(function(p){
+      return (p.items||[]).filter(function(i){return !i.extra;}).reduce(function(s,i){return s+(Number(i.prev)||0);},0)
+            +(p.services||[]).filter(function(i){return !i.extra;}).reduce(function(s,i){return s+(Number(i.prev)||0);},0);
+    });
+    const realVals = S.projects.map(function(p){
+      return (p.items||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0)
+            +(p.services||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0);
+    });
     var barOpts = JSON.parse(JSON.stringify(chartOpts()));
     barOpts.plugins.legend = {
       display:true,
@@ -911,8 +1065,8 @@ function renderDashboard(){
   if(!S.projects.length){wrap.innerHTML='<div class="empty"><div class="empty-icon">◈</div><div class="empty-title">Nenhum projeto</div><div class="empty-sub">Clique em "+ Novo projeto"</div></div>';return;}
   let html='<table class="tbl"><thead><tr><th>Projeto</th><th>Materiais</th><th>Serviços</th><th>Previsto</th><th>Real</th><th>Desvio</th><th></th></tr></thead><tbody>';
   S.projects.forEach(function(p){
-    const mP=(p.items||[]).reduce(function(s,i){return s+i.prev;},0),mR=(p.items||[]).reduce(function(s,i){return s+i.real;},0);
-    const sP=(p.services||[]).reduce(function(s,i){return s+i.prev;},0),sR=(p.services||[]).reduce(function(s,i){return s+i.real;},0);
+    const mP=(p.items||[]).filter(function(i){return !i.extra;}).reduce(function(s,i){return s+(Number(i.prev)||0);},0),mR=(p.items||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0);
+    const sP=(p.services||[]).filter(function(i){return !i.extra;}).reduce(function(s,i){return s+(Number(i.prev)||0);},0),sR=(p.services||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0);
     const tp=mP+sP,tr=mR+sR,d=tr-tp,pct=tp?((d/tp)*100).toFixed(1):0;
     const bc=d>0?'badge-red':'badge-green';
     html+='<tr><td style="color:var(--text);cursor:pointer" onclick="openProject(\''+p.id+'\')">'+p.nome+'</td>'
@@ -1189,45 +1343,6 @@ function detectAnomalies(nfs){
   return results;
 }
 
-// ── AI ANALYSIS ──
-async function runAIAnalysis(){
-  const btn=document.getElementById('btn-ai-analyze');const box=document.getElementById('ai-resp-box');
-  btn.disabled=true;btn.textContent='Analisando...';box.className='ai-resp loading';box.textContent='Consultando IA com seus dados financeiros...';
-  const nfs=S.nfs;
-  const catMap={},centroMap={},mesMap={};
-  nfs.forEach(function(n){if(n.obs)catMap[n.obs]=(catMap[n.obs]||0)+n.valor;if(n.centro)centroMap[n.centro]=(centroMap[n.centro]||0)+n.valor;const m=(n.data||'').slice(0,7);if(m)mesMap[m]=(mesMap[m]||0)+n.valor;});
-  const top5cat=Object.entries(catMap).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
-  const top5centro=Object.entries(centroMap).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
-  const meses=Object.entries(mesMap).sort(function(a,b){return a[0].localeCompare(b[0]);});
-  const total=nfs.reduce(function(s,n){return s+n.valor;},0);
-  const anomalies=detectAnomalies(nfs);
-  const anomCount=anomalies.filter(function(a){return a.type!=='ok';}).length;
-  const top5catStr=top5cat.map(function(e){return '- '+e[0]+': R$'+e[1].toFixed(2);}).join('\n');
-  const top5centroStr=top5centro.map(function(e){return '- '+e[0]+': R$'+e[1].toFixed(2);}).join('\n');
-  const mesesStr=meses.map(function(m){return m[0]+': R$'+m[1].toFixed(0);}).join(' | ');
-  const anomStr=anomalies.filter(function(a){return a.type!=='ok';}).map(function(a){return '- '+a.title+': '+a.sub;}).join('\n');
-  const prompt='Você é um analista financeiro especialista em controle de compras e notas fiscais. Analise os dados de uma empresa de segurança eletrônica (câmeras, alarmes, CFTV).\n\n'
-    +'DADOS ('+nfs.length+' NFs | Total: R$ '+total.toFixed(2)+'):\n'
-    +'Gastos mensais: '+mesesStr+'\n\n'
-    +'TOP 5 CATEGORIAS:\n'+top5catStr+'\n\nTOP 5 CENTROS DE CUSTO:\n'+top5centroStr+'\n\n'
-    +'ALERTAS DETECTADOS: '+anomCount+'\n'+anomStr+'\n\n'
-    +'Responda em português com:\n'
-    +'1. 📊 PADRÕES: O que os dados revelam?\n'
-    +'2. ⚠ ATENÇÃO: Riscos ou ineficiências?\n'
-    +'3. 💡 SUGESTÕES: 3-5 ações concretas\n'
-    +'4. 📈 TENDÊNCIAS: O que esperar?\n\n'
-    +'Seja direto e use números reais dos dados.';
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
-    const data=await res.json();
-    const text=(data.content||[]).map(function(i){return i.text||'';}).join('')||'Sem resposta.';
-    box.className='ai-resp';box.textContent=text;
-    trackUsage('ai','analise');
-    localStorage.setItem('dc_last_ai',JSON.stringify({ts:new Date().toISOString(),text}));
-  }catch(e){box.className='ai-resp';box.textContent='Erro ao conectar com a IA. Verifique sua conexão.';}
-  btn.disabled=false;btn.textContent='🔄 Analisar novamente';
-}
-
 // ── INTEL TAB ──
 function renderIntelTab(){
   trackUsage('tabs','intel');
@@ -1253,7 +1368,6 @@ function renderIntelTab(){
   html+='<div class="itabs">'
     +'<button class="itab '+(intelTab==='alertas'?'active':'')+'" id="itab-alertas" onclick="switchIntelTab(\'alertas\')">⚠ Alertas</button>'
     +'<button class="itab '+(intelTab==='padroes'?'active':'')+'" id="itab-padroes" onclick="switchIntelTab(\'padroes\')">📊 Padrões</button>'
-    +'<button class="itab '+(intelTab==='ia'?'active':'')+'" id="itab-ia" onclick="switchIntelTab(\'ia\')">⚡ IA</button>'
     +'<button class="itab '+(intelTab==='acoes'?'active':'')+'" id="itab-acoes" onclick="switchIntelTab(\'acoes\')">✅ Ações</button>'
     +'</div>';
 
@@ -1303,17 +1417,6 @@ function renderIntelTab(){
     +'<div class="card"><div class="card-hd" style="margin-bottom:12px"><div class="card-title">Evolução mensal</div></div>'+topMes.map(function(e){const p=e[0].split('-');return pbarRow((MESES_PT[p[1]]||p[1])+'/'+p[0].slice(2),e[1],maxMes,'#c084fc');}).join('')+'</div>'
     +'</div>';
 
-  // ─ IA PANE ─
-  const lastAI=JSON.parse(localStorage.getItem('dc_last_ai')||'null');
-  let iaHtml='<div class="ai-box">'
-    +'<div class="ai-title">Análise com <span>Inteligência Artificial</span></div>'
-    +'<div style="font-size:10px;color:var(--muted);margin-bottom:4px">'+(lastAI?'Última análise: '+new Date(lastAI.ts).toLocaleString('pt-BR'):'Nenhuma análise realizada ainda')+'</div>'
-    +'<div id="ai-resp-box" class="ai-resp">'+(lastAI?lastAI.text:'Clique em "Analisar com IA" para obter insights sobre seus dados.')+'</div>'
-    +'<div style="display:flex;gap:8px;margin-top:4px">'
-    +'<button class="btn btn-primary" id="btn-ai-analyze" onclick="runAIAnalysis()">⚡ Analisar com IA</button>'
-    +(lastAI?'<button class="btn btn-ghost btn-sm" onclick="clearLastAI()">Limpar</button>':'')
-    +'</div></div>';
-
   // ─ AÇÕES PANE ─
   function actionSection(title,color,icon,items2,emptyMsg){
     let s='<div class="action-section"><div class="action-section-title"><span>'+icon+'</span><span style="color:'+color+'">'+title+'</span><span class="badge badge-muted">'+items2.length+'</span></div>';
@@ -1342,7 +1445,6 @@ function renderIntelTab(){
 
   html+='<div id="ipane-alertas" '+(intelTab!=='alertas'?'style="display:none"':'')+'>'+alertasHtml+'</div>'
     +'<div id="ipane-padroes" '+(intelTab!=='padroes'?'style="display:none"':'')+'>'+padroesHtml+'</div>'
-    +'<div id="ipane-ia" '+(intelTab!=='ia'?'style="display:none"':'')+'>'+iaHtml+'</div>'
     +'<div id="ipane-acoes" '+(intelTab!=='acoes'?'style="display:none"':'')+'>'+acoesHtml+'</div>';
 
   root.innerHTML=html;
@@ -1350,8 +1452,787 @@ function renderIntelTab(){
 
 
 
+// ── ANALISE DE PRECOS ──
+let precoGlobalItems = [];
+let precoGlobalTotal = 0;
+let precoAbaAtiva = 'resumo';
+
+function carregarAnalisePrecos(){
+  fetch('analise_precos.json')
+    .then(r => r.json())
+    .then(data => {
+      var items = Object.keys(data).map(function(nome){
+        return {nome: nome, ...data[nome]};
+      });
+
+      items.sort(function(a, b){ return b.valor_total - a.valor_total; });
+
+      var total = items.reduce(function(s, i){ return s + i.valor_total; }, 0);
+      var acumulado = 0;
+
+      items.forEach(function(item){
+        acumulado += item.valor_total;
+        var pct = (acumulado / total) * 100;
+        if(pct <= 80) item.classe = 'A';
+        else if(pct <= 95) item.classe = 'B';
+        else item.classe = 'C';
+      });
+
+      precoGlobalItems = items;
+      precoGlobalTotal = total;
+
+      mudarAbaPreco('resumo');
+    })
+    .catch(e => {
+      document.getElementById('preco-content').innerHTML = '<div class="card" style="padding:40px;text-align:center;color:var(--muted)"><div style="font-size:20px;margin-bottom:10px">📂</div><div>Arquivo não encontrado</div></div>';
+    });
+}
+
+function mudarAbaPreco(aba){
+  precoAbaAtiva = aba;
+  ['resumo','fornecedores','temporal','previsao','margem','negociacao'].forEach(function(a){
+    document.getElementById('aba-'+a).classList.toggle('active', a === aba);
+  });
+
+  if(aba === 'resumo') renderAbaResumo();
+  else if(aba === 'fornecedores') renderAbaFornecedores();
+  else if(aba === 'temporal') renderAbaTemporal();
+  else if(aba === 'previsao') renderAbaPrevisao();
+  else if(aba === 'margem') renderAbaMargem();
+  else if(aba === 'negociacao') renderAbaNegociacao();
+}
+
+function desenharGraficoABC(items){
+  var classeA = items.filter(i => i.classe === 'A');
+  var classeB = items.filter(i => i.classe === 'B');
+  var classeC = items.filter(i => i.classe === 'C');
+
+  var totalA = classeA.reduce((s, i) => s + i.valor_total, 0);
+  var totalB = classeB.reduce((s, i) => s + i.valor_total, 0);
+  var totalC = classeC.reduce((s, i) => s + i.valor_total, 0);
+  var total = totalA + totalB + totalC;
+
+  var brlk = function(v){ return v>=1000 ? 'R$ '+(v/1000).toFixed(0)+'k' : 'R$ '+v.toFixed(0); };
+
+  // ── DONUT: distribuição do valor por classe ──
+  var ctxD = document.getElementById('preco-chart-donut');
+  if(ctxD){
+    if(window.graficoDonut) window.graficoDonut.destroy();
+    window.graficoDonut = new Chart(ctxD, {
+      type: 'doughnut',
+      data: {
+        labels: ['Classe A ('+classeA.length+' itens)', 'Classe B ('+classeB.length+' itens)', 'Classe C ('+classeC.length+' itens)'],
+        datasets: [{
+          data: [totalA, totalB, totalC],
+          backgroundColor: ['rgba(255,82,82,0.85)', 'rgba(240,165,0,0.85)', 'rgba(0,212,138,0.85)'],
+          borderColor: '#0b0e0d',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '58%',
+        plugins: {
+          legend: {position: 'bottom', labels: {color: 'var(--muted)', font:{size:10}, padding:8, boxWidth:12}},
+          tooltip: {
+            callbacks: {
+              label: function(c){ var pct=(c.parsed/total*100).toFixed(1); return ' '+brlk(c.parsed)+' ('+pct+'%)'; }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── PARETO: valor por item (ordenado) + % acumulado ──
+  var ctx = document.getElementById('preco-chart-abc');
+  if(!ctx) return;
+
+  var sorted = items.slice().sort(function(a,b){ return b.valor_total - a.valor_total; });
+  var grand = sorted.reduce(function(s,i){ return s + i.valor_total; }, 0) || 1;
+  var labels = sorted.map(function(i){ return i.nome; });
+  var vals = sorted.map(function(i){ return i.valor_total; });
+  var corClasse = function(c){ return c==='A'?'rgba(255,82,82,0.75)': c==='B'?'rgba(240,165,0,0.75)':'rgba(0,212,138,0.75)'; };
+  var barColors = sorted.map(function(i){ return corClasse(i.classe); });
+  var cum = 0;
+  var cumPct = sorted.map(function(i){ cum += i.valor_total; return +(cum/grand*100).toFixed(2); });
+
+  if(window.graficoABC) window.graficoABC.destroy();
+
+  window.graficoABC = new Chart(ctx, {
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Valor (R$)',
+          data: vals,
+          backgroundColor: barColors,
+          borderWidth: 0,
+          yAxisID: 'y',
+          order: 2
+        },
+        {
+          type: 'line',
+          label: '% Acumulado',
+          data: cumPct,
+          borderColor: 'rgba(120,180,255,0.95)',
+          backgroundColor: 'rgba(120,180,255,0.95)',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.25,
+          yAxisID: 'y1',
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: {mode: 'index', intersect: false},
+      scales: {
+        y: {
+          type: 'linear', position: 'left',
+          title: {display: true, text: 'Valor (R$)', color: 'var(--muted)', font:{size:10}},
+          ticks: {color: 'var(--muted)', font:{size:9}, callback: function(v){ return brlk(v); }},
+          grid: {color: 'var(--border)'}
+        },
+        y1: {
+          type: 'linear', position: 'right', min: 0, max: 100,
+          title: {display: true, text: '% Acumulado', color: 'var(--muted)', font:{size:10}},
+          ticks: {color: 'rgba(120,180,255,0.9)', font:{size:9}, callback: function(v){ return v+'%'; }},
+          grid: {drawOnChartArea: false}
+        },
+        x: {
+          ticks: {display: false},
+          grid: {display: false}
+        }
+      },
+      plugins: {
+        legend: {labels: {color: 'var(--muted)', font:{size:10}, boxWidth:12}},
+        tooltip: {
+          callbacks: {
+            title: function(items){ return items[0].label; },
+            label: function(c){
+              if(c.dataset.type === 'line') return ' Acumulado: '+c.parsed.y.toFixed(1)+'%';
+              var it = sorted[c.dataIndex];
+              return [' Valor: '+brlk(c.parsed.y), ' Classe: '+it.classe];
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+
+// ── ABA 1: RESUMO ──
+function renderAbaResumo(){
+  var html = '';
+  var classeA = precoGlobalItems.filter(i => i.classe === 'A');
+  var classeB = precoGlobalItems.filter(i => i.classe === 'B');
+  var classeC = precoGlobalItems.filter(i => i.classe === 'C');
+
+  var totalA = classeA.reduce((s, i) => s + i.valor_total, 0);
+  var totalB = classeB.reduce((s, i) => s + i.valor_total, 0);
+  var totalC = classeC.reduce((s, i) => s + i.valor_total, 0);
+
+  html += '<div class="metrics-row">';
+  html += '<div class="mc blue"><div class="mc-lbl">Total Itens</div><div class="mc-val blue">'+precoGlobalItems.length+'</div></div>';
+  html += '<div class="mc red"><div class="mc-lbl">Classe A</div><div class="mc-val red">'+classeA.length+'</div><div class="mc-sub">'+((totalA/precoGlobalTotal)*100).toFixed(1)+'%</div></div>';
+  html += '<div class="mc amber"><div class="mc-lbl">Classe B</div><div class="mc-val amber">'+classeB.length+'</div><div class="mc-sub">'+((totalB/precoGlobalTotal)*100).toFixed(1)+'%</div></div>';
+  html += '<div class="mc green"><div class="mc-lbl">Classe C</div><div class="mc-val green">'+classeC.length+'</div><div class="mc-sub">'+((totalC/precoGlobalTotal)*100).toFixed(1)+'%</div></div>';
+  html += '</div>';
+
+  // Gráfico ABC — Donut + Pareto lado a lado
+  html += '<div class="card" style="margin-bottom:20px;padding:20px">';
+  html += '<div style="font-size:12px;color:var(--muted);margin-bottom:14px;text-transform:uppercase;letter-spacing:.1em">Curva ABC — Distribuição + Pareto</div>';
+  html += '<div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(300px,1.7fr);gap:24px;align-items:center">';
+  html += '<div><div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px">Distribuição do Valor</div><canvas id="preco-chart-donut" style="max-height:280px"></canvas></div>';
+  html += '<div><div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px">Pareto — Valor por Item + % Acumulado</div><canvas id="preco-chart-abc" style="max-height:280px"></canvas></div>';
+  html += '</div></div>';
+
+  // Filtros
+  html += '<div style="margin-bottom:20px;display:flex;gap:8px;align-items:center"><input type="text" id="preco-filtro" placeholder="🔎 Pesquisar..." style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;flex:1;font-family:var(--mono);font-size:12px;color:var(--text)" onkeyup="filtrarPrecos()"><select id="preco-filtro-abc" style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:12px;color:var(--text)" onchange="filtrarPrecos()"><option value="">Todos</option><option value="A">Classe A</option><option value="B">Classe B</option><option value="C">Classe C</option></select><button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'preco-filtro\').value=\'\'; document.getElementById(\'preco-filtro-abc\').value=\'\'; filtrarPrecos()">✕ Limpar</button></div>';
+
+  // Tabela
+  html += '<div class="card"><table class="tbl" style="width:100%"><thead><tr><th>Classe</th><th style="text-align:left">Item</th><th>Compras</th><th>Preço Médio</th><th>Mín/Máx</th><th>Variação</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+
+  var filtroTermo = (document.getElementById('preco-filtro')?.value || '').toLowerCase();
+  var filtroAbc = document.getElementById('preco-filtro-abc')?.value;
+
+  precoGlobalItems.forEach(function(item){
+    if(filtroAbc && item.classe !== filtroAbc) return;
+    if(filtroTermo && !item.nome.toLowerCase().includes(filtroTermo)) return;
+
+    var cor = item.classe === 'A' ? 'var(--red)' : (item.classe === 'B' ? 'var(--amber)' : 'var(--green)');
+    var sinal = item.variacao_pct >= 0 ? '+' : '';
+    var corVar = item.variacao_pct >= 0 ? 'var(--red)' : 'var(--green)';
+
+    html += '<tr style="cursor:pointer" onclick="abrirModalPrecoDiscrepancia(\''+item.nome.replace(/'/g, "\\'")+'\')" onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'transparent\'">';
+    html += '<td><span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:'+cor+';text-align:center;line-height:24px;font-weight:700;font-size:11px;color:var(--bg)">'+item.classe+'</span></td>';
+    html += '<td style="text-align:left">'+item.nome.substring(0,40)+'</td>';
+    html += '<td>'+item.quantidade_compras+'</td>';
+    html += '<td style="text-align:right">R$'+item.preco_medio.toFixed(2)+'</td>';
+    html += '<td style="text-align:right;font-size:10px">R$'+item.preco_minimo.toFixed(2)+'/'+item.preco_maximo.toFixed(2)+'</td>';
+    html += '<td style="text-align:right;color:'+corVar+';font-weight:600">'+sinal+item.variacao_pct.toFixed(2)+'%</td>';
+    html += '<td style="text-align:right;font-weight:600">R$'+item.valor_total.toFixed(2)+'</td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('preco-content').innerHTML = html;
+  desenharGraficoABC(precoGlobalItems);
+}
+
+// ── ABA 2: FORNECEDORES ──
+function renderAbaFornecedores(){
+  var html = '<div style="display:flex;flex-direction:column;gap:16px">';
+
+  precoGlobalItems.slice(0, 15).forEach(function(item){
+    var fornList = Object.entries(item.fornecedores)
+      .map(function(e){ return {nome: e[0], ...e[1]}; })
+      .sort(function(a, b){ return a.preco_medio - b.preco_medio; });
+
+    var melhor = fornList[0];
+    var pior = fornList[fornList.length - 1];
+    var dif = pior.preco_medio - melhor.preco_medio;
+
+    html += '<div class="card" style="padding:16px;border-left:4px solid var(--blue)">';
+    html += '<div style="font-weight:600;margin-bottom:8px">'+item.nome.substring(0,50)+'</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11px">';
+    html += '<div><span style="color:var(--muted)">Melhor:</span> <strong style="color:var(--green)">'+melhor.nome.substring(0,25)+'</strong><br>R$ '+melhor.preco_medio.toFixed(2)+' ('+melhor.qtd+'x)</div>';
+    html += '<div><span style="color:var(--muted)">Pior:</span> <strong style="color:var(--red)">'+pior.nome.substring(0,25)+'</strong><br>R$ '+pior.preco_medio.toFixed(2)+' ('+pior.qtd+'x)</div>';
+    html += '</div>';
+    html += '<div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:4px;color:var(--amber);font-weight:600;font-size:11px">Diferença: R$ '+dif.toFixed(2)+' ('+((dif/melhor.preco_medio)*100).toFixed(1)+'%)</div>';
+    html += '</div>';
+  });
+
+  html += '</div>';
+  document.getElementById('preco-content').innerHTML = html;
+}
+
+// ── ABA 3: SÉRIE TEMPORAL ──
+function renderAbaTemporal(){
+  var html = '<div style="display:flex;flex-direction:column;gap:20px">';
+
+  precoGlobalItems.slice(0, 5).forEach(function(item, idx){
+    if(!item.serie_temporal || item.serie_temporal.length < 2) return;
+
+    html += '<div class="card" style="padding:16px"><div style="font-weight:600;margin-bottom:12px">'+item.nome.substring(0,50)+'</div>';
+    html += '<canvas id="chart-temporal-'+idx+'" style="max-height:200px;margin-bottom:12px"></canvas>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px">';
+    html += '<div><span style="color:var(--muted)">Preço Inicial:</span> R$'+item.serie_temporal[0].preco_medio.toFixed(2)+'</div>';
+    html += '<div><span style="color:var(--muted)">Preço Final:</span> R$'+item.serie_temporal[item.serie_temporal.length-1].preco_medio.toFixed(2)+'</div>';
+    html += '<div><span style="color:var(--muted)">Variação:</span> '+item.variacao_pct.toFixed(2)+'%</div>';
+    html += '</div></div>';
+  });
+
+  html += '</div>';
+  document.getElementById('preco-content').innerHTML = html;
+  setTimeout(desenharGraficosTemporais, 100);
+}
+
+// ── ABA 4: PREVISÃO ──
+function renderAbaPrevisao(){
+  var html = '<div style="display:flex;flex-direction:column;gap:16px">';
+
+  html += '<div class="card" style="padding:16px;border-left:4px solid var(--blue)">';
+  html += '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">ITENS COM MAIOR PREVISÃO DE AUMENTO</div>';
+
+  var itemsPrevisao = precoGlobalItems
+    .filter(i => i.serie_temporal && i.serie_temporal.length >= 2)
+    .map(function(i){
+      var atual = i.preco_medio;
+      var previsto = i.preco_previsto;
+      var variacao = ((previsto - atual) / atual) * 100;
+      return {nome: i.nome, atual, previsto, variacao};
+    })
+    .sort(function(a, b){ return b.variacao - a.variacao; });
+
+  itemsPrevisao.slice(0, 10).forEach(function(item){
+    var cor = item.variacao >= 0 ? 'var(--red)' : 'var(--green)';
+    var sinal = item.variacao >= 0 ? '+' : '';
+
+    html += '<div style="padding:12px;background:var(--bg3);border-radius:4px;display:flex;justify-content:space-between;align-items:center">';
+    html += '<div style="font-size:11px"><strong>'+item.nome.substring(0,40)+'</strong><br><span style="color:var(--muted)">Atual: R$'+item.atual.toFixed(2)+' | Previsto: R$'+item.previsto.toFixed(2)+'</span></div>';
+    html += '<div style="font-weight:700;color:'+cor+';font-size:14px">'+sinal+item.variacao.toFixed(1)+'%</div>';
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+  document.getElementById('preco-content').innerHTML = html;
+}
+
+// ── ABA 5: MARGEM DE LUCRO ──
+function renderAbaMargem(){
+  var html = '<div style="display:flex;flex-direction:column;gap:16px">';
+  html += '<div style="padding:16px;background:var(--bg3);border-radius:8px;border-left:4px solid var(--green)">';
+  html += '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">SUGESTÃO DE PREÇOS DE VENDA</div>';
+
+  precoGlobalItems.slice(0, 15).forEach(function(item){
+    var margem = item.margem_sugerida_pct || 30;
+    var custoMedio = item.preco_medio;
+    var precoVenda = custoMedio * (1 + margem / 100);
+
+    html += '<div style="padding:12px;background:var(--bg);border-radius:4px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;align-items:center;border-bottom:1px solid var(--border)">';
+    html += '<div style="font-size:11px"><strong>'+item.nome.substring(0,35)+'</strong></div>';
+    html += '<div style="text-align:right;font-size:11px;color:var(--muted)">Custo:<br>R$ '+custoMedio.toFixed(2)+'</div>';
+    html += '<div style="text-align:right;font-size:11px;color:var(--muted)">Margem:<br>'+margem+'%</div>';
+    html += '<div style="text-align:right;font-size:12px;font-weight:700;color:var(--green)">Venda:<br>R$ '+precoVenda.toFixed(2)+'</div>';
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+  document.getElementById('preco-content').innerHTML = html;
+}
+
+// ── ABA 6: NEGOCIAÇÃO ──
+function renderAbaNegociacao(){
+  var html = '<div style="display:flex;flex-direction:column;gap:16px">';
+  html += '<div style="padding:16px;background:var(--bg3);border-radius:8px;border-left:4px solid var(--amber)">';
+  html += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.1em">ITENS PARA NEGOCIAÇÃO COM FORNECEDOR</div>';
+  html += '<div style="font-size:10px;color:var(--muted2);margin-bottom:16px">Itens com maior discrepância de preço - oportunidade de reduzir custos</div>';
+
+  var itemsNegociacao = precoGlobalItems
+    .map(function(i){
+      var diff = i.nf_mais_cara.preco - i.nf_mais_barata.preco;
+      var difPct = (diff / i.nf_mais_barata.preco) * 100;
+      return {item: i, diff, difPct};
+    })
+    .sort(function(a, b){ return b.difPct - a.difPct; })
+    .slice(0, 12);
+
+  itemsNegociacao.forEach(function(o){
+    var item = o.item;
+    var economia = o.diff * item.quantidade_compras;
+
+    html += '<div style="padding:14px;background:var(--bg);border-radius:4px;border-left:4px solid var(--red);margin-bottom:8px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:start">';
+    html += '<div style="flex:1;font-size:11px">';
+    html += '<strong style="color:var(--text)">'+item.nome.substring(0,45)+'</strong><br>';
+    html += '<span style="color:var(--muted);font-size:10px">Melhor: R$'+item.nf_mais_barata.preco.toFixed(2)+' | Pior: R$'+item.nf_mais_cara.preco.toFixed(2)+'</span>';
+    html += '</div>';
+    html += '<div style="text-align:right">';
+    html += '<div style="font-weight:700;color:var(--red);font-size:13px">'+o.difPct.toFixed(1)+'%</div>';
+    html += '<div style="color:var(--amber);font-size:10px;margin-top:4px">Economia: R$'+economia.toFixed(2)+'</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+  document.getElementById('preco-content').innerHTML = html;
+}
+
+// ── FUNÇÕES AUXILIARES ──
+function filtrarPrecos(){
+  renderAbaResumo();
+}
+
+function desenharGraficosTemporais(){
+  precoGlobalItems.slice(0, 5).forEach(function(item, idx){
+    if(!item.serie_temporal || item.serie_temporal.length < 2) return;
+
+    var ctx = document.getElementById('chart-temporal-'+idx);
+    if(!ctx) return;
+
+    if(window['graficoTemporal'+idx]) window['graficoTemporal'+idx].destroy();
+
+    var labels = item.serie_temporal.map(s => s.mes);
+    var data = item.serie_temporal.map(s => s.preco_medio);
+
+    window['graficoTemporal'+idx] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Preço Médio',
+          data: data,
+          borderColor: 'var(--blue)',
+          backgroundColor: 'rgba(77, 159, 255, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {legend: {display: false}},
+        scales: {
+          y: {ticks: {color: 'var(--muted)'}, grid: {color: 'var(--border)'}},
+          x: {ticks: {color: 'var(--muted)'}, grid: {color: 'var(--border)'}}
+        }
+      }
+    });
+  });
+}
+
+function exportarAnalise(){
+  toast('Exportação será implementada em breve!', 'warning');
+}
+
+function abrirModalPrecoDiscrepancia(nomeItem){
+  var item = precoGlobalItems.find(i => i.nome === nomeItem);
+  if(!item) return;
+
+  var html = '<div style="display:flex;flex-direction:column;gap:16px">';
+
+  // Resumo
+  html += '<div style="padding:12px;background:var(--bg3);border-radius:8px;border-left:4px solid var(--accent)">';
+  html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Resumo do Item</div>';
+  html += '<div style="font-weight:600;color:var(--accent)">'+item.nome+'</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;font-size:11px">';
+  html += '<div><span style="color:var(--muted)">Compras:</span> '+item.quantidade_compras+'x</div>';
+  html += '<div><span style="color:var(--muted)">Variação:</span> '+item.variacao_pct.toFixed(2)+'%</div>';
+  html += '<div><span style="color:var(--muted)">Preço Médio:</span> R$ '+item.preco_medio.toFixed(2)+'</div>';
+  html += '<div><span style="color:var(--muted)">Total Comprado:</span> R$ '+item.valor_total.toFixed(2)+'</div>';
+  html += '</div></div>';
+
+  // NF Mais Cara
+  html += '<div style="padding:12px;background:var(--bg3);border-radius:8px;border-left:4px solid var(--red)">';
+  html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Compra mais CARA</div>';
+  html += '<div style="display:grid;gap:6px;font-size:12px">';
+  html += '<div><span style="color:var(--muted)">NF:</span> <strong>'+item.nf_mais_cara.numero+'</strong></div>';
+  html += '<div><span style="color:var(--muted)">Preço:</span> <strong style="color:var(--red)">R$ '+item.nf_mais_cara.preco.toFixed(2)+'</strong> ('+((item.nf_mais_cara.preco-item.preco_medio)/item.preco_medio*100).toFixed(1)+'% acima da média)</div>';
+  html += '<div><span style="color:var(--muted)">Fornecedor:</span> '+item.nf_mais_cara.fornecedor+'</div>';
+  html += '<div><span style="color:var(--muted)">Data:</span> '+item.nf_mais_cara.data+'</div>';
+  html += '</div></div>';
+
+  // NF Mais Barata
+  html += '<div style="padding:12px;background:var(--bg3);border-radius:8px;border-left:4px solid var(--green)">';
+  html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Compra mais BARATA</div>';
+  html += '<div style="display:grid;gap:6px;font-size:12px">';
+  html += '<div><span style="color:var(--muted)">NF:</span> <strong>'+item.nf_mais_barata.numero+'</strong></div>';
+  html += '<div><span style="color:var(--muted)">Preço:</span> <strong style="color:var(--green)">R$ '+item.nf_mais_barata.preco.toFixed(2)+'</strong> ('+((item.nf_mais_barata.preco-item.preco_medio)/item.preco_medio*100).toFixed(1)+'% abaixo da média)</div>';
+  html += '<div><span style="color:var(--muted)">Fornecedor:</span> '+item.nf_mais_barata.fornecedor+'</div>';
+  html += '<div><span style="color:var(--muted)">Data:</span> '+item.nf_mais_barata.data+'</div>';
+  html += '</div></div>';
+
+  // Diferença
+  var diff = item.nf_mais_cara.preco - item.nf_mais_barata.preco;
+  var diffPct = (diff / item.nf_mais_barata.preco) * 100;
+  html += '<div style="padding:12px;background:var(--bg3);border-radius:8px;border-left:4px solid var(--amber)">';
+  html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Diferença de Preço</div>';
+  html += '<div style="font-size:18px;font-weight:700;color:var(--amber)">R$ '+diff.toFixed(2)+' (+'+diffPct.toFixed(1)+'%)</div>';
+  html += '<div style="font-size:11px;color:var(--muted);margin-top:4px">Oportunidade de negociação com fornecedor</div>';
+  html += '</div>';
+
+  html += '</div>';
+
+  document.getElementById('modal-preco-titulo').textContent = item.nome.substring(0, 50);
+  document.getElementById('modal-preco-content').innerHTML = html;
+  openModal('modal-preco-discrepancia');
+}
+
+// ── AUDITORIA (NOTAS FISCAIS) ──
+function filtrarAuditoria(){
+  var termo = (document.getElementById('audit-filtro').value || '').toLowerCase();
+  var cards = document.querySelectorAll('#audit-content .card[data-search]');
+  var vistos = 0;
+
+  console.log('🔎 Filtrando: "'+termo+'", encontradas '+cards.length+' cards');
+
+  cards.forEach(function(card){
+    var dataSearch = card.getAttribute('data-search') || '';
+    var match = termo === '' || dataSearch.includes(termo);
+    card.style.display = match ? 'block' : 'none';
+    if(match) vistos++;
+  });
+
+  if(termo !== '' && vistos === 0){
+    toast('Nenhuma NF encontrada para "'+termo+'"', 'warning');
+  } else if(termo !== ''){
+    toast('Encontradas '+vistos+' NF(s)', 'success');
+  }
+
+  console.log('🔎 Resultado: '+vistos+' cards visíveis');
+}
+
+function runAuditoria(){
+  var nfs = S.nfs || [];
+  var issues = [];
+  var warns = [];
+
+  // Limpa o filtro
+  var filtroEl = document.getElementById('audit-filtro');
+  if(filtroEl) filtroEl.value = '';
+
+  console.log('🔍 runAuditoria iniciada, S.nfs.length='+nfs.length);
+
+  // 1. NFs sem categoria (skip NFs auditadas)
+  nfs.forEach(function(n, idx){
+    if(n.auditado) return; // Skip NFs marcadas como auditadas
+    if(!n.obs || n.obs.trim() === '' || n.obs === '-'){
+      warns.push({nf:n, idx:idx, tipo:'sem_cat', refIdx:null, msg:'NF sem categoria'});
+    }
+  });
+
+  // 2. NFs com valores inválidos (skip NFs auditadas)
+  nfs.forEach(function(n, idx){
+    if(n.auditado) return; // Skip NFs marcadas como auditadas
+    if(isNaN(n.valor) || n.valor < 0){
+      issues.push({nf:n, idx:idx, tipo:'valor_invalido', refIdx:null, msg:'Valor inválido'});
+    }
+  });
+
+  // 3. Possíveis duplicatas (mesmo valor + fornecedor, mas número diferente) - skip NFs auditadas
+  var valueMap = {};
+  nfs.forEach(function(n, idx){
+    if(n.auditado) return; // Skip NFs marcadas como auditadas
+    var key = n.valor.toFixed(2) + '|' + n.fornecedor;
+    if(valueMap[key]){
+      var refIdx = valueMap[key];
+      var refNf = nfs[refIdx];
+      warns.push({nf:n, idx:idx, tipo:'duplicata', refIdx:refIdx, refNf:refNf, msg:'Mesmo valor (R$ '+n.valor.toFixed(2)+') e fornecedor. Verificar se é duplicata da NF '+(refNf.numero||'?')});
+    } else valueMap[key] = idx;
+  });
+
+  // 4. NFs com valor muito alto (skip NFs auditadas)
+  var avg = nfs.reduce(function(s,n){return s+n.valor;},0) / (nfs.length||1);
+  nfs.forEach(function(n, idx){
+    if(n.auditado) return; // Skip NFs marcadas como auditadas
+    if(n.valor > avg * 3){
+      warns.push({nf:n, idx:idx, tipo:'valor_alto', refIdx:null, msg:'Valor muito alto (3x acima da média R$ '+avg.toFixed(2)+')'});
+    }
+  });
+
+  var total = issues.length + warns.length;
+  console.log('📊 runAuditoria resultado: issues='+issues.length+', warns='+warns.length+', total='+total);
+
+  document.getElementById('audit-total').textContent = nfs.length;
+  document.getElementById('audit-issues').textContent = issues.length;
+  document.getElementById('audit-warns').textContent = warns.length;
+  document.getElementById('audit-status').textContent = total === 0 ? '✓ OK' : '⚠ '+total+' problemas';
+  document.getElementById('audit-count').textContent = total > 0 ? total : '';
+
+  renderAuditResults(issues, warns);
+}
+
+function renderAuditResults(issues, warns){
+  var html = '';
+
+  if(issues.length === 0 && warns.length === 0){
+    html = '<div class="card"><div style="padding:40px;text-align:center;color:var(--muted)"><div style="font-size:32px;margin-bottom:10px">✓</div><div>Nenhum problema em Notas Fiscais!</div></div></div>';
+  } else {
+    // Erros
+    if(issues.length > 0){
+      html += '<div style="margin-bottom:20px"><h3 style="font-size:13px;color:var(--red);margin-bottom:10px;text-transform:uppercase;letter-spacing:.1em">🚨 '+issues.length+' ERRO(S)</h3>';
+      issues.forEach(function(item){
+        html += renderNFCard(item, 'erro');
+      });
+      html += '</div>';
+    }
+
+    // Avisos
+    if(warns.length > 0){
+      html += '<div style="margin-bottom:20px"><h3 style="font-size:13px;color:var(--amber);margin-bottom:10px;text-transform:uppercase;letter-spacing:.1em">⚠ '+warns.length+' AVISO(S)</h3>';
+      warns.forEach(function(item){
+        html += renderNFCard(item, 'aviso');
+      });
+      html += '</div>';
+    }
+  }
+
+  document.getElementById('audit-content').innerHTML = html;
+}
+
+function renderNFCard(item, tipo){
+  var nf = item.nf;
+  var idx = item.idx;
+
+  console.log('🎨 renderNFCard - idx='+idx, 'nf.numero='+nf.numero, 'S.nfs[idx].numero='+S.nfs[idx].numero, 'match='+(S.nfs[idx].numero===nf.numero));
+
+  var borderColor = tipo === 'erro' ? 'var(--red)' : 'var(--amber)';
+  var problemas = [];
+
+  // Dados para filtro
+  var dataSearch = (nf.numero+' '+nf.fornecedor+' '+(nf.obs||'')+' '+nf.valor).toLowerCase();
+
+  // Detecta TODOS os problemas desta NF
+  if(!nf.obs || nf.obs.trim() === '' || nf.obs === '-'){
+    problemas.push('📌 <strong>Sem categoria:</strong> Escolha uma categoria (CFTV, Material, Serviço, etc)');
+  }
+
+  if(isNaN(nf.valor) || nf.valor < 0){
+    problemas.push('🚨 <strong>Valor inválido:</strong> O valor está inválido ou negativo');
+  }
+
+  var avg = S.nfs.reduce(function(s,n){return s+n.valor;},0) / (S.nfs.length||1);
+  if(nf.valor > avg * 3){
+    problemas.push('⚠ <strong>Valor muito alto:</strong> '+nf.valor.toFixed(2)+' é 3x maior que a média (R$ '+avg.toFixed(2)+')');
+  }
+
+  // Verifica duplicata
+  for(var i = 0; i < S.nfs.length; i++){
+    if(i !== idx){
+      var other = S.nfs[i];
+      if(nf.valor.toFixed(2) === other.valor.toFixed(2) && nf.fornecedor === other.fornecedor && nf.numero !== other.numero){
+        problemas.push('🔄 <strong>Possível duplicata:</strong> NF '+other.numero+' do fornecedor '+other.fornecedor+' tem o mesmo valor');
+        break;
+      }
+    }
+  }
+
+  var msgTexto = problemas.length > 0 ? '<div style="display:flex;flex-direction:column;gap:8px">'+problemas.map(function(p){return '<div style="font-size:11px">'+p+'</div>';}).join('')+'</div>' : item.msg;
+
+  return '<div class="card" data-search="'+dataSearch+'" style="border-left:4px solid '+borderColor+';margin-bottom:12px"><div style="padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:12px">'
+    +'<div style="display:flex;gap:8px;margin-bottom:8px"><span class="badge '+(tipo==='erro'?'badge-red':'badge-amber')+'">'+(tipo==='erro'?'ERRO':'AVISO')+'</span></div>'
+    +'<div style="font-size:12px;color:var(--text);line-height:1.5">'+msgTexto+'</div>'
+    +'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">'
+    +'<div><div style="font-size:11px"><strong>NF:</strong> <input type="text" id="nf-num-'+idx+'" value="'+nf.numero+'" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:4px 8px;width:100%;font-family:var(--mono);font-size:10px;color:var(--text);margin-top:2px"></div>'
+    +'<div style="font-size:11px;margin-top:6px"><strong>Fornecedor:</strong> <input type="text" id="nf-forn-'+idx+'" value="'+nf.fornecedor+'" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:4px 8px;width:100%;font-family:var(--mono);font-size:10px;color:var(--text);margin-top:2px"></div>'
+    +'<div style="font-size:11px;margin-top:6px"><strong>Categoria:</strong> <input type="text" id="nf-obs-'+idx+'" value="'+(nf.obs||'')+'" placeholder="Ex: CFTV, Material..." style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:4px 8px;width:100%;font-family:var(--mono);font-size:10px;color:var(--text);margin-top:2px"></div>'
+    +'</div>'
+    +'<div><div style="font-size:11px"><strong>Valor (R$):</strong></div><input type="number" id="nf-val-'+idx+'" value="'+nf.valor.toFixed(2)+'" step="0.01" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:8px;width:100%;font-family:var(--mono);font-size:12px;color:var(--text);margin-top:4px;font-weight:600">'
+    +'<div style="display:flex;gap:8px;margin-top:12px">'
+    +'<button class="btn btn-primary btn-sm" onclick="window.saveNFAudit('+idx+')">✓ Salvar</button>'
+    +'<button class="btn btn-ghost btn-sm" onclick="window.discardNFAudit('+idx+')">✕ Descartar</button>'
+    +'<button class="btn btn-danger btn-sm" onclick="if(confirm(\'Remover NF?\')) window.deleteNFAudit('+idx+')">🗑 Remover</button>'
+    +'</div></div></div></div>';
+}
+
+function saveNFAudit(idx){
+  console.log('💾 saveNFAudit idx='+idx, 'S.nfs.length='+S.nfs.length);
+
+  var nf = S.nfs[idx];
+  if(!nf){
+    console.error('❌ NF não encontrada no índice '+idx);
+    toast('❌ Erro: NF não encontrada', 'error');
+    return;
+  }
+
+  console.log('📝 Antes de salvar:', JSON.stringify(nf));
+
+  // Lê valores dos inputs
+  var numVal = document.getElementById('nf-num-'+idx);
+  var fornVal = document.getElementById('nf-forn-'+idx);
+  var obsVal = document.getElementById('nf-obs-'+idx);
+  var valVal = document.getElementById('nf-val-'+idx);
+
+  if(!numVal || !fornVal || !obsVal || !valVal){
+    console.error('❌ Inputs não encontrados', {numVal: !!numVal, fornVal: !!fornVal, obsVal: !!obsVal, valVal: !!valVal});
+    toast('❌ Erro ao ler campos', 'error');
+    return;
+  }
+
+  nf.numero = numVal.value;
+  nf.fornecedor = fornVal.value;
+  nf.obs = obsVal.value;
+  nf.valor = parseFloat(valVal.value) || 0;
+
+  console.log('📝 Depois de salvar:', JSON.stringify(nf));
+
+  persist();
+
+  // Mostra o que foi salvo
+  var msg = 'NF: '+nf.numero+' | Forn: '+nf.fornecedor+' | Cat: '+nf.obs+' | Val: R$'+nf.valor.toFixed(2);
+  toast('✓ Salvo: '+msg);
+
+  // Aguarda um pouco e depois analisa o que ainda está errado
+  setTimeout(function(){
+    console.log('🔍 Analisando problemas após salvar...');
+
+    // Recalcula todos os problemas desta NF
+    var problemas = [];
+
+    if(!nf.obs || nf.obs.trim() === '' || nf.obs === '-'){
+      problemas.push('sem categoria');
+    }
+
+    if(isNaN(nf.valor) || nf.valor < 0){
+      problemas.push('valor inválido');
+    }
+
+    var avg = S.nfs.reduce(function(s,n){return s+n.valor;},0) / (S.nfs.length||1);
+    if(nf.valor > avg * 3){
+      problemas.push('valor muito alto ('+nf.valor.toFixed(2)+' vs média '+avg.toFixed(2)+')');
+    }
+
+    for(var i = 0; i < S.nfs.length; i++){
+      if(i !== idx){
+        var other = S.nfs[i];
+        if(nf.valor.toFixed(2) === other.valor.toFixed(2) && nf.fornecedor === other.fornecedor && nf.numero !== other.numero){
+          problemas.push('possível duplicata com NF '+other.numero);
+          break;
+        }
+      }
+    }
+
+    if(problemas.length > 0){
+      toast('⚠️ Ainda tem: '+problemas.join(' | '), 'error');
+      console.log('❌ NF ainda tem problemas:', problemas);
+    } else {
+      toast('✅ RESOLVIDO! Saindo da auditoria...', 'success');
+      console.log('✅ NF sem problemas, saindo!');
+    }
+
+    runAuditoria();
+  }, 50);
+}
+
+function discardNFAudit(idx){
+  console.log('✅ discardNFAudit idx='+idx, 'marcando como auditado');
+  var nf = S.nfs[idx];
+  nf.auditado = true; // Marca como "verificado e OK"
+  persist();
+  toast('✅ NF '+nf.numero+' marcada como auditada (removida da lista)');
+  runAuditoria();
+}
+
+function deleteNFAudit(idx){
+  console.log('🗑️ deleteNFAudit idx='+idx, 'antes S.nfs.length='+S.nfs.length);
+  var nfNum = S.nfs[idx].numero;
+  var nfValor = S.nfs[idx].valor;
+  var nfsAntes = S.nfs.length;
+
+  // Remove de S.nfs
+  S.nfs.splice(idx, 1);
+  var nfsDepois = S.nfs.length;
+
+  // Salva no localStorage
+  persist();
+
+  // Verifica se foi realmente removida do sistema
+  var nfAindaExiste = S.nfs.some(function(n){ return n.numero === nfNum; });
+
+  console.log('🗑️ depois S.nfs.length='+nfsDepois+', NF ainda existe: '+nfAindaExiste);
+
+  if(nfsDepois < nfsAntes && !nfAindaExiste){
+    toast('✅ NF '+nfNum+' (R$ '+nfValor.toFixed(2)+') DELETADA do sistema! Restam: '+nfsDepois+' NFs');
+  } else {
+    toast('❌ Erro ao deletar NF do sistema!', 'error');
+  }
+
+  runAuditoria();
+}
+
 // ── INIT ──
 load();
+// Timestamp dos dados do localStorage ANTES das IIFEs de criacao (para comparar com o arquivo)
+var _lsTime = (S && S._savedAt) ? S._savedAt : 0;
+// NOTA: o reset destrutivo de schema foi REMOVIDO. As IIFEs abaixo usam if(!find),
+// entao so criam projetos que faltam — nunca apagam edicoes do usuario.
+
+// Criar NF de TESTE apenas uma vez
+(function(){
+  if(S.nfs && S.nfs.length > 0 && !localStorage.getItem('dc_teste_nf_criada')){
+    var nfTeste = {
+      numero: '🧪 TESTE-DELETE-ME',
+      fornecedor: 'FORNECEDOR TESTE',
+      obs: '', // SEM CATEGORIA para aparecer na auditoria
+      valor: 999.99,
+      data: new Date().toISOString().split('T')[0],
+      auditado: false
+    };
+    // Adiciona em primeiro lugar
+    S.nfs.unshift(nfTeste);
+    persist();
+    localStorage.setItem('dc_teste_nf_criada', 'true'); // Marca como criada
+    console.log('🧪 NF de teste criada em primeiro lugar! Delete ela para testar.');
+  }
+})();
 
 // Add items to CD SÃO JOSÉ DOS PINHAIS if missing
 (function(){
@@ -1411,17 +2292,6 @@ load();
   }
 })();
 
-// Add items to B_Print_Ceará if missing
-(function(){
-  var proj = S.projects.find(function(p){return p.id==='b_print_cear';});
-  if(proj && (!proj.items || proj.items.length===0)){
-    proj.items=[
-      {id:uid(),nome:'Câmera IP 4MP ColorVu — Hikvision DS-2CD1T47G2H',prev:3120.40,real:2995.00,cat:'CFTV',extra:false},
-      {id:uid(),nome:'Licença Digifort Pack 4 Canal',prev:2186.89,real:2842.96,cat:'Software',extra:false}
-    ];
-    persist();
-  }
-})();
 
 // Rename Câmeras Perímetro → Datacom if still old name
 (function(){
@@ -1473,9 +2343,62 @@ load();
       ]});
     persist();
   }
-    if(!S.projects.find(function(p){return p.id==='darkstore';})){S.projects.push({id:'darkstore',nome:'DarkStore',desc:'Importado',cliente:'',data:'',items:[],services:[{id:uid(),nome:'Tubulação',qtd:80,fornecedor:'TUBULAÇÃO GALVANIZADA COM MÃO DE OBRA',prev:35.0,real:35.0,'cat':'Infra/Transporte',extra:false},{id:uid(),nome:'Kit Elétrica Rack',qtd:1,fornecedor:'PROTETOR ELETRÔNICO, PLUGUES E CONECTORES',prev:500.0,real:500.0,'cat':'Infra/Transporte',extra:false},{id:uid(),nome:'Mão de Obra',qtd:1,fornecedor:'INSTALAÇÃO, CONFIGURAÇÃO, COMISSIONAMENTO, TREINAMENTO',prev:2500.0,real:2500.0,'cat':'Serviço',extra:false}]}); }
-  if(!S.projects.find(function(p){return p.id==='chandon_cameras_wifi';})){S.projects.push({id:'chandon_cameras_wifi',nome:'CHANDON CAMERAS WIFI',desc:'Importado',cliente:'',data:'',items:[],services:[{id:uid(),nome:'Mão de Obra - Câmeras',qtd:17,fornecedor:'Vigicorp',prev:4250.0,real:4250.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Mão de Obra - Access Point',qtd:6,fornecedor:'Vigicorp',prev:3000.0,real:3000.0,'cat':'Serviço',extra:false}]}); }
-  if(!S.projects.find(function(p){return p.id==='edif_cio_sharm';})){S.projects.push({id:'edif_cio_sharm',nome:'Edifício Sharm',desc:'Importado',cliente:'',data:'',items:[],services:[{id:uid(),nome:'Tubulação',qtd:1,fornecedor:'Estimado',prev:1800.0,real:1800.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Material Elétrico',qtd:1,fornecedor:'Estimado',prev:400.0,real:400.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Mão de Obra',qtd:1,fornecedor:'Estimado',prev:9000.0,real:9000.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Quadro de comando',qtd:1,fornecedor:'Estimado',prev:352.0,real:352.0,'cat':'Serviço',extra:false}]}); }
+    if(!S.projects.find(function(p){return p.id==='edificio_sharm';})){S.projects.push({id:'edificio_sharm',nome:'Edificio Sharm',desc:'',cliente:'Sharm',data:'',items:[
+      {id:uid(),nome:'NVR 32 Canais — Hikvision DS-7632NXI-K2',prev:1846.88,real:1768,cat:'CFTV',extra:false},
+      {id:uid(),nome:'HD 6TB — Seagate Skyhawk',prev:1089.10,real:1790,cat:'CFTV',extra:false},
+      {id:uid(),nome:'Camera IP 2MP (x20) — Hilook IPC-B121H-C',prev:3101.40,real:0,cat:'CFTV',extra:false},
+      {id:uid(),nome:'Switch PoE 24P — Intelbras S2328G-A',prev:1578.07,real:1578.07,cat:'CFTV',extra:false},
+      {id:uid(),nome:'Routerboard — Mikrotik RB 750GR3',prev:442,real:436.45,cat:'CFTV',extra:false},
+      {id:uid(),nome:'Controlador Facial (x6) — Hikvision',prev:4674,real:4388.76,cat:'Controle de Acesso',extra:false},
+      {id:uid(),nome:'Mola Aerea (x5) — Intelbras MH 104A',prev:936.60,real:936.60,cat:'Controle de Acesso',extra:false},
+      {id:uid(),nome:'Eletroima 150kgf (x5) — Intelbras FE 20150',prev:1278,real:1278,cat:'Controle de Acesso',extra:false},
+      {id:uid(),nome:'Fonte Nobreak 12V (x5) — JFL Full Power',prev:1173.15,real:760.85,cat:'Controle de Acesso',extra:false},
+      {id:uid(),nome:'Leitor Tag Veicular UHF (x2) — Solid',prev:5980.80,real:5980.80,cat:'Controle de Acesso',extra:false},
+      {id:uid(),nome:'Tag UHF Interno (x100) — Solid Tag 110',prev:1091,real:1091,cat:'Controle de Acesso',extra:false},
+      {id:uid(),nome:'Controladora 2P — Intelbras CT 3000 2PB',prev:1000.36,real:960.35,cat:'Controle de Acesso',extra:false},
+      {id:uid(),nome:'Botoeira (x2) — Intelbras BT 3000 IN',prev:154.84,real:154.84,cat:'Controle de Acesso',extra:false},
+      {id:uid(),nome:'Acionador Emergencia (x5) — Intelbras AS 2010',prev:643.70,real:643.70,cat:'Controle de Acesso',extra:false},
+      {id:uid(),nome:'Quadro de Comando — Diversos',prev:352,real:352,cat:'Infraestrutura',extra:false},
+      {id:uid(),nome:'Suporte Leitor UHF (x2) — Serralheria',prev:800,real:800,cat:'Infraestrutura',extra:false}
+    ],services:[
+      {id:uid(),nome:'Tubulacao',qtd:1,fornecedor:'Estimado',prev:1800.0,real:1800.0,cat:'Servico',extra:false},
+      {id:uid(),nome:'Material Eletrico',qtd:1,fornecedor:'Estimado',prev:400.0,real:400.0,cat:'Servico',extra:false},
+      {id:uid(),nome:'Mao de Obra',qtd:1,fornecedor:'Estimado',prev:9000.0,real:9000.0,cat:'Servico',extra:false},
+      {id:uid(),nome:'Quadro de comando',qtd:1,fornecedor:'Estimado',prev:352.0,real:352.0,cat:'Servico',extra:false}
+    ]}); }
+    if(!S.projects.find(function(p){return p.id==='b_print_ceara';})){S.projects.push({id:'b_print_ceara',nome:'B_Print_Ceara',desc:'',cliente:'',data:'',items:[
+      {id:uid(),nome:'Camera IP 4MP ColorVu — Hikvision DS-2CD1T47G2H-LIU',prev:3120.40,real:2995.00,cat:'CFTV',extra:false},
+      {id:uid(),nome:'Licenca Digifort Pack 4 Canal',prev:2186.89,real:2842.96,cat:'Software',extra:false}
+    ],services:[
+      {id:uid(),nome:'Mao de obra tecnica',qtd:1,fornecedor:'Configuracao Remota',prev:1500.0,real:0.0,cat:'Servico',extra:false}
+    ]}); }
+    if(!S.projects.find(function(p){return p.id==='chandon';})){S.projects.push({id:'chandon',nome:'CHANDON',desc:'Cameras Temporarias BoM',cliente:'',data:'',items:[
+      {id:uid(),nome:'Camera IM5 WiFi 2MP (x17) — Intelbras MIBO Smart',prev:5963.77,real:4894.81,cat:'CFTV',extra:false},
+      {id:uid(),nome:'Cartao Micro SD 128GB (x17) — Intelbras WD Purple',prev:2098.82,real:3704.81,cat:'CFTV',extra:false},
+      {id:uid(),nome:'Access Point Dual Band (x6) — Intelbras WiFi 5',prev:3901.20,real:4755.72,cat:'Rede',extra:false}
+    ],services:[
+      {id:uid(),nome:'Mao de Obra - Cameras',qtd:17,fornecedor:'Vigicorp',prev:4250.0,real:4250.0,cat:'Servico',extra:false},
+      {id:uid(),nome:'Mao de Obra - Access Point',qtd:6,fornecedor:'Vigicorp',prev:3000.0,real:3000.0,cat:'Servico',extra:false}
+    ]}); }
+    if(!S.projects.find(function(p){return p.id==='darkstore';})){S.projects.push({id:'darkstore',nome:'DarkStore',desc:'Importado',cliente:'',data:'',items:[
+      {id:uid(),nome:'Camera IP 2MP (x16) — Hikvision DS-2CD1021G0-I',prev:3147.84,real:2888.32,cat:'CFTV',extra:false},
+      {id:uid(),nome:'NVR 16 Canais — Hikvision DS-7616NI-Q1',prev:840.98,real:840.98,cat:'CFTV',extra:false},
+      {id:uid(),nome:'HD 6TB — Seagate Skyhawk',prev:1279.90,real:1682.48,cat:'Materiais',extra:false},
+      {id:uid(),nome:'Caixa Passagem Externa (x6)',prev:87.24,real:82.86,cat:'Materiais',extra:false},
+      {id:uid(),nome:'Caixa Passagem Interna (x10)',prev:68.50,real:68.40,cat:'Materiais',extra:false},
+      {id:uid(),nome:'Rack 5U — Intelbras MRM 537',prev:182.49,real:204.74,cat:'Infraestrutura',extra:false},
+      {id:uid(),nome:'Cabo UTP CAT5E — Megatron (305mt)',prev:851.00,real:435.71,cat:'Cabeamento',extra:false},
+      {id:uid(),nome:'Organizador Cabo',prev:47.96,real:50.15,cat:'Cabeamento',extra:false},
+      {id:uid(),nome:'Patch Cord CAT5E (x3)',prev:27.15,real:28.38,cat:'Cabeamento',extra:false},
+      {id:uid(),nome:'Regua 8 Tomadas',prev:70.14,real:70.13,cat:'Energia',extra:false},
+      {id:uid(),nome:'Switch 16P POE + 2SFP',prev:939.97,real:939.96,cat:'Rede',extra:false},
+      {id:uid(),nome:'Central Alarme s/Fio',prev:436.54,real:0,cat:'Alarme',extra:false},
+      {id:uid(),nome:'Sirene c/Fio',prev:19.87,real:0,cat:'Alarme',extra:false},
+      {id:uid(),nome:'Teclado s/Fio Pro UHF',prev:195.64,real:0,cat:'Alarme',extra:false},
+      {id:uid(),nome:'Botao Panico s/Fio',prev:62.97,real:0,cat:'Alarme',extra:false},
+      {id:uid(),nome:'Sensor IVP PET (x16)',prev:2069.28,real:2069.28,cat:'Alarme',extra:false},
+      {id:uid(),nome:'Licenca VMS',prev:0,real:0,cat:'Software',extra:false}
+    ],services:[{id:uid(),nome:'Tubulacao Galvanizada',qtd:80,fornecedor:'',prev:35.0,real:35.0,cat:'Infra',extra:false},{id:uid(),nome:'Kit Eletrica Rack',qtd:1,fornecedor:'',prev:500.0,real:500.0,cat:'Infra',extra:false},{id:uid(),nome:'Mao de Obra',qtd:1,fornecedor:'',prev:2500.0,real:2500.0,cat:'Servico',extra:false}]}); }
   if(!S.projects.find(function(p){return p.id==='escola_mesquita';})){S.projects.push({id:'escola_mesquita',nome:'Escola Mesquita',desc:'Importado',cliente:'',data:'',items:[{id:uid(),nome:'Gerenciador Telas Chamada de Alunos — Dell',prev:3303.0,real:3339.31,'cat':'Materiais',extra:false},{id:uid(),nome:'Câmera Acusense 4MP Fixa — Hikvision',prev:11204.57,real:11440.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Câmera LPR — Hikvision',prev:8334.81,real:11394.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Câmeras Internas — Hikvision',prev:9460.0,real:8612.04,'cat':'CFTV',extra:false},{id:uid(),nome:'Catraca Módulo Central — Hikvision',prev:12229.5,real:11000.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Catraca Módulo Esquerda — Hikvision',prev:8185.25,real:7835.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Catraca Módulo Direita — Hikvision',prev:8185.25,real:7835.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Central alarme — Hikvision',prev:1045.7,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Sirene — Hikvision',prev:738.0,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Sensor IVP — Hikvision',prev:7678.86,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Sendor IVP Externo — Hikvision',prev:785.8,real:0.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Teclado — Hikvision',prev:874.23,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Repetidor de Sinal — Hikvision',prev:901.9,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Leitor Facial — Hikvision',prev:13000.0,real:14900.0,'cat':'CFTV',extra:false},{id:uid(),nome:'NVR 32 — Hikvision',prev:4866.72,real:4866.82,'cat':'CFTV',extra:false},{id:uid(),nome:'Suporte Facial Simples — Hikvision',prev:1204.2,real:1190.2,'cat':'CFTV',extra:false},{id:uid(),nome:'Swichs 8 Portas PoE — Hikvision',prev:2854.7,real:6250.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Bateria 12V/7Ah — Intelbras',prev:96.77,real:60.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Cabo CAT5 — Intelbras',prev:8150.0,real:9062.8,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Caixa passagem CFTV — Intelbras',prev:882.0,real:400.4,'cat':'Materiais',extra:false},{id:uid(),nome:'Chip M2M — Virtueyes',prev:16.0,real:16.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Eletroímã — Intelbras',prev:238.0,real:255.6,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Fonte de Alimentação — Intelbras',prev:539.4,real:457.8,'cat':'Materiais',extra:false},{id:uid(),nome:'Fonte Nobreak 12V/5A — Intelbras',prev:240.0,real:194.32,'cat':'Materiais',extra:false},{id:uid(),nome:'HD 6TB — Intelbras',prev:6534.12,real:3473.68,'cat':'Materiais',extra:false},{id:uid(),nome:'Kit Rádio para Elevador — Intelbras',prev:943.65,real:905.91,'cat':'Materiais',extra:false},{id:uid(),nome:'Mola Aérea — Intelbras',prev:195.12,real:187.32,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Monitor 40" — Intelbras',prev:3000.0,real:2700.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Nobreak 1500VA — Intelbras',prev:869.1,real:790.43,'cat':'Materiais',extra:false},{id:uid(),nome:'Organizador de Cabo — Intelbras',prev:97.76,real:100.1,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Patch Cord CAT5E — Intelbras',prev:374.0,real:410.5,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Patch Panel CAT5E — Intelbras',prev:354.06,real:355.4,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Rack 3U — Intelbras',prev:676.48,real:814.8,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Rack 5U — Intelbras',prev:213.64,real:213.65,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Rack 8U — Intelbras',prev:550.36,real:563.45,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Régua Rack — Intelbras',prev:381.15,real:365.95,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Switch 8P Gigabit — Intelbras',prev:156.34,real:154.27,'cat':'CFTV',extra:false},{id:uid(),nome:'Switch 24P PoE — Intelbras',prev:3129.6,real:2846.36,'cat':'CFTV',extra:false},{id:uid(),nome:'Telefone IP — Intelbras',prev:297.93,real:286.02,'cat':'Materiais',extra:false},{id:uid(),nome:'Laço Indutivo — Kalts',prev:1600.0,real:593.4,'cat':'Materiais',extra:false},{id:uid(),nome:'Detector de Veículos 2 Canais — Kalts',prev:0.0,real:694.31,'cat':'Materiais',extra:false},{id:uid(),nome:'Gerenciador de rede — Mikrotik',prev:500.0,real:436.45,'cat':'Materiais',extra:false},{id:uid(),nome:'Cancela 4m — PPA',prev:5000.0,real:4569.18,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Totem — Serralheria',prev:1500.0,real:1500.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Poste para câmeras — Serralheria',prev:2000.0,real:2000.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Poste para LPR — Serralheria',prev:1500.0,real:1500.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Postelete para câmera — Serralheria',prev:600.0,real:600.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Software Controle de Acesso Serviço Implantação — Solid Falcon',prev:3980.0,real:3980.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Usuário Extra — Solid Falcon',prev:0.0,real:40.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Notificação Whatsapp — Solid Falcon',prev:0.0,real:240.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Base Professional — Solid Falcon',prev:0.0,real:420.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Câmera LPR — Solid Falcon',prev:0.0,real:114.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Software Controle de Acesso Leitor Facial — Solid Falcon',prev:0.0,real:200.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Monitoramento Vídeo Licença — Somaseg',prev:312.0,real:2281.5,'cat':'Software',extra:false},{id:uid(),nome:'Guarda Corpo em Vidro — Vidro Arte',prev:2000.0,real:2000.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Quadro de Comando',prev:450.0,real:450.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Eletroímã 150kgf — Intelbras',prev:474.76,real:511.2,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Suporte Facial Simples — Intelbras',prev:257.14,real:246.86,'cat':'CFTV',extra:false},{id:uid(),nome:'Fonte Nobreak 12V/5A',prev:0,real:194.32,'cat':'Materiais',extra:true},{id:uid(),nome:'Conector RJ45',prev:0,real:78.09,'cat':'Materiais',extra:true},{id:uid(),nome:'Par de ativo',prev:0,real:85.68,'cat':'Materiais',extra:true},{id:uid(),nome:'ELETROIMA FE20150',prev:0,real:511.2,'cat':'Materiais',extra:true},{id:uid(),nome:'AUTOMATIZA-SUPORTE PARA VIDRO SV-20150-4671098',prev:0,real:246.86,'cat':'Materiais',extra:true},{id:uid(),nome:'SWITCH 8 PORTAS FAST',prev:0,real:99.28,'cat':'Materiais',extra:true}],services:[{id:uid(),nome:'Material Elétrico',qtd:1,fornecedor:'Estimado',prev:5000.0,real:5000.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Tubulação',qtd:600,fornecedor:'Estimado',prev:21000.0,real:21000.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Mão de Obra',qtd:1,fornecedor:'Estimado',prev:4500.0,real:4500.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Mão de Obra',qtd:1,fornecedor:'Estimado',prev:24600.0,real:24600.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Quadro de Comando',qtd:1,fornecedor:'Estimado',prev:450.0,real:450.0,'cat':'Serviço',extra:false}]}); }
   if(!S.projects.find(function(p){return p.id==='lifar_torniquete';})){S.projects.push({id:'lifar_torniquete',nome:'LIFAR TORNIQUETE',desc:'Importado',cliente:'',data:'',items:[
       {id:uid(),nome:'Leitor RFID PROX LE130 — Intelbras (x4)',prev:1183.60,real:962.64,cat:'Controle de Acesso',extra:false},
@@ -1491,7 +2414,6 @@ load();
       {id:uid(),nome:'Switch 10P Giga PoE S1110G — Intelbras',prev:672.90,real:645.99,cat:'Infra/Transporte',extra:false}
     ],services:[{id:uid(),nome:'Quadro de comando',qtd:1,fornecedor:'QUADRO DE COMANDO',prev:500.0,real:500.0,'cat':'Infra/Transporte',extra:false},{id:uid(),nome:'Material Elétrico e miscelaneas',qtd:1,fornecedor:'MATERIAL ELÉTRICO E MISCELANEAS',prev:500.0,real:500.0,'cat':'Infra/Transporte',extra:false},{id:uid(),nome:'Tubulação',qtd:15,fornecedor:'MÃO DE OBRA + TUBULAÇÃO',prev:35.0,real:35.0,'cat':'Infra/Transporte',extra:false},{id:uid(),nome:'Mão de Obra Técnica',qtd:1,fornecedor:'MÃO DE OBRA DE INSTALAÇÃO E CONFIGURAÇÃO',prev:1500.0,real:1500.0,'cat':'Serviço',extra:false}]}); }
   if(!S.projects.find(function(p){return p.id==='alegrete';})){S.projects.push({id:'alegrete',nome:'ALEGRETE',desc:'Importado',cliente:'',data:'',items:[],services:[{id:uid(),nome:'Kit tubulação',qtd:19,fornecedor:'Estimado',prev:9500.0,real:9500.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Micelaneos e Elétrica',qtd:19,fornecedor:'Estimado',prev:5700.0,real:5700.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Instalação e configuração',qtd:19,fornecedor:'Estimado',prev:13300.0,real:9800.0,'cat':'Serviço',extra:false}]}); }
-  if(!S.projects.find(function(p){return p.id==='b_print_cear';})){S.projects.push({id:'b_print_cear',nome:'B_Print_Ceará',desc:'Importado',cliente:'',data:'',items:[],services:[{id:uid(),nome:'Mão de obra técnica',qtd:1,fornecedor:'MÃO DE OBRA TÉCNICA - CONFIGURAÇÃO REMOTA',prev:1500.0,real:0.0,'cat':'Serviço',extra:false}]}); }
   if(!S.projects.find(function(p){return p.id==='new_print_sca_almox';})){S.projects.push({id:'new_print_sca_almox',nome:'New_Print_SCA_ALMOX',desc:'Importado',cliente:'',data:'',items:[
       {id:uid(),nome:'Câmera IP 4MP Acusense — Hikvision DS-2CD2043G2-I',prev:999.37,real:699.90,cat:'CFTV',extra:false},
       {id:uid(),nome:'Suporte Facial — FOCA (x2)',prev:400.00,real:1556.00,cat:'Controle de Acesso',extra:false},
@@ -1508,10 +2430,61 @@ load();
   persist();
 })();
 
+// NOW: Add items to projects AFTER they've been created
 
-  // Load NFs
-  (function(){
-    var v='v5_2026'; if(localStorage.getItem('dc_nf_ver')===v && S.nfs.length>100) return;
+// Add items to Datacom (Câmeras Perímetro) if missing
+(function(){
+  var proj = S.projects.find(function(p){return p.id==='cam-perimetro';});
+  var temItens = proj && (proj.items||[]).some(function(i){return i.nome.includes('Lic. Digifort');});
+  if(proj && !temItens){
+    proj.items=[
+      {id:uid(),nome:'Lic. Digifort Pack 8ch (1)',prev:5740,real:6972.13,cat:'Licenças',extra:false},
+      {id:uid(),nome:'Lic. Digifort Pack 8ch (2)',prev:5740,real:6972.13,cat:'Licenças',extra:false},
+      {id:uid(),nome:'Lic. Digifort Pack 2ch',prev:1677.99,real:2037.15,cat:'Licenças',extra:false},
+      {id:uid(),nome:'Lic. Digifort 16ch Edge',prev:3719,real:4514.46,cat:'Licenças',extra:false},
+      {id:uid(),nome:'Lic. Digifort 8ch Edge',prev:2010.76,real:2440.25,cat:'Licenças',extra:false},
+      {id:uid(),nome:'Cabo CAT6 1500m',prev:11310,real:9045,cat:'Cabeamento',extra:false},
+      {id:uid(),nome:'Conector Keystone CAT6',prev:179.4,real:58.45,cat:'Conectores',extra:false},
+      {id:uid(),nome:'Patch Cord CAT6',prev:100.32,real:90,cat:'Conectores',extra:false},
+      {id:uid(),nome:'Conector RJ45 CAT6',prev:38.28,real:6.36,cat:'Conectores',extra:false},
+      {id:uid(),nome:'Cabo CAT6 500m (adicional)',prev:0,real:3015,cat:'Cabeamento',extra:true}
+    ];
+    persist();
+  }
+})();
+
+// Add items to DarkStore if missing (17 items from Excel)
+(function(){
+  var proj = S.projects.find(function(p){return p.id==='darkstore';});
+  // Check if any of the 17 items exist (by counting specific names)
+  var temCameraIP2MP = proj && (proj.items||[]).some(function(i){return i.nome.includes('Câmera IP 2MP');});
+  if(proj && !temCameraIP2MP){
+    proj.items=[
+      {id:uid(),nome:'Câmera IP 2MP — Hikvision DS-2CD1021G0-I (x16)',prev:3147.84,real:2888.32,cat:'CFTV',extra:false},
+      {id:uid(),nome:'NVR 16 Canais — Hikvision DS-7616NI-Q1',prev:840.98,real:840.98,cat:'CFTV',extra:false},
+      {id:uid(),nome:'HD 6TB — Seagate Skyhawk',prev:1279.90,real:1682.48,cat:'Materiais',extra:false},
+      {id:uid(),nome:'Caixa Passagem Externa (x6) — Intelbras VBOX 1100 E',prev:87.24,real:82.86,cat:'Materiais',extra:false},
+      {id:uid(),nome:'Caixa Passagem Interna (x10) — Intelbras VBOX 1100',prev:68.50,real:68.40,cat:'Materiais',extra:false},
+      {id:uid(),nome:'Rack 5U — Intelbras MRM 537',prev:182.49,real:204.74,cat:'Infraestrutura',extra:false},
+      {id:uid(),nome:'Cabo UTP CAT5E — Megatron (305mt)',prev:851.00,real:435.71,cat:'Cabeamento',extra:false},
+      {id:uid(),nome:'Organizador Cabo — Intelbras P40',prev:47.96,real:50.15,cat:'Cabeamento',extra:false},
+      {id:uid(),nome:'Patch Cord CAT5E (x3) — Intelbras 1.0m',prev:27.15,real:28.38,cat:'Cabeamento',extra:false},
+      {id:uid(),nome:'Régua 8 Tomadas — Intelbras EPR 208',prev:70.14,real:70.13,cat:'Energia',extra:false},
+      {id:uid(),nome:'Switch 16P POE + 2SFP — Intelbras S1118F-PA',prev:939.97,real:939.96,cat:'Rede',extra:false},
+      {id:uid(),nome:'Central Alarme s/Fio — JFL Active Full 32',prev:436.54,real:0,cat:'Alarme',extra:false},
+      {id:uid(),nome:'Sirene c/Fio — JFL SIR-120',prev:19.87,real:0,cat:'Alarme',extra:false},
+      {id:uid(),nome:'Teclado s/Fio Pro UHF — JFL TEC 510 DUO+',prev:195.64,real:0,cat:'Alarme',extra:false},
+      {id:uid(),nome:'Botão Pânico s/Fio — JFL CR4T DUO+',prev:62.97,real:0,cat:'Alarme',extra:false},
+      {id:uid(),nome:'Sensor IVP PET (x16) — JFL IRPET-520 DUO+',prev:2069.28,real:2069.28,cat:'Alarme',extra:false},
+      {id:uid(),nome:'Licença VMS — Hikvision iVMS 4200',prev:0,real:0,cat:'Software',extra:false}
+    ];
+    persist();
+  }
+})();
+
+// Load NFs
+(function(){
+  var v='v5_2026'; if(localStorage.getItem('dc_nf_ver')===v && S.nfs.length>100) return;
     var obs={}; S.nfs.forEach(function(n){if(n.det)obs[n.numero+'|'+n.fornecedor]=n.det;});
     var a=[];
     a.push({id:uid(),numero:'388',fornecedor:'JONATHAN PUREZA ZANDONAI FERRAGENS',valor:236.11,data:'2026-01-02',projId:'',obs:'Ferragem',centro:'Canela/Filial',det:''},{id:uid(),numero:'34657',fornecedor:'CLIP PAPELARIA BRILHANTE',valor:268.7,data:'2026-01-02',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'30383',fornecedor:'MERCADO DOS PLASTICOS',valor:311.45,data:'2026-01-02',projId:'',obs:'Ferragem',centro:'Canela/Filial',det:''},{id:uid(),numero:'82434',fornecedor:'AUTTEC MATERIAIS ELETRICOS',valor:1826.81,data:'2026-01-02',projId:'',obs:'Ferragem',centro:'UFSM/HUSM',det:''},{id:uid(),numero:'912',fornecedor:'AUTO POSTO BITTENCOURT 03',valor:6273.47,data:'2026-01-02',projId:'',obs:'Combustível',centro:'Vigillare SM',det:''},{id:uid(),numero:'23659',fornecedor:'PIONEIRA TELE AGUA',valor:400.0,data:'2026-01-04',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'4611',fornecedor:'CANDEMIL MOTOS LTDA',valor:35.1,data:'2026-01-05',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'40870',fornecedor:'BIG PATRONATO SANTA MARIA',valor:59.92,data:'2026-01-05',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Administrativo/Fin.',det:''},{id:uid(),numero:'172371',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:77.78,data:'2026-01-05',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'FARMACIA PANVEL - FILIAL 758'},{id:uid(),numero:'24083',fornecedor:'MATV SUL ELETRONICOS LTDA - SC',valor:77.78,data:'2026-01-05',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN - SANTA CRUZ DO SUL SURCEN ( CASA DE MAQUINAS'},{id:uid(),numero:'48495',fornecedor:'CENTRAL SUPORTES',valor:87.52,data:'2026-01-05',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'2751',fornecedor:'CLAUDIOMIRO ZIEGLER HOFFMEISTER',valor:89.0,data:'2026-01-05',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'4610',fornecedor:'CANDEMIL MOTOS LTDA',valor:128.0,data:'2026-01-05',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'172285',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:435.71,data:'2026-01-05',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN - CERRO GRANDE DO SUL ETA SURSIN'},{id:uid(),numero:'319370',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:448.58,data:'2026-01-05',projId:'',obs:'CFTV',centro:'Corporativo',det:'CONDOMINIO IBIRAPUERA'},{id:uid(),numero:'3121',fornecedor:'ARCA PROMOCOES E EVENTOS LTDA',valor:495.0,data:'2026-01-05',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Corporativo',det:''},{id:uid(),numero:'172236',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:1683.26,data:'2026-01-05',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN EBAT BOOSTER SAO JORGE TORRES'},{id:uid(),numero:'172241',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2178.24,data:'2026-01-05',projId:'',obs:'CFTV e Alarme',centro:'Corsan',det:'CORSAN EEB 8.1 MORADA DAS PALMEIRAS TORRES'},{id:uid(),numero:'172242',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:3500.33,data:'2026-01-05',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN TORRES EBE03 PRAIA GRANDE (PRAINHA)'},{id:uid(),numero:'172233',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:3569.55,data:'2026-01-05',projId:'',obs:'CFTV',centro:'Corporativo',det:'CORSAN ARROIO DO SAL ESCRITORIO'},{id:uid(),numero:'1639',fornecedor:'STARKE CALCADOS E ACESSORIOS',valor:3675.0,data:'2026-01-05',projId:'',obs:'Uniformes e EPI',centro:'Vigillare SM',det:''},{id:uid(),numero:'172398',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:3681.23,data:'2026-01-05',projId:'',obs:'CFTV',centro:'Corporativo',det:''},{id:uid(),numero:'64497410',fornecedor:'NERDICE',valor:7950.0,data:'2026-01-05',projId:'',obs:'Uniformes e EPI',centro:'Vigillare SM',det:''},{id:uid(),numero:'43220',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:61.13,data:'2026-01-06',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMÁCIA SÃO JOÃO NOVO HAMBURGO 27'},{id:uid(),numero:'319424',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:197.15,data:'2026-01-06',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'FARMACIA PANVEL - FILIAL 486'},{id:uid(),numero:'43222',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:202.35,data:'2026-01-06',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN ARROIO DO SAL ESCRITORIO'},{id:uid(),numero:'43218',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:235.28,data:'2026-01-06',projId:'',obs:'Alarme',centro:'Vigillare Poa',det:''},{id:uid(),numero:'43224',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:248.12,data:'2026-01-06',projId:'',obs:'Controle de Acesso',centro:'Corporativo',det:'COLÉGIO MESQUITA'},{id:uid(),numero:'43219',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:559.0,data:'2026-01-06',projId:'',obs:'Controle de Acesso',centro:'Dimed S.A',det:''},{id:uid(),numero:'319488',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:630.92,data:'2026-01-06',projId:'',obs:'Controle de Acesso',centro:'Dimed S.A',det:''},{id:uid(),numero:'319464',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:658.89,data:'2026-01-06',projId:'',obs:'CFTV',centro:'Vigillare Poa',det:''},{id:uid(),numero:'319443',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:671.04,data:'2026-01-06',projId:'',obs:'CFTV',centro:'Vigillare Poa',det:''},{id:uid(),numero:'43223',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:868.71,data:'2026-01-06',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'37608',fornecedor:'MPE SANTA ROSA',valor:884.92,data:'2026-01-06',projId:'',obs:'CFTV',centro:'UFSM/HUSM',det:'UNIVERSIDADE FEDERAL DE SANTA MARIA'},{id:uid(),numero:'43221',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:1043.81,data:'2026-01-06',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN EBE JARDIM DO SOL RIO GRANDE'},{id:uid(),numero:'172451',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:1126.9,data:'2026-01-06',projId:'',obs:'CFTV',centro:'Corporativo',det:'CHANDON'},{id:uid(),numero:'319425',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1288.44,data:'2026-01-06',projId:'',obs:'CFTV',centro:'Dimed S.A',det:''},{id:uid(),numero:'43217',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:1298.39,data:'2026-01-06',projId:'',obs:'CFTV',centro:'Vigillare Poa',det:'OBRA, CASA DIRETOR FABRICIO'},{id:uid(),numero:'73266',fornecedor:'PORTO MATERIAIS',valor:1677.25,data:'2026-01-06',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Poa',det:''},{id:uid(),numero:'566',fornecedor:'POSTO FERRARI 4',valor:2124.57,data:'2026-01-06',projId:'',obs:'Combustível',centro:'Vigillare SM',det:''},{id:uid(),numero:'172558',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2611.18,data:'2026-01-06',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'5468',fornecedor:'H. D. PORTELLA CIA LTDA II',valor:4712.4,data:'2026-01-06',projId:'',obs:'Combustível',centro:'Vigillare SM',det:''},{id:uid(),numero:'43225',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:11616.39,data:'2026-01-06',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'64552861',fornecedor:'NETWORK2B SOLUÇÕES CORPORATIVAS',valor:145.0,data:'2026-01-07',projId:'',obs:'Manutenção de Pc/Notebook',centro:'Vigitrack - diversos',det:''},{id:uid(),numero:'101157',fornecedor:'MEGAMS',valor:190.13,data:'2026-01-07',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMÁCIA SÃO JOÃO - CAXIAS DO SUL 3'},{id:uid(),numero:'64552660',fornecedor:'48.283.986 ROBERTO CARVALHO DE OLIVEIRA',valor:484.0,data:'2026-01-07',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Poa',det:''},{id:uid(),numero:'23964',fornecedor:'ELO DISTRIBUIDORA ELETRICA',valor:505.2,data:'2026-01-07',projId:'',obs:'Ferragem',centro:'Canela/Filial',det:''},{id:uid(),numero:'26947470',fornecedor:'KABUM!',valor:965.35,data:'2026-01-07',projId:'',obs:'Periféricos',centro:'Vigillare Poa',det:''},{id:uid(),numero:'172736',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:1328.14,data:'2026-01-07',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'319565',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:2307.81,data:'2026-01-07',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'COMERCIAL POA'},{id:uid(),numero:'1358',fornecedor:'TECNOAR',valor:2737.0,data:'2026-01-07',projId:'',obs:'Despesa veículos',centro:'PMSM',det:''},{id:uid(),numero:'4839',fornecedor:'SERT SEG DISTRIBUIDORA LTDA (ES)',valor:44440.3,data:'2026-01-07',projId:'',obs:'CFTV',centro:'Corporativo',det:''},{id:uid(),numero:'4617',fornecedor:'CANDEMIL MOTOS LTDA',valor:60.0,data:'2026-01-08',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'4616',fornecedor:'CANDEMIL MOTOS LTDA',valor:60.0,data:'2026-01-08',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'812',fornecedor:'LENON MOTOS LTDA',valor:76.0,data:'2026-01-08',projId:'',obs:'Despesa veículos',centro:'Vigillare Poa',det:''},{id:uid(),numero:'100789',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:77.79,data:'2026-01-08',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN ESTANCIA VELHA EBA'},{id:uid(),numero:'82580',fornecedor:'AUTTEC MATERIAIS ELETRICOS',valor:644.06,data:'2026-01-08',projId:'',obs:'Ferragem',centro:'PMSM',det:''},{id:uid(),numero:'64572884',fornecedor:'PEDRO AUGUSTO KASPER 39825787015',valor:783.0,data:'2026-01-08',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'429379',fornecedor:'ABT COMERCIAL ELETRICA LTDA',valor:806.65,data:'2026-01-08',projId:'',obs:'Ferragem',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'64572812',fornecedor:'PEDRO AUGUSTO KASPER 39825787015',valor:1165.0,data:'2026-01-08',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'1860',fornecedor:'Erusato Ltda',valor:97.9,data:'2026-01-09',projId:'',obs:'Despesa veículos',centro:'Vigillare Poa',det:''},{id:uid(),numero:'2763',fornecedor:'MEGAMS SIST. DE SEGURANCA E TELECOMUNICACOES LTDA',valor:125.56,data:'2026-01-09',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMÁCIA SÃO JOÃO - LAJEADO 4'},{id:uid(),numero:'713417',fornecedor:'ELETRON SERVICE COM E SER LTDA',valor:145.6,data:'2026-01-09',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Poa',det:''},{id:uid(),numero:'82611',fornecedor:'AUTTEC MATERIAIS ELETRICOS',valor:243.58,data:'2026-01-09',projId:'',obs:'Ferragem',centro:'Vigillare SM',det:''},{id:uid(),numero:'319718',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:491.08,data:'2026-01-09',projId:'',obs:'Controle de Acesso',centro:'Corporativo',det:''},{id:uid(),numero:'43270',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:950.04,data:'2026-01-09',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN TORRES EBE 03 PRAIA GRANDE (PRAINHA)'},{id:uid(),numero:'43271',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:954.61,data:'2026-01-09',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN EBAT BOOSTER SÃO JORGE TORRES'},{id:uid(),numero:'43269',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:1045.17,data:'2026-01-09',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN EEB 8.1 MORADA DAS PALMEIRAS TORRES'},{id:uid(),numero:'16739',fornecedor:'RBR SECURITY COMERCIO DE EQUIPAMENTOS ELETRONICOS LTDA.',valor:1050.9,data:'2026-01-09',projId:'',obs:'Alarme',centro:'Corporativo',det:''},{id:uid(),numero:'43268',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:1202.24,data:'2026-01-09',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN EEB 1 BEIRA RIO TORRES'},{id:uid(),numero:'100800',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:2384.37,data:'2026-01-09',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMACIA SAO JOAO - MONTENEGRO 3'},{id:uid(),numero:'353541',fornecedor:'JR DISTR DE BEBIDAS LTDA',valor:90.0,data:'2026-01-10',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Canela/Filial',det:''},{id:uid(),numero:'82663',fornecedor:'AUTTEC MATERIAIS ELETRICOS',valor:43.7,data:'2026-01-12',projId:'',obs:'Ferragem',centro:'PMSM',det:''},{id:uid(),numero:'319829',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:303.75,data:'2026-01-12',projId:'',obs:'Alarme',centro:'Dimed S.A',det:''},{id:uid(),numero:'319778',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:758.06,data:'2026-01-12',projId:'',obs:'Controle de Acesso',centro:'Corporativo',det:''},{id:uid(),numero:'43279',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:986.11,data:'2026-01-12',projId:'',obs:'CFTV',centro:'SLC Agrícola',det:'SLC MAQUINAS LTDA - LAJEADO'},{id:uid(),numero:'319824',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1655.49,data:'2026-01-12',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'173261',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2349.54,data:'2026-01-12',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'245630',fornecedor:'HIPERSUL',valor:296.5,data:'2026-01-13',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'37767',fornecedor:'MPE SANTA ROSA',valor:369.96,data:'2026-01-13',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN CAPTACAO ELEVATORIA TRES PASSOS'},{id:uid(),numero:'855330',fornecedor:'CD-PORTO B',valor:599.9,data:'2026-01-13',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Administrativo/Fin.',det:''},{id:uid(),numero:'100913',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:728.8,data:'2026-01-13',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'AJURIS'},{id:uid(),numero:'173394',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2150.26,data:'2026-01-13',projId:'',obs:'Alarme',centro:'Canela/Filial',det:''},{id:uid(),numero:'173329',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2186.4,data:'2026-01-13',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'AJURIS'},{id:uid(),numero:'173416',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:3072.46,data:'2026-01-13',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'429814',fornecedor:'ABT COMERCIAL ELETRICA LTDA',valor:32813.84,data:'2026-01-13',projId:'',obs:'CFTV',centro:'Corporativo',det:''},{id:uid(),numero:'37786',fornecedor:'MPE SANTA ROSA',valor:116.27,data:'2026-01-14',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMACIA SÃO JOÃO- SANTO ANGELO 7'},{id:uid(),numero:'27035808',fornecedor:'KABUM!',valor:149.99,data:'2026-01-14',projId:'',obs:'Periféricos',centro:'Vigitrack - diversos',det:''},{id:uid(),numero:'137046',fornecedor:'NILTON NEPOMUCENO EPP',valor:164.9,data:'2026-01-14',projId:'',obs:'Periféricos',centro:'Vigitrack - diversos',det:''},{id:uid(),numero:'100960',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:388.52,data:'2026-01-14',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN - DOIS IRMAOS CAPTACAO SURSIN'},{id:uid(),numero:'320018',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:415.64,data:'2026-01-14',projId:'',obs:'CFTV',centro:'Corporativo',det:''},{id:uid(),numero:'320035',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:534.08,data:'2026-01-14',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'101004',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:728.8,data:'2026-01-14',projId:'',obs:'CFTV',centro:'Vigillare SM',det:''},{id:uid(),numero:'319956',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1030.17,data:'2026-01-14',projId:'',obs:'CFTV',centro:'Dimed S.A',det:''},{id:uid(),numero:'320040',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1068.16,data:'2026-01-14',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'319938',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:2675.25,data:'2026-01-14',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'FARMACIA PANVEL FILIAL 311'},{id:uid(),numero:'173615',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:4833.08,data:'2026-01-14',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'16766',fornecedor:'RBR SECURITY COMERCIO DE EQUIPAMENTOS ELETRONICOS LTDA.',valor:51259.5,data:'2026-01-14',projId:'',obs:'NF de Demonstração',centro:'Corporativo',det:''},{id:uid(),numero:'4626',fornecedor:'CANDEMIL MOTOS LTDA',valor:35.13,data:'2026-01-15',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'4625',fornecedor:'CANDEMIL MOTOS LTDA',valor:208.0,data:'2026-01-15',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'24056',fornecedor:'ELO DISTRIBUIDORA ELETRICA',valor:334.21,data:'2026-01-15',projId:'',obs:'Ferragem',centro:'Canela/Filial',det:''},{id:uid(),numero:'101462',fornecedor:'MEGAMS',valor:613.96,data:'2026-01-15',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'FARMACIA PANVEL FILIAL 927'},{id:uid(),numero:'2311',fornecedor:'MATV SUL ELETRONICOS LTDA - CRICIUMA',valor:620.17,data:'2026-01-15',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'11184',fornecedor:'SERGIO R. GRAPIGLIA & CIA LTDA',valor:767.0,data:'2026-01-15',projId:'',obs:'Despesa veículos',centro:'UFSM/HUSM',det:''},{id:uid(),numero:'101026',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:847.4,data:'2026-01-15',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN- DOIS IRMAOS CAPTACAO SURSIN'},{id:uid(),numero:'3495',fornecedor:'PREMIUMRS DISTRIBUIDORA LTDA',valor:906.41,data:'2026-01-15',projId:'',obs:'Alarme',centro:'Dimed S.A',det:''},{id:uid(),numero:'7065',fornecedor:'DIFFERENCIAL OFFICE',valor:1360.0,data:'2026-01-15',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'24632',fornecedor:'CD2212',valor:2116.0,data:'2026-01-15',projId:'',obs:'Periféricos',centro:'UFSM/HUSM',det:''},{id:uid(),numero:'1405',fornecedor:'TECNOAR',valor:2368.32,data:'2026-01-15',projId:'',obs:'Despesa veículos',centro:'Vigillare SM',det:''},{id:uid(),numero:'320172',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:118.25,data:'2026-01-16',projId:'',obs:'Tubulação',centro:'Corporativo',det:'CYRELA'},{id:uid(),numero:'320149',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:164.0,data:'2026-01-16',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Poa',det:''},{id:uid(),numero:'356035',fornecedor:'MPE COMANDOS ELETRON',valor:184.9,data:'2026-01-16',projId:'',obs:'Controle de Acesso',centro:'Vigillare SM',det:''},{id:uid(),numero:'184074',fornecedor:'MERCADAO DA INFORMATICA',valor:202.98,data:'2026-01-16',projId:'',obs:'Periféricos',centro:'Vigillare Poa',det:''},{id:uid(),numero:'173891',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:354.75,data:'2026-01-16',projId:'',obs:'Tubulação',centro:'Corporativo',det:''},{id:uid(),numero:'16815',fornecedor:'RBR SECURITY COMERCIO DE EQUIPAMENTOS ELETRONICOS LTDA.',valor:1490.0,data:'2026-01-16',projId:'',obs:'CFTV',centro:'Corporativo',det:''},{id:uid(),numero:'320226',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1610.44,data:'2026-01-16',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'29604',fornecedor:'MATV SUL ELETRONICOS LTDA - LITORAL',valor:1777.32,data:'2026-01-16',projId:'',obs:'CFTV',centro:'Corporativo',det:''},{id:uid(),numero:'120675',fornecedor:'PREMIUMRS',valor:1887.3,data:'2026-01-16',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'173992',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2438.93,data:'2026-01-16',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'43327',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:3375.0,data:'2026-01-16',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'81942',fornecedor:'Egatronica Com de Motores e Equip Eletricos Ltda',valor:4569.18,data:'2026-01-16',projId:'',obs:'Controle de Acesso',centro:'Corporativo',det:''},{id:uid(),numero:'15354',fornecedor:'FELUC - PELOTAS',valor:81.63,data:'2026-01-19',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'FARMACIA PANVEL - FILIAL 96'},{id:uid(),numero:'320253',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:104.12,data:'2026-01-19',projId:'',obs:'CFTV',centro:'Corporativo',det:'CORPORATIVO BOX PRINT'},{id:uid(),numero:'174126',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:116.43,data:'2026-01-19',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN FARROUPILHA'},{id:uid(),numero:'413400',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS',valor:713.64,data:'2026-01-19',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'320262',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:894.3,data:'2026-01-19',projId:'',obs:'Alarme',centro:'Corporativo',det:''},{id:uid(),numero:'174131',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:1137.25,data:'2026-01-19',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN RESERVATORIO ERMELINO THOMASIA SAPUCAIA DO SUL'},{id:uid(),numero:'320293',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1225.74,data:'2026-01-19',projId:'',obs:'CFTV',centro:'Vigillare SM',det:''},{id:uid(),numero:'2806',fornecedor:'MEGAMS SIST. DE SEGURANCA E TELECOMUNICACOES LTDA',valor:2222.34,data:'2026-01-19',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMÁCIA SÃO JOÃO CAÇAPAVA DO SUL 2'},{id:uid(),numero:'102290',fornecedor:'MATV SUL ELETRONICOS LTDA - CRICIUMA',valor:2239.69,data:'2026-01-19',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'320290',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:2400.9,data:'2026-01-19',projId:'',obs:'CFTV e Alarme',centro:'Canela/Filial',det:''},{id:uid(),numero:'8344801',fornecedor:'DELL COMPUTADORES DO BRASIL LTDA',valor:4818.9,data:'2026-01-19',projId:'',obs:'Pc\'s e Notebook',centro:'Vigillare Poa',det:''},{id:uid(),numero:'43345',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:17.35,data:'2026-01-20',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMÁCIA SÃO JOÃO - SAPIRANGA 6'},{id:uid(),numero:'73565',fornecedor:'PORTO MATERIAIS',valor:49.4,data:'2026-01-20',projId:'',obs:'Alarme',centro:'Vigillare Poa',det:''},{id:uid(),numero:'539452',fornecedor:'ABT COMERCIAL ELETRICA LTDA',valor:55.0,data:'2026-01-20',projId:'',obs:'Tubulação',centro:'Corporativo',det:''},{id:uid(),numero:'10545',fornecedor:'MATV SUL ELETRONICOS LTDA - CANOAS',valor:76.3,data:'2026-01-20',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN ESTEIO DECIN PLANTA QUIMICOS FABRICA DE ASFALTO'},{id:uid(),numero:'15418',fornecedor:'FELUC - PELOTAS',valor:81.63,data:'2026-01-20',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN CAPÃO DO LEÃO - ESCRITORIO / ETA'},{id:uid(),numero:'43343',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:95.95,data:'2026-01-20',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN CAPÃO DO LEÃO - ESCRITORIO / ETA'},{id:uid(),numero:'152',fornecedor:'POSTO LINHA VERDE LTDA',valor:100.0,data:'2026-01-20',projId:'',obs:'Combustível',centro:'Vigillare SM',det:''},{id:uid(),numero:'430677',fornecedor:'ABT COMERCIAL ELETRICA LTDA',valor:104.46,data:'2026-01-20',projId:'',obs:'Tubulação',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'174246',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:107.7,data:'2026-01-20',projId:'',obs:'CFTV',centro:'Corporativo',det:'ASSOCIACAO CENTRAL PARQUE'},{id:uid(),numero:'101200',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:146.37,data:'2026-01-20',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN ESTANCIA VELHA EBA RETIRAR NA MA DE NOVO HAMBURGO'},{id:uid(),numero:'43347',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:176.57,data:'2026-01-20',projId:'',obs:'Alarme',centro:'Corporativo',det:'ESTOQUE POA'},{id:uid(),numero:'320352',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:211.8,data:'2026-01-20',projId:'',obs:'CFTV e Alarme',centro:'Vigillare Viamão',det:'HOSPITAL DE VIAMÃO'},{id:uid(),numero:'43348',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:314.16,data:'2026-01-20',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN - ESTEIO - ESCRITORIO SURSIN'},{id:uid(),numero:'43346',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:360.61,data:'2026-01-20',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMÁCIA SÃO JOÃO - SÃO LEOPOLDO 7'},{id:uid(),numero:'43344',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:388.52,data:'2026-01-20',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'FARMACIA PANVEL - FILIAL 733'},{id:uid(),numero:'43349',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:550.13,data:'2026-01-20',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMÁCIA SÃO JOÃO - FELIZ 1, MONTENEGRO 5, SAPIRANGA 2, TRES COROAS 3'},{id:uid(),numero:'320346',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:592.44,data:'2026-01-20',projId:'',obs:'CFTV',centro:'Vigillare SM',det:''},{id:uid(),numero:'28662',fornecedor:'MUTERLE MATERIAIS ELETRICOS LTDA',valor:1006.31,data:'2026-01-20',projId:'',obs:'Ferragem',centro:'Vigillare Caxias',det:''});
@@ -1524,17 +2497,449 @@ load();
     a.push({id:uid(),numero:'103768',fornecedor:'MEGAMS',valor:66.19,data:'2026-04-06',projId:'',obs:'Alarme',centro:'Corsan',det:'FARMACIA SAO JOAO SANTA CRUZ DO SUL 16'},{id:uid(),numero:'1674',fornecedor:'STARKE CALCADOS E ACESSORIOS',valor:330.0,data:'2026-04-06',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Canela/Filial',det:''},{id:uid(),numero:'2124',fornecedor:'SERVISAT ELETRO ELETRONICA',valor:294.0,data:'2026-04-07',projId:'',obs:'Redes',centro:'Vigillare SM',det:'CYRELA'},{id:uid(),numero:'105253',fornecedor:'MATV SUL ELETRONICOS LTDA - CRICIUMA',valor:97.32,data:'2026-04-07',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'FARMACIA SAO JOAO - ARROIO DO SAL 2'},{id:uid(),numero:'185826',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:9507.66,data:'2026-04-07',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'FARMACIA SAO JOAO - ROLANTE      1'},{id:uid(),numero:'6088',fornecedor:'H. D. PORTELLA CIA LTDA II',valor:4630.19,data:'2026-04-07',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'FARMACIA SAO JOAO - ROLANTE      2'},{id:uid(),numero:'11185',fornecedor:'MATV SUL ELETRONICOS LTDA - CANOAS',valor:3592.7,data:'2026-04-07',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN OFF GRID'},{id:uid(),numero:'4757',fornecedor:'CANDEMIL MOTOS LTDA',valor:60.0,data:'2026-04-07',projId:'',obs:'Controle de Acesso',centro:'Canela/Filial',det:'HOSPITAL DE VIAMÃO'},{id:uid(),numero:'185794',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:6367.66,data:'2026-04-07',projId:'',obs:'Cancelas',centro:'Canela/Filial',det:''},{id:uid(),numero:'4084',fornecedor:'MARAVILHA SISTEMAS DE SEGURANCA EIRELI',valor:197.0,data:'2026-04-08',projId:'',obs:'Alarme',centro:'Farmácias São João',det:''},{id:uid(),numero:'30784',fornecedor:'Loja 24 - Bourbon Country',valor:14.98,data:'2026-04-08',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Poa',det:''},{id:uid(),numero:'43967',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:2115.4,data:'2026-04-08',projId:'',obs:'Controle de Acesso',centro:'Vigillare SM',det:'HOSPITAL DE VIAMÃO'},{id:uid(),numero:'27665418',fornecedor:'KABUM!',valor:40.22,data:'2026-04-08',projId:'',obs:'Material de elétrica',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'360689',fornecedor:'MPE COMANDOS ELETRON',valor:444.5,data:'2026-04-08',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'CORSAN CAMAQUA -    RECALQUE DA BARRAGEM ARROIO DURO'},{id:uid(),numero:'325129',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1258.8,data:'2026-04-08',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'FARMACIA SAO JOAO FLORES DA CUNHA 1'},{id:uid(),numero:'24797',fornecedor:'MATV SUL ELETRONICOS LTDA - SC',valor:474.36,data:'2026-04-08',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'CORSAN - SAPIRANGA - EBE SURSIN'},{id:uid(),numero:'11211',fornecedor:'MATV SUL ELETRONICOS LTDA - CANOAS',valor:77.28,data:'2026-04-08',projId:'',obs:'CFTV',centro:'Corsan',det:'VIGICORP'},{id:uid(),numero:'11203',fornecedor:'MATV SUL ELETRONICOS LTDA - CANOAS',valor:669.48,data:'2026-04-08',projId:'',obs:'Alarme',centro:'Corsan',det:'ESTOQUE SM'},{id:uid(),numero:'185889',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:149.38,data:'2026-04-08',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMACIA SAO JOAO - MONTENEGRO'},{id:uid(),numero:'325050',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:40.48,data:'2026-04-08',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'CORSAN RIO GRANDE - ETE NAVEGANTES'},{id:uid(),numero:'185887',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2016.89,data:'2026-04-08',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Corsan',det:''},{id:uid(),numero:'325047',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:2569.09,data:'2026-04-08',projId:'',obs:'CFTV',centro:'Farmácias São João',det:'CYRELA'},{id:uid(),numero:'103823',fornecedor:'MEGAMS',valor:430.43,data:'2026-04-08',projId:'',obs:'CFTV',centro:'Corporativo',det:'CYRELA'},{id:uid(),numero:'3188',fornecedor:'MEGAMS SIST. DE SEGURANCA E TELECOMUNICACOES LTDA',valor:125.94,data:'2026-04-08',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMaCIA PANVEL FILIAL 963'},{id:uid(),numero:'955',fornecedor:'LENON MOTOS LTDA',valor:126.0,data:'2026-04-08',projId:'',obs:'Alarme',centro:'Canela/Filial',det:''},{id:uid(),numero:'5426',fornecedor:'MERCADO DOS PLASTICOS',valor:388.25,data:'2026-04-08',projId:'',obs:'Controle de Acesso',centro:'Canela/Filial',det:''},{id:uid(),numero:'66178563',fornecedor:'PEDRO AUGUSTO KASPER 39825787015',valor:1140.0,data:'2026-04-08',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Canela/Filial',det:''},{id:uid(),numero:'66178523',fornecedor:'PEDRO AUGUSTO KASPER 39825787015',valor:265.0,data:'2026-04-08',projId:'',obs:'Alarme',centro:'Canela/Filial',det:'FARMACIA SAO JOAO - MONTENEGRO      3'},{id:uid(),numero:'66178508',fornecedor:'PEDRO AUGUSTO KASPER 39825787015',valor:321.0,data:'2026-04-08',projId:'',obs:'CFTV',centro:'Canela/Filial',det:'CORSAN GRAVATAI - EBA 19'},{id:uid(),numero:'66178493',fornecedor:'PEDRO AUGUSTO KASPER 39825787015',valor:491.0,data:'2026-04-08',projId:'',obs:'CFTV e Alarme',centro:'Canela/Filial',det:'ESTOQUE SM'},{id:uid(),numero:'66178438',fornecedor:'PEDRO AUGUSTO KASPER 39825787015',valor:770.0,data:'2026-04-08',projId:'',obs:'Alarme',centro:'Canela/Filial',det:''},{id:uid(),numero:'66178472',fornecedor:'PEDRO AUGUSTO KASPER 39825787015',valor:903.0,data:'2026-04-08',projId:'',obs:'Alarme',centro:'Canela/Filial',det:'ESTOQUE SM'},{id:uid(),numero:'1343',fornecedor:'SPEED INFORMATICA',valor:200.0,data:'2026-04-09',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'360777',fornecedor:'MPE COMANDOS ELETRON',valor:174.25,data:'2026-04-09',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'186186',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:22940.89,data:'2026-04-09',projId:'',obs:'Despesa veículos',centro:'Corporativo',det:''},{id:uid(),numero:'325201',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:22957.04,data:'2026-04-09',projId:'',obs:'Despesa veículos',centro:'Corporativo',det:''},{id:uid(),numero:'360769',fornecedor:'MPE COMANDOS ELETRON',valor:3108.88,data:'2026-04-09',projId:'',obs:'CFTV e Alarme',centro:'Dimed S.A',det:''},{id:uid(),numero:'186204',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:16020.64,data:'2026-04-09',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'325214',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1069.75,data:'2026-04-09',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'VIAMÃO'},{id:uid(),numero:'24815',fornecedor:'MATV SUL ELETRONICOS LTDA - SC',valor:1423.08,data:'2026-04-09',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'24813',fornecedor:'MATV SUL ELETRONICOS LTDA - SC',valor:540.71,data:'2026-04-09',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'CORSAN - CANOAS - DPTO DEOB/MET SURSIN'},{id:uid(),numero:'325164',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1914.75,data:'2026-04-09',projId:'',obs:'CFTV',centro:'Vigillare Viamão',det:'CORSAN ESCRITORIO US (GETULIO VARGAS)'},{id:uid(),numero:'5495',fornecedor:'SERT SEG DISTRIBUIDORA LTDA (ES)',valor:69328.84,data:'2026-04-10',projId:'',obs:'Alarme',centro:'Corporativo',det:'FARMACIA SAO JOAO - GRAMADO'},{id:uid(),numero:'5497',fornecedor:'SERT SEG DISTRIBUIDORA LTDA (ES)',valor:69328.84,data:'2026-04-10',projId:'',obs:'Alarme',centro:'Corporativo',det:'ESTOQUE SM'},{id:uid(),numero:'186460',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:1635.49,data:'2026-04-10',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'2440456',fornecedor:'REFRIGERACAO DUFRIO COM. E IMP. LTDA',valor:3682.1,data:'2026-04-10',projId:'',obs:'CFTV',centro:'Vigillare Poa',det:'CORSAN EBAB BURATI FARROUPILHA'},{id:uid(),numero:'360882',fornecedor:'MPE COMANDOS ELETRON',valor:2394.23,data:'2026-04-10',projId:'',obs:'Alarme',centro:'Corsan',det:'FARMACIA SAO JOAO - VACARIA'},{id:uid(),numero:'125787',fornecedor:'PREMIUMRS',valor:397.29,data:'2026-04-10',projId:'',obs:'Alarme',centro:'Vigillare Viamão',det:'CORSAN EBAB BURATI FARROUPILHA'},{id:uid(),numero:'360812',fornecedor:'MPE COMANDOS ELETRON',valor:15.0,data:'2026-04-10',projId:'',obs:'Alarme',centro:'UFSM/HUSM',det:'ESTOQUE SM'},{id:uid(),numero:'48974',fornecedor:'BIG PATRONATO SANTA MARIA',valor:206.35,data:'2026-04-10',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'FARMACIA SÃO JOÃO SANTA CRUZ DO SUL 16'},{id:uid(),numero:'325306',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:615.6,data:'2026-04-10',projId:'',obs:'Combustível',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'325303',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:259.0,data:'2026-04-10',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'CORSAN ESCRITORIO US (GETULIO VARGAS)'},{id:uid(),numero:'11256',fornecedor:'MATV SUL ELETRONICOS LTDA - CANOAS',valor:37.23,data:'2026-04-10',projId:'',obs:'CFTV e Alarme',centro:'Corsan',det:''},{id:uid(),numero:'186332',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:103.3,data:'2026-04-10',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'ESTOQUE SM'},{id:uid(),numero:'325263',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1629.12,data:'2026-04-10',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN EBAB JULIETA FARROUPILHA'},{id:uid(),numero:'325260',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:2036.8,data:'2026-04-10',projId:'',obs:'Alarme',centro:'Corporativo',det:'FARMACIA SAO JOAO - VACARIA'},{id:uid(),numero:'105550',fornecedor:'SANTA MARIA DISTRIBUIDORA DE BATERIAS LTDA',valor:6272.0,data:'2026-04-10',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'CORSAN ALVORADA'},{id:uid(),numero:'325250',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:911.89,data:'2026-04-10',projId:'',obs:'CFTV',centro:'Farmácias São João',det:'CORSAN ALVORADA'},{id:uid(),numero:'18919',fornecedor:'FELUC - PELOTAS',valor:75.59,data:'2026-04-10',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN CAMAQUA'},{id:uid(),numero:'21554',fornecedor:'DIGITAL SAT DIST DE EQUIP ELETRONICOS SA',valor:529.28,data:'2026-04-10',projId:'',obs:'CFTV',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'104362',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:289.1,data:'2026-04-10',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Farmácias São João',det:''},{id:uid(),numero:'11242',fornecedor:'MATV SUL ELETRONICOS LTDA - CANOAS',valor:997.01,data:'2026-04-10',projId:'',obs:'Alarme',centro:'Corsan',det:'FARMACIASAO JOAO - CAXIAS DO SUL 1 (NOVA)'},{id:uid(),numero:'25317',fornecedor:'ELO DISTRIBUIDORA ELETRICA',valor:193.63,data:'2026-04-10',projId:'',obs:'CFTV',centro:'Canela/Filial',det:'- CORSAN - CANOAS ETA NITEROI CASA DE BOMBAS SURSIN'},{id:uid(),numero:'39523',fornecedor:'MPE SANTA ROSA',valor:997.0,data:'2026-04-11',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'21092571',fornecedor:'VIAVAREJO',valor:998.89,data:'2026-04-11',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'140604',fornecedor:'INTELBRAS S/A',valor:10154.55,data:'2026-04-11',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Alegrete',det:''},{id:uid(),numero:'140610',fornecedor:'INTELBRAS S/A',valor:710.82,data:'2026-04-11',projId:'',obs:'Alarme',centro:'Vigillare Alegrete',det:'CORSAN EBAB JULIETA FARROUPILHA'},{id:uid(),numero:'26755',fornecedor:'MATV SUL ELETRONICOS LTDA - POA 2',valor:491.94,data:'2026-04-13',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'CORSAN - BENTO GONÇALVES SURNE ADM 2 ANDAR'},{id:uid(),numero:'325368',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:983.88,data:'2026-04-13',projId:'',obs:'Alarme',centro:'Dimed S.A',det:''},{id:uid(),numero:'325365',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:491.94,data:'2026-04-13',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'CORSAN PORTO ALEGRE - ANTONIO DE CARVALHO GALPAO'},{id:uid(),numero:'446194',fornecedor:'FERRAMENTAS GERAIS COMERCIO IMP DE FERRAM. E MAQUI',valor:709.02,data:'2026-04-13',projId:'',obs:'Alarme',centro:'Vigillare Viamão',det:'ESTOQUE SM'},{id:uid(),numero:'17426',fornecedor:'RBR SECURITY COMERCIO DE EQUIPAMENTOS ELETRONICOS LTDA.',valor:3600.0,data:'2026-04-13',projId:'',obs:'Fibra Óptica',centro:'Vigillare Alegrete',det:''},{id:uid(),numero:'186668',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:6125.73,data:'2026-04-13',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'17423',fornecedor:'RBR SECURITY COMERCIO DE EQUIPAMENTOS ELETRONICOS LTDA.',valor:4134.0,data:'2026-04-13',projId:'',obs:'Combustível',centro:'UFSM/HUSM',det:''},{id:uid(),numero:'69549',fornecedor:'RODOAUTO COM DE PNEUS LTDA',valor:1644.0,data:'2026-04-13',projId:'',obs:'Material de elétrica',centro:'Vigillare SM',det:''},{id:uid(),numero:'438742',fornecedor:'ABT COMERCIAL ELETRICA LTDA',valor:107.48,data:'2026-04-13',projId:'',obs:'Material de elétrica',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'14997',fornecedor:'DAMOFIX',valor:538.4,data:'2026-04-13',projId:'',obs:'CFTV',centro:'PMSM',det:''},{id:uid(),numero:'438802',fornecedor:'ABT COMERCIAL ELETRICA LTDA',valor:342.84,data:'2026-04-13',projId:'',obs:'CFTV',centro:'Vigillare Viamão',det:'ESTOQUE SM'},{id:uid(),numero:'186623',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:474.44,data:'2026-04-13',projId:'',obs:'Alarme',centro:'Corsan',det:'CONDOMINIO IBIRAPUERA'},{id:uid(),numero:'186568',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2160.91,data:'2026-04-13',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN PORTO ALEGRE - ANTONIO DE CARVALHO GALPAO'},{id:uid(),numero:'325354',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1136.51,data:'2026-04-13',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'ESTOQUE SM'},{id:uid(),numero:'3208',fornecedor:'MEGAMS SIST. DE SEGURANCA E TELECOMUNICACOES LTDA',valor:129.33,data:'2026-04-13',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMACIA PANVEL - FILIAL 868'},{id:uid(),numero:'24562',fornecedor:'PIONEIRA TELE AGUA',valor:60.0,data:'2026-04-13',projId:'',obs:'Controle de Acesso',centro:'Vigillare SM',det:''},{id:uid(),numero:'292358',fornecedor:'DIGITALSAT DIST DE EQUI ELETRONICOS LTDA',valor:1309.35,data:'2026-04-13',projId:'',obs:'Periféricos',centro:'Corporativo',det:''},{id:uid(),numero:'4518',fornecedor:'PREMIUMRS DISTRIBUIDORA LTDA',valor:2737.39,data:'2026-04-13',projId:'',obs:'Controle de Acesso',centro:'Farmácias São João',det:''},{id:uid(),numero:'325327',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:2471.47,data:'2026-04-13',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'CORSAN POÇO 04 ITAPUA VIAMAO'},{id:uid(),numero:'104418',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:288.23,data:'2026-04-13',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMÁCIA SÃO JOÃO - TRÊS CACHOEIRAS 1'},{id:uid(),numero:'1497',fornecedor:'GUSTAVO ASSMANN DIAS',valor:546.99,data:'2026-04-13',projId:'',obs:'Alarme',centro:'Canela/Filial',det:'CORSAN TORRES - SÃO BRAS SALA DE MAQUINAS'},{id:uid(),numero:'15690267',fornecedor:'KALUNGA SA',valor:24.2,data:'2026-04-14',projId:'',obs:'Alarme',centro:'Vigillare Poa',det:'CORSAN CANOAS - 1° RECALQUE CAPTAÇAO SURSIN'},{id:uid(),numero:'159755',fornecedor:'RS JARDIM BOTANICO',valor:329.9,data:'2026-04-14',projId:'',obs:'Alarme',centro:'Vigillare Poa',det:'CD FARMACIA SAO JOAO CAXIAS DO SUL'},{id:uid(),numero:'4555',fornecedor:'PREMIUMRS DISTRIBUIDORA LTDA',valor:515.6,data:'2026-04-14',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'PANVEL SÃO PAULO'},{id:uid(),numero:'186839',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:6446.86,data:'2026-04-14',projId:'',obs:'Alarme',centro:'Corsan',det:'PANVEL CALL CENTER'},{id:uid(),numero:'156',fornecedor:'DE SOUZA STAEVIE E CIA. LTDA. FAIXA',valor:201.52,data:'2026-04-14',projId:'',obs:'Alarme',centro:'Vigillare Santana do Livramento',det:'CORSAN POÇO 09 ITAPUA VIAMÃO'},{id:uid(),numero:'186841',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:4740.96,data:'2026-04-14',projId:'',obs:'Alarme',centro:'Corsan',det:'FARMACIA SAO JOAO - NOVO HAMBURGO 13'},{id:uid(),numero:'325472',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1680.62,data:'2026-04-14',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'CORSAN - SAPIRANGA ETE PASSO DA CRUZ - SURSIN'},{id:uid(),numero:'186871',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2330.91,data:'2026-04-14',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'CORSAN - SAPIRANGA ETE PASSO DA CRUZ - SURSIN'},{id:uid(),numero:'29426',fornecedor:'MUTERLE MATERIAIS ELETRICOS LTDA',valor:6577.15,data:'2026-04-14',projId:'',obs:'Alarme',centro:'Vigillare Caxias',det:'FARMÁCIA SÃO JOÃO -IJUÍ 5'},{id:uid(),numero:'157956',fornecedor:'ALPHA SECURITY IMP. EXP. DE ELET. EIRELI',valor:2962.97,data:'2026-04-14',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Dimed S.A',det:''},{id:uid(),numero:'157957',fornecedor:'ALPHA SECURITY IMP. EXP. DE ELET. EIRELI',valor:222.84,data:'2026-04-14',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Dimed S.A',det:''},{id:uid(),numero:'186748',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:141.78,data:'2026-04-14',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'ESTOQUE SM'},{id:uid(),numero:'30713',fornecedor:'MATV SUL ELETRONICOS LTDA - LITORAL',valor:344.9,data:'2026-04-14',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'29424',fornecedor:'MUTERLE MATERIAIS ELETRICOS LTDA',valor:1540.06,data:'2026-04-14',projId:'',obs:'CFTV e Alarme',centro:'Corporativo',det:'ESTOQUE SM'},{id:uid(),numero:'438866',fornecedor:'ABT COMERCIAL ELETRICA LTDA',valor:535.0,data:'2026-04-14',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'325397',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1763.13,data:'2026-04-14',projId:'',obs:'Ferragem',centro:'Canela/Filial',det:''},{id:uid(),numero:'325398',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:24.0,data:'2026-04-14',projId:'',obs:'Combustível',centro:'Canela/Filial',det:'COMBUSTIVEL'},{id:uid(),numero:'44005',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:10299.08,data:'2026-04-14',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Canela/Filial',det:''},{id:uid(),numero:'1679',fornecedor:'MP POSTOS E LOGISTICA LTDA CANELA',valor:166.75,data:'2026-04-14',projId:'',obs:'Alarme',centro:'Canela/Filial',det:''},{id:uid(),numero:'2610',fornecedor:'CONTAUTO CONTINENTE AUTOMOVEIS LTDA',valor:171.9,data:'2026-04-15',projId:'',obs:'Alarme',centro:'Vigillare Poa',det:''},{id:uid(),numero:'299',fornecedor:'B H S ESTAMPAS LTDA',valor:3900.0,data:'2026-04-15',projId:'',obs:'Alarme',centro:'Vigillare Poa',det:''},{id:uid(),numero:'44021',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:390.39,data:'2026-04-15',projId:'',obs:'Material de elétrica',centro:'Vigillare SM',det:''},{id:uid(),numero:'187015',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:385.74,data:'2026-04-15',projId:'',obs:'Material de elétrica',centro:'Vigillare SM',det:''},{id:uid(),numero:'17446',fornecedor:'RBR SECURITY COMERCIO DE EQUIPAMENTOS ELETRONICOS LTDA.',valor:10338.0,data:'2026-04-15',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Corporativo',det:''},{id:uid(),numero:'19124',fornecedor:'FELUC - PELOTAS',valor:75.59,data:'2026-04-15',projId:'',obs:'Uniformes e EPI',centro:'Corsan',det:''},{id:uid(),numero:'186894',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:346.6,data:'2026-04-15',projId:'',obs:'Alarme',centro:'Corsan',det:''},{id:uid(),numero:'44015',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:100.74,data:'2026-04-15',projId:'',obs:'Despesa veículos',centro:'Farmácias São João',det:''},{id:uid(),numero:'44016',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:369.66,data:'2026-04-15',projId:'',obs:'Despesa veículos',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'44017',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:1380.52,data:'2026-04-15',projId:'',obs:'Despesa veículos',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'44018',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:545.21,data:'2026-04-15',projId:'',obs:'Despesa veículos',centro:'Corsan',det:''},{id:uid(),numero:'44019',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:387.51,data:'2026-04-15',projId:'',obs:'Despesa veículos',centro:'Farmácias São João',det:''},{id:uid(),numero:'44020',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:89.72,data:'2026-04-15',projId:'',obs:'Despesa veículos',centro:'Corsan',det:''},{id:uid(),numero:'325548',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:487.6,data:'2026-04-15',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'187090',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:331.93,data:'2026-04-15',projId:'',obs:'Ferragem',centro:'Vigillare SM',det:''},{id:uid(),numero:'2429534',fornecedor:'FABESUL Comercio de Suprimentos Ltda',valor:629.64,data:'2026-04-15',projId:'',obs:'Material de elétrica',centro:'Vigillare Poa',det:''},{id:uid(),numero:'66358133',fornecedor:'TECNOLIFE',valor:260.0,data:'2026-04-15',projId:'',obs:'Controle de Acesso',centro:'Canela/Filial',det:''},{id:uid(),numero:'3835',fornecedor:'Isolete lopes da rosa epp',valor:778.0,data:'2026-04-15',projId:'',obs:'Ferragem',centro:'Corporativo',det:''},{id:uid(),numero:'22383',fornecedor:'VIRTUEYES',valor:5.0,data:'2026-04-15',projId:'',obs:'Despesa veículos',centro:'Administrativo/Fin.',det:''},{id:uid(),numero:'299',fornecedor:'B H S ESTAMPAS LTDA',valor:3900.0,data:'2026-04-15',projId:'',obs:'Uniformes e EPI',centro:'Vigillare Poa',det:''},{id:uid(),numero:'44021',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:390.39,data:'2026-04-15',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'187015',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:385.74,data:'2026-04-15',projId:'',obs:'Redes',centro:'Vigillare SM',det:''},{id:uid(),numero:'17446',fornecedor:'RBR SECURITY COMERCIO DE EQUIPAMENTOS ELETRONICOS LTDA.',valor:10338.0,data:'2026-04-15',projId:'',obs:'CFTV',centro:'Corporativo',det:'FARMACIA SAO JOAO - BAGE'},{id:uid(),numero:'19124',fornecedor:'FELUC - PELOTAS',valor:75.59,data:'2026-04-15',projId:'',obs:'Periféricos',centro:'Corsan',det:'FARMACIA PANVEL FILIAL 714 RETIRAR NA MATV DE CAXIAS'},{id:uid(),numero:'186894',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:346.6,data:'2026-04-15',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN OFF GRID - PAINEL SOLAR'},{id:uid(),numero:'44015',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:100.74,data:'2026-04-15',projId:'',obs:'CFTV',centro:'Farmácias São João',det:'VIGILLARE - SANTA MARIA'},{id:uid(),numero:'44016',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:369.66,data:'2026-04-15',projId:'',obs:'CFTV',centro:'Vigillare Viamão',det:'VIGILLARE - SANTA MARIA'},{id:uid(),numero:'44017',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:1380.52,data:'2026-04-15',projId:'',obs:'CFTV e Alarme',centro:'Vigillare Viamão',det:'FARMACIA PANVEL FILIAL 710 -- OS 77433f'},{id:uid(),numero:'44018',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:545.21,data:'2026-04-15',projId:'',obs:'CFTV',centro:'Corsan',det:'VIGILLARE - SANTA MARIA'},{id:uid(),numero:'44019',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:387.51,data:'2026-04-15',projId:'',obs:'CFTV',centro:'Farmácias São João',det:'CORSAN CAPAO DA CANOA'},{id:uid(),numero:'44020',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:89.72,data:'2026-04-15',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN CANOAS'},{id:uid(),numero:'325548',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:487.6,data:'2026-04-15',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'ESTOQUE'},{id:uid(),numero:'187090',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:331.93,data:'2026-04-15',projId:'',obs:'Ferramentas',centro:'Vigillare SM',det:'ESTOQUE'},{id:uid(),numero:'2429534',fornecedor:'FABESUL Comercio de Suprimentos Ltda',valor:629.64,data:'2026-04-15',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Poa',det:''},{id:uid(),numero:'4775',fornecedor:'CANDEMIL MOTOS LTDA',valor:60.0,data:'2026-04-16',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'8527105',fornecedor:'DELL COMPUTADORES DO BRASIL LTDA',valor:8235.11,data:'2026-04-16',projId:'',obs:'CFTV',centro:'Corporativo',det:'ESTOQUE'},{id:uid(),numero:'44040',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:4950.0,data:'2026-04-16',projId:'',obs:'Controle de Acesso',centro:'Vigillare Viamão',det:'ESTOQUE'},{id:uid(),numero:'17464',fornecedor:'RBR SECURITY COMERCIO DE EQUIPAMENTOS ELETRONICOS LTDA.',valor:16600.0,data:'2026-04-16',projId:'',obs:'CFTV',centro:'Corporativo',det:'ESTOQUE'},{id:uid(),numero:'187192',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:9166.84,data:'2026-04-16',projId:'',obs:'CFTV',centro:'Corporativo',det:''},{id:uid(),numero:'6712',fornecedor:'ZILDOMAR MENEZES & CIA LTDA.',valor:8681.6,data:'2026-04-16',projId:'',obs:'CFTV',centro:'Corporativo',det:'CORSAN'},{id:uid(),numero:'187289',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2350.61,data:'2026-04-16',projId:'',obs:'Alarme',centro:'Farmácias São João',det:''},{id:uid(),numero:'187295',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:377.2,data:'2026-04-16',projId:'',obs:'CFTV',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'104632',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:234.73,data:'2026-04-16',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'PANVEL FILIAL 431'});
     a.push({id:uid(),numero:'105606',fornecedor:'MATV SUL ELETRONICOS LTDA - CRICIUMA',valor:176.16,data:'2026-04-16',projId:'',obs:'CFTV',centro:'Corporativo',det:''},{id:uid(),numero:'24893',fornecedor:'MATV SUL ELETRONICOS LTDA - SC',valor:113.9,data:'2026-04-16',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'PANVEL FILIAL 431'},{id:uid(),numero:'187279',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:1329.71,data:'2026-04-16',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'187275',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2267.27,data:'2026-04-16',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'PANVEL FILIAL 431'},{id:uid(),numero:'44039',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:3737.77,data:'2026-04-16',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN ESTEIO'},{id:uid(),numero:'104621',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:1276.02,data:'2026-04-16',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMACIA SÃO JOAO - MONTENEGRO'},{id:uid(),numero:'325577',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:7453.12,data:'2026-04-16',projId:'',obs:'CFTV',centro:'Corporativo',det:''},{id:uid(),numero:'44030',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:1318.63,data:'2026-04-16',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN ALVORADA'},{id:uid(),numero:'4774',fornecedor:'CANDEMIL MOTOS LTDA',valor:35.23,data:'2026-04-16',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'44031',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:1839.79,data:'2026-04-16',projId:'',obs:'Alarme',centro:'Corsan',det:'CORSAN ESTEIO'},{id:uid(),numero:'104599',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:507.24,data:'2026-04-16',projId:'',obs:'CFTV',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'187189',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:800.28,data:'2026-04-16',projId:'',obs:'CFTV',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'187201',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2393.78,data:'2026-04-16',projId:'',obs:'CFTV',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'325592',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:619.07,data:'2026-04-16',projId:'',obs:'CFTV',centro:'Corporativo',det:'CENTRAL PARQUE'},{id:uid(),numero:'4219',fornecedor:'MULTI SUGESTOES EMBALAGENS LTDA',valor:30.0,data:'2026-04-16',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Alegrete',det:''},{id:uid(),numero:'187271',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:3646.69,data:'2026-04-16',projId:'',obs:'CFTV e Alarme',centro:'Canela/Filial',det:''},{id:uid(),numero:'325613',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:73.12,data:'2026-04-16',projId:'',obs:'CFTV e Alarme',centro:'Canela/Filial',det:''},{id:uid(),numero:'8529502',fornecedor:'DELL COMPUTADORES DO BRASIL LTDA',valor:4506.53,data:'2026-04-17',projId:'',obs:'Pc\'s e Notebook',centro:'Vigillare Poa',det:''},{id:uid(),numero:'8528252',fornecedor:'DELL COMPUTADORES DO BRASIL LTDA',valor:1426.66,data:'2026-04-17',projId:'',obs:'Periféricos',centro:'Corporativo',det:''},{id:uid(),numero:'17471',fornecedor:'RBR SECURITY COMERCIO DE EQUIPAMENTOS ELETRONICOS LTDA.',valor:1490.0,data:'2026-04-17',projId:'',obs:'Controle de Acesso',centro:'Dimed S.A',det:''},{id:uid(),numero:'56119',fornecedor:'PLANTEC DISTRIBUIDORA DE PRODUTOS DE TELECOMUNICACOES E INFO',valor:3048.25,data:'2026-04-17',projId:'',obs:'Alarme',centro:'Dimed S.A',det:''},{id:uid(),numero:'439308',fornecedor:'ABT COMERCIAL ELETRICA LTDA',valor:1115.28,data:'2026-04-17',projId:'',obs:'Materiais de Obra',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'4615',fornecedor:'PREMIUMRS DISTRIBUIDORA LTDA',valor:4318.48,data:'2026-04-17',projId:'',obs:'CFTV e Alarme',centro:'Corsan',det:'CORSAN TRAMANDAI'},{id:uid(),numero:'87838',fornecedor:'MEGAMS PASSO FUNDO',valor:59.03,data:'2026-04-17',projId:'',obs:'Material de elétrica',centro:'Corsan',det:'CORSAN PANAMBI'},{id:uid(),numero:'361272',fornecedor:'MPE COMANDOS ELETRON',valor:2250.0,data:'2026-04-17',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'325630',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:2492.39,data:'2026-04-17',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMACIA SÃO JOAO - CANOAS'},{id:uid(),numero:'325643',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1852.54,data:'2026-04-17',projId:'',obs:'CFTV e Alarme',centro:'Vigillare Viamão',det:'PREFEITURA VIAMÃO'},{id:uid(),numero:'325654',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:766.85,data:'2026-04-17',projId:'',obs:'CFTV e Alarme',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'19210',fornecedor:'FELUC - PELOTAS',valor:1083.7,data:'2026-04-17',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN CANGUÇU'},{id:uid(),numero:'325652',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:522.96,data:'2026-04-17',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMACIA SÃO JOÃO - MONTENEGRO'},{id:uid(),numero:'12212',fornecedor:'L. H. HAHNEL e CIA LTDA',valor:2640.44,data:'2026-04-17',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'73441',fornecedor:'MEGAMS SIST. DE SEGURANCA E TELECOMUNICACOES LTDA',valor:436.54,data:'2026-04-20',projId:'',obs:'Alarme',centro:'Farmácias São João',det:''},{id:uid(),numero:'187592',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:1822.48,data:'2026-04-20',projId:'',obs:'CFTV',centro:'Vigillare Alegrete',det:''},{id:uid(),numero:'326363',fornecedor:'LOJAS QUERO-QUERO S/A - 0104',valor:58.98,data:'2026-04-20',projId:'',obs:'Ferramentas',centro:'Vigillare SM',det:''},{id:uid(),numero:'325789',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1878.32,data:'2026-04-20',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'COMERCIAL'},{id:uid(),numero:'27932',fornecedor:'HIPERSUL',valor:376.0,data:'2026-04-20',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'44052',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:92.4,data:'2026-04-20',projId:'',obs:'CFTV',centro:'Farmácias São João',det:'FARMACIAS SÃO JOÃO - PORTO ALEGRE'},{id:uid(),numero:'44051',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:312.01,data:'2026-04-20',projId:'',obs:'CFTV',centro:'Vigillare Viamão',det:'PREFEITURA VIAMÃO'},{id:uid(),numero:'44050',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:321.76,data:'2026-04-20',projId:'',obs:'Periféricos',centro:'Dimed S.A',det:'PANVEL FILIAL 334'},{id:uid(),numero:'44049',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:129.33,data:'2026-04-20',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMACIA SÃO JOÃO ESTEIO -9'},{id:uid(),numero:'325736',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:780.89,data:'2026-04-20',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'1811',fornecedor:'MP POSTOS E LOGISTICA LTDA CANELA',valor:146.68,data:'2026-04-20',projId:'',obs:'CFTV e Alarme',centro:'Canela/Filial',det:'VIAMAO'},{id:uid(),numero:'996',fornecedor:'ARACA COMERCIO DE BRINDES LTDA',valor:3575.0,data:'2026-04-22',projId:'',obs:'Bens de Pequeno Valor',centro:'Administrativo/Fin.',det:''},{id:uid(),numero:'187865',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:5832.34,data:'2026-04-22',projId:'',obs:'CFTV',centro:'Vigillare SM',det:''},{id:uid(),numero:'195172',fornecedor:'MERCADAO DA INFORMATICA',valor:109.98,data:'2026-04-22',projId:'',obs:'Periféricos',centro:'Vigitrack - diversos',det:''},{id:uid(),numero:'439612',fornecedor:'ABT COMERCIAL ELETRICA LTDA',valor:164.43,data:'2026-04-22',projId:'',obs:'Materiais de Obra',centro:'Vigillare Poa',det:''},{id:uid(),numero:'4338',fornecedor:'CIA ZAFFARI COM E IND - LOJA 02',valor:79.06,data:'2026-04-22',projId:'',obs:'Bens de Pequeno Valor',centro:'Vigillare Poa',det:''},{id:uid(),numero:'1084656',fornecedor:'VENANCIO',valor:63.58,data:'2026-04-22',projId:'',obs:'Bens de Pequeno Valor',centro:'Vigillare SM',det:''},{id:uid(),numero:'75310',fornecedor:'PORTO MATERIAIS',valor:1031.5,data:'2026-04-22',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Poa',det:''},{id:uid(),numero:'25474',fornecedor:'ELO DISTRIBUIDORA ELETRICA',valor:154.39,data:'2026-04-22',projId:'',obs:'Materiais de Obra',centro:'Canela/Filial',det:''},{id:uid(),numero:'44073',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:1974.94,data:'2026-04-23',projId:'',obs:'CFTV',centro:'Corporativo',det:'HU-FURG HOSPITAL UNIVERSITARIO'},{id:uid(),numero:'325993',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:149.38,data:'2026-04-23',projId:'',obs:'Controle de Acesso',centro:'Farmácias São João',det:'FARMACIA SÃO JOÃO VIAMAO 2'},{id:uid(),numero:'325992',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:149.38,data:'2026-04-23',projId:'',obs:'Controle de Acesso',centro:'Dimed S.A',det:'PANVEL FILIAL 831'},{id:uid(),numero:'188031',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:1912.13,data:'2026-04-23',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'PANVEL FILIAL 831'},{id:uid(),numero:'188029',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:761.64,data:'2026-04-23',projId:'',obs:'CFTV e Alarme',centro:'Farmácias São João',det:'FARMACIA SÃO JOÃO VIAMAO 2'},{id:uid(),numero:'188028',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:1938.92,data:'2026-04-23',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN XANGRI-LA ETE 2'},{id:uid(),numero:'361522',fornecedor:'MPE COMANDOS ELETRON',valor:2693.01,data:'2026-04-23',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'ESTOQUE'},{id:uid(),numero:'158',fornecedor:'MARCOS ROBERTO CHAVES DA ROSA EIRELI',valor:50.0,data:'2026-04-23',projId:'',obs:'Despesa veículos',centro:'Vigillare SM',det:''},{id:uid(),numero:'62',fornecedor:'PETROPOLIS ALIMENTACAO LTDA',valor:54.04,data:'2026-04-23',projId:'',obs:'Confraternizações',centro:'Vigillare Poa',det:''},{id:uid(),numero:'105920',fornecedor:'SANTA MARIA DISTRIBUIDORA DE BATERIAS LTDA',valor:400.0,data:'2026-04-23',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'1596',fornecedor:'CASA DOS MILITARES LTDA',valor:4505.0,data:'2026-04-23',projId:'',obs:'Uniformes e EPI',centro:'Vigillare SM',det:''},{id:uid(),numero:'361497',fornecedor:'MPE COMANDOS ELETRON',valor:11240.53,data:'2026-04-23',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'ESTOQUE'},{id:uid(),numero:'187935',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:474.44,data:'2026-04-23',projId:'',obs:'CFTV e Alarme',centro:'Corsan',det:'CORSAN FARROUPILHA'},{id:uid(),numero:'326046',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:10452.52,data:'2026-04-24',projId:'',obs:'Alarme',centro:'Vigillare Alegrete',det:''},{id:uid(),numero:'8541483',fornecedor:'DELL COMPUTADORES DO BRASIL LTDA',valor:1426.58,data:'2026-04-24',projId:'',obs:'Periféricos',centro:'Vigillare Poa',det:''},{id:uid(),numero:'188193',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:1537.73,data:'2026-04-24',projId:'',obs:'Alarme',centro:'Farmácias São João',det:''},{id:uid(),numero:'43891',fornecedor:'STANGHERLIN EPIS E FERRAMENTAS',valor:490.8,data:'2026-04-24',projId:'',obs:'Uniformes e EPI',centro:'Vigillare SM',det:''},{id:uid(),numero:'188244',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:903.83,data:'2026-04-24',projId:'',obs:'CFTV e Alarme',centro:'Vigillare Alegrete',det:''},{id:uid(),numero:'44078',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:7220.94,data:'2026-04-24',projId:'',obs:'Alarme',centro:'Corsan',det:''},{id:uid(),numero:'158408',fornecedor:'ALPHA SECURITY IMP. EXP. DE ELET. EIRELI',valor:3302.32,data:'2026-04-24',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'PANVEL FILIAL 631'},{id:uid(),numero:'247853',fornecedor:'ALPHA SECURITY IMP. EXP. DE ELET. EIRELI',valor:3302.33,data:'2026-04-24',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'PANVEL FILIAL 562'},{id:uid(),numero:'361622',fornecedor:'MPE COMANDOS ELETRON',valor:595.5,data:'2026-04-24',projId:'',obs:'Materiais de Obra',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'326090',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:77.28,data:'2026-04-24',projId:'',obs:'CFTV e Alarme',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'326089',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:830.25,data:'2026-04-24',projId:'',obs:'Alarme',centro:'Vigillare Viamão',det:''},{id:uid(),numero:'44077',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:66.11,data:'2026-04-24',projId:'',obs:'Controle de Acesso',centro:'Farmácias São João',det:'FARMACIA SÃO JOAO CERRO LARGO'},{id:uid(),numero:'188200',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:1462.8,data:'2026-04-24',projId:'',obs:'Controle de Acesso',centro:'Vigillare SM',det:'CIF ENDER'},{id:uid(),numero:'326037',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:717.1,data:'2026-04-24',projId:'',obs:'CFTV',centro:'Canela/Filial',det:'CIF CANELA'},{id:uid(),numero:'188140',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:5197.2,data:'2026-04-24',projId:'',obs:'CFTV',centro:'Canela/Filial',det:''},{id:uid(),numero:'10104',fornecedor:'CASA DOS REPAROS HIDRAULICOS LTDA',valor:326.9,data:'2026-04-25',projId:'',obs:'Materiais de Obra',centro:'Vigillare SM',det:''},{id:uid(),numero:'1041',fornecedor:'LENON MOTOS LTDA',valor:80.0,data:'2026-04-25',projId:'',obs:'Despesa veículos',centro:'Vigillare Poa',det:''},{id:uid(),numero:'78763',fornecedor:'EXTREMA',valor:28318.58,data:'2026-04-27',projId:'',obs:'Despesa veículos',centro:'Vigitrack - diversos',det:''},{id:uid(),numero:'5585',fornecedor:'JEN INDUSTRIA E INSTALACAO DE MAQUINA INDUSTRIAL LTDA',valor:4673.0,data:'2026-04-27',projId:'',obs:'Controle de Acesso',centro:'Corporativo',det:''},{id:uid(),numero:'326186',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1120.02,data:'2026-04-27',projId:'',obs:'Periféricos',centro:'Vigillare SM',det:'COMERCIAL'},{id:uid(),numero:'104611',fornecedor:'MEGAMS',valor:216.83,data:'2026-04-27',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'PANVEL FILIAL 97'},{id:uid(),numero:'27769461',fornecedor:'KABUM!',valor:423.52,data:'2026-04-27',projId:'',obs:'Periféricos',centro:'Vigillare SM',det:''},{id:uid(),numero:'440120',fornecedor:'ABT COMERCIAL ELETRICA LTDA',valor:402.14,data:'2026-04-27',projId:'',obs:'Materiais de Obra',centro:'Corporativo',det:''},{id:uid(),numero:'6860',fornecedor:'ZILDOMAR MENEZES & CIA LTDA.',valor:846.22,data:'2026-04-27',projId:'',obs:'Periféricos',centro:'Vigillare SM',det:''},{id:uid(),numero:'14921',fornecedor:'ANGELA A J BUSATTO CIA LTDA',valor:260.0,data:'2026-04-27',projId:'',obs:'CFTV',centro:'Vigillare Alegrete',det:''},{id:uid(),numero:'188539',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:80.72,data:'2026-04-27',projId:'',obs:'Periféricos',centro:'Vigillare SM',det:'ESTOQUE'},{id:uid(),numero:'188518',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:7516.74,data:'2026-04-27',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'ESTOQUE'},{id:uid(),numero:'326201',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:704.19,data:'2026-04-27',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'CIF ENDER ESTOQUE'},{id:uid(),numero:'26930',fornecedor:'MATV SUL ELETRONICOS LTDA - POA 2',valor:1224.72,data:'2026-04-27',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'CIF ENDER ESTOQUE'},{id:uid(),numero:'326198',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:288.23,data:'2026-04-27',projId:'',obs:'Periféricos',centro:'Vigillare SM',det:'CIF ENDER ESTOQUE'},{id:uid(),numero:'1049',fornecedor:'LENON MOTOS LTDA',valor:138.0,data:'2026-04-27',projId:'',obs:'Despesa veículos',centro:'Vigillare Poa',det:''},{id:uid(),numero:'1075',fornecedor:'AUTO POSTO BITTENCOURT 03',valor:13938.62,data:'2026-04-27',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'COMERCIAL'},{id:uid(),numero:'326159',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:2454.09,data:'2026-04-27',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'COMERCIAL'},{id:uid(),numero:'188423',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:483.74,data:'2026-04-27',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'COMERCIAL'},{id:uid(),numero:'104936',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:289.1,data:'2026-04-27',projId:'',obs:'Alarme',centro:'Vigillare SM',det:'COMERCIAL'},{id:uid(),numero:'44080',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:1345.36,data:'2026-04-27',projId:'',obs:'CFTV',centro:'Vigillare Alegrete',det:''},{id:uid(),numero:'3277',fornecedor:'MEGAMS SIST. DE SEGURANCA E TELECOMUNICACOES LTDA',valor:59.03,data:'2026-04-27',projId:'',obs:'Periféricos',centro:'Dimed S.A',det:'PANVEL FILIAL 864'},{id:uid(),numero:'20439',fornecedor:'TEKMOVEIS COMERCIO DE MOVEIS E EQUIPAMENTOS EIRELI',valor:242.0,data:'2026-04-27',projId:'',obs:'Móveis',centro:'Vigillare Poa',det:''},{id:uid(),numero:'1054',fornecedor:'LENON MOTOS LTDA',valor:38.0,data:'2026-04-27',projId:'',obs:'Despesa veículos',centro:'Canela/Filial',det:''},{id:uid(),numero:'85359',fornecedor:'CAXIAS DO SUL DISTRIBUIDORA DE BATERIAS LTDA',valor:8985.0,data:'2026-04-27',projId:'',obs:'Alarme',centro:'Canela/Filial',det:'ESTOQUE'},{id:uid(),numero:'25000',fornecedor:'MATV SUL ELETRONICOS LTDA - SC',valor:2086.3,data:'2026-04-28',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'ESTOQUE'},{id:uid(),numero:'188705',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:4066.1,data:'2026-04-28',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'188710',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:2160.91,data:'2026-04-28',projId:'',obs:'CFTV',centro:'Vigillare SM',det:''},{id:uid(),numero:'105051',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:58.16,data:'2026-04-28',projId:'',obs:'CFTV',centro:'Corsan',det:''},{id:uid(),numero:'105052',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:369.95,data:'2026-04-28',projId:'',obs:'CFTV',centro:'Corsan',det:'SURSIN'},{id:uid(),numero:'326308',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:786.36,data:'2026-04-28',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'CIF DIRETO ESTOQUE'},{id:uid(),numero:'326303',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:125.42,data:'2026-04-28',projId:'',obs:'Controle de Acesso',centro:'Vigillare Viamão',det:'HOSPITAL DE VIAMÃO'},{id:uid(),numero:'105042',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:3393.35,data:'2026-04-28',projId:'',obs:'CFTV',centro:'Corporativo',det:'DATACOM'},{id:uid(),numero:'188673',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:7804.13,data:'2026-04-28',projId:'',obs:'CFTV',centro:'Vigillare Alegrete',det:'ALEGRETE'},{id:uid(),numero:'105027',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:2052.59,data:'2026-04-28',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN'},{id:uid(),numero:'105026',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:141.78,data:'2026-04-28',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMACIA SÃO JOÃO'},{id:uid(),numero:'24992',fornecedor:'MATV SUL ELETRONICOS LTDA - SC',valor:374.69,data:'2026-04-28',projId:'',obs:'CFTV',centro:'Corsan',det:'CORSAN'},{id:uid(),numero:'2433384',fornecedor:'FABESUL Comercio de Suprimentos Ltda',valor:2025.07,data:'2026-04-28',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Poa',det:''},{id:uid(),numero:'88055',fornecedor:'MEGAMS PASSO FUNDO',valor:3612.3,data:'2026-04-28',projId:'',obs:'Periféricos',centro:'Corsan',det:''},{id:uid(),numero:'1088',fornecedor:'LENON MOTOS LTDA',valor:58.0,data:'2026-04-28',projId:'',obs:'Despesa veículos',centro:'Vigillare Poa',det:''},{id:uid(),numero:'105008',fornecedor:'MATV SUL ELETRONICOS LTDA - NH',valor:234.73,data:'2026-04-28',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'PANVEL FILIAL 716'},{id:uid(),numero:'75470',fornecedor:'PORTO MATERIAIS',valor:77.4,data:'2026-04-29',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare Poa',det:''},{id:uid(),numero:'27782591',fornecedor:'KABUM!',valor:470.58,data:'2026-04-29',projId:'',obs:'CFTV',centro:'Vigillare SM',det:''},{id:uid(),numero:'326385',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:14020.68,data:'2026-04-29',projId:'',obs:'CFTV e Alarme',centro:'Corsan',det:''},{id:uid(),numero:'44101',fornecedor:'GRUPO SAT - NOVO HAMBURGO',valor:129.33,data:'2026-04-29',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'ERP SINGER'},{id:uid(),numero:'188848',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:15093.94,data:'2026-04-29',projId:'',obs:'CFTV',centro:'Corsan',det:''},{id:uid(),numero:'39926',fornecedor:'MPE SANTA ROSA',valor:1103.55,data:'2026-04-29',projId:'',obs:'Controle de Acesso',centro:'Vigillare SM',det:''},{id:uid(),numero:'103340',fornecedor:'MPE FILIAL',valor:662.13,data:'2026-04-29',projId:'',obs:'Controle de Acesso',centro:'Vigillare SM',det:''},{id:uid(),numero:'6920',fornecedor:'ZILDOMAR MENEZES & CIA LTDA.',valor:1103.55,data:'2026-04-29',projId:'',obs:'Controle de Acesso',centro:'Vigillare SM',det:''},{id:uid(),numero:'4773',fornecedor:'PREMIUMRS DISTRIBUIDORA LTDA',valor:1024.48,data:'2026-04-29',projId:'',obs:'CFTV',centro:'Corsan',det:'VIAMÃO'},{id:uid(),numero:'361922',fornecedor:'MPE COMANDOS ELETRON',valor:1986.39,data:'2026-04-29',projId:'',obs:'Controle de Acesso',centro:'Vigillare SM',det:''},{id:uid(),numero:'361930',fornecedor:'MPE COMANDOS ELETRON',valor:404.94,data:'2026-04-29',projId:'',obs:'CFTV',centro:'Corporativo',det:''},{id:uid(),numero:'26974',fornecedor:'MATV SUL ELETRONICOS LTDA - POA 2',valor:289.1,data:'2026-04-29',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'11492',fornecedor:'MATV SUL ELETRONICOS LTDA - CANOAS',valor:289.1,data:'2026-04-29',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'126825',fornecedor:'PREMIUMRS',valor:239.9,data:'2026-04-29',projId:'',obs:'Controle de Acesso',centro:'Farmácias São João',det:''},{id:uid(),numero:'104717',fornecedor:'MEGAMS',valor:44.09,data:'2026-04-29',projId:'',obs:'Alarme',centro:'Dimed S.A',det:'PANVEL FILIAL 758'},{id:uid(),numero:'326330',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1062.25,data:'2026-04-29',projId:'',obs:'CFTV',centro:'Farmácias São João',det:'FARMACIA SÃO JOÃO'},{id:uid(),numero:'188793',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:211.17,data:'2026-04-29',projId:'',obs:'Alarme',centro:'Farmácias São João',det:''},{id:uid(),numero:'293274',fornecedor:'DIGITALSAT DIST DE EQUI ELETRONICOS LTDA',valor:2618.7,data:'2026-04-29',projId:'',obs:'CFTV e Alarme',centro:'Corsan',det:''},{id:uid(),numero:'2140',fornecedor:'ARCO MATERIAIS DE CONSTRUCAO',valor:1027.4,data:'2026-04-30',projId:'',obs:'Materiais de Obra',centro:'Corporativo',det:''},{id:uid(),numero:'61166',fornecedor:'Urso Branco Comercio Varejista de Lubrificantes Ltda',valor:513.72,data:'2026-04-30',projId:'',obs:'Despesa veículos',centro:'Vigillare Poa',det:''},{id:uid(),numero:'24841',fornecedor:'SIMOES EPI',valor:69.95,data:'2026-04-30',projId:'',obs:'Uniformes e EPI',centro:'Vigillare SM',det:''},{id:uid(),numero:'50600',fornecedor:'BIG PATRONATO SANTA MARIA',valor:556.85,data:'2026-04-30',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Vigillare SM',det:''},{id:uid(),numero:'362025',fornecedor:'MPE COMANDOS ELETRON',valor:868.16,data:'2026-04-30',projId:'',obs:'CFTV e Alarme',centro:'Corsan',det:''},{id:uid(),numero:'362018',fornecedor:'MPE COMANDOS ELETRON',valor:3067.91,data:'2026-04-30',projId:'',obs:'Alarme',centro:'Farmácias São João',det:'FARMACIAS SÃO JOÃO BAGE'},{id:uid(),numero:'189114',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:288.23,data:'2026-04-30',projId:'',obs:'Periféricos',centro:'Dimed S.A',det:'PANVEL FILIAL 714'},{id:uid(),numero:'189100',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:21345.68,data:'2026-04-30',projId:'',obs:'Off- Grid',centro:'Corsan',det:''},{id:uid(),numero:'189095',fornecedor:'MATV SUL ELETRONICOS LTDA - CXS 2',valor:5138.25,data:'2026-04-30',projId:'',obs:'CFTV e Alarme',centro:'Vigillare SM',det:'ESTOQUE'},{id:uid(),numero:'361990',fornecedor:'MPE COMANDOS ELETRON',valor:242.8,data:'2026-04-30',projId:'',obs:'CFTV',centro:'Vigillare SM',det:''},{id:uid(),numero:'362027',fornecedor:'MPE COMANDOS ELETRON',valor:3020.8,data:'2026-04-30',projId:'',obs:'Alarme',centro:'Dimed S.A',det:''},{id:uid(),numero:'326494',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:1996.64,data:'2026-04-30',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'ESTOQUE'},{id:uid(),numero:'4815',fornecedor:'PREMIUMRS DISTRIBUIDORA LTDA',valor:129.91,data:'2026-04-30',projId:'',obs:'Material de Escritório /Limpeza/ Consumo',centro:'Corsan',det:''});
     a.push({id:uid(),numero:'30744',fornecedor:'CENTERMAX TINTAS E EQUIPAMENTOS EIRELI',valor:2671.46,data:'2026-04-30',projId:'',obs:'Materiais de Obra',centro:'Vigillare Alegrete',det:''},{id:uid(),numero:'15202',fornecedor:'DAMOFIX',valor:641.25,data:'2026-04-30',projId:'',obs:'Materiais de Obra',centro:'Vigillare SM',det:''},{id:uid(),numero:'1026',fornecedor:'ARACA COMERCIO DE BRINDES LTDA',valor:539.7,data:'2026-04-30',projId:'',obs:'Confraternizações',centro:'Administrativo/Fin.',det:''},{id:uid(),numero:'440524',fornecedor:'ABT COMERCIAL ELETRICA LTDA',valor:213.39,data:'2026-04-30',projId:'',obs:'Ferragem',centro:'Corporativo',det:''},{id:uid(),numero:'361945',fornecedor:'MPE COMANDOS ELETRON',valor:661.13,data:'2026-04-30',projId:'',obs:'Alarme',centro:'Vigillare SM',det:''},{id:uid(),numero:'326437',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:511.83,data:'2026-04-30',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'COMERCIAL'},{id:uid(),numero:'326443',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:737.86,data:'2026-04-30',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'COMERCIAL'},{id:uid(),numero:'326444',fornecedor:'MATV SUL ELETRONICOS LTDA - POA',valor:644.93,data:'2026-04-30',projId:'',obs:'CFTV',centro:'Vigillare SM',det:'COMERCIAL'});
-    a.forEach(function(n){var k=n.numero+'|'+n.fornecedor;if(obs[k])n.det=obs[k];}); S.nfs=a; localStorage.setItem('dc_nf_ver',v); persist();
-  })();
+  a.forEach(function(n){var k=n.numero+'|'+n.fornecedor;if(obs[k])n.det=obs[k];}); S.nfs=a; localStorage.setItem('dc_nf_ver',v); persist();
+})();
 
+
+// ── BUSCA GLOBAL ──
+function buscaGlobal(){
+  var termo = prompt('Buscar por:');
+  if(!termo) return;
+  termo = termo.toLowerCase();
+  var resultados = '<div style="background:var(--bg2);border-radius:10px;padding:20px">';
+  var found = false;
+
+  S.projects.forEach(function(p){
+    if(p.nome.toLowerCase().includes(termo) || (p.desc||'').toLowerCase().includes(termo)){
+      found = true;
+      resultados += '<div style="margin-bottom:15px;padding:15px;background:var(--bg3);border-radius:8px">';
+      resultados += '<strong>Projeto:</strong> ' + p.nome + '<br>';
+      if(p.items.length) resultados += 'Itens: ' + p.items.length + '<br>';
+      resultados += '</div>';
+    }
+    (p.items||[]).forEach(function(i){
+      if(i.nome.toLowerCase().includes(termo)){
+        found = true;
+        resultados += '<div style="margin-bottom:15px;padding:15px;background:var(--bg3);border-radius:8px">';
+        resultados += '<strong>Item:</strong> ' + i.nome + '<br>';
+        resultados += '<strong>Projeto:</strong> ' + p.nome + '<br>';
+        resultados += '<strong>Previsto:</strong> R$ ' + (i.prev||0).toFixed(2) + ' | <strong>Real:</strong> R$ ' + (i.real||0).toFixed(2) + '<br>';
+        resultados += '</div>';
+      }
+    });
+  });
+
+  S.nfs.forEach(function(nf){
+    if(nf.numero.toLowerCase().includes(termo) || (nf.fornecedor||'').toLowerCase().includes(termo)){
+      found = true;
+      resultados += '<div style="margin-bottom:15px;padding:15px;background:var(--bg3);border-radius:8px">';
+      resultados += '<strong>NF:</strong> ' + nf.numero + '<br>';
+      resultados += '<strong>Fornecedor:</strong> ' + nf.fornecedor + ' | <strong>Valor:</strong> R$ ' + (nf.valor||0).toFixed(2) + '<br>';
+      resultados += '</div>';
+    }
+  });
+
+  if(!found) resultados += '<div style="text-align:center;padding:20px;color:var(--muted)">Nenhum resultado encontrado</div>';
+  resultados += '</div>';
+  document.getElementById('page-dashboard').innerHTML = '<div style="padding:20px">' + resultados + '</div>';
+}
+
+// ── RENDER ALERTAS ──
+function renderAlertas(){
+  var html = '';
+  var alertas = [];
+
+  // Verificar preços que caíram mais de 10%
+  S.projects.forEach(function(p){
+    (p.items||[]).forEach(function(i){
+      if(i.prev && i.real && (i.real < i.prev * 0.9)){
+        var economia = ((i.prev - i.real) / i.prev * 100).toFixed(1);
+        alertas.push({tipo:'economia',nome:i.nome,prev:i.prev,real:i.real,pct:economia,projeto:p.nome});
+      }
+      if(i.prev && i.real && (i.real > i.prev * 1.1)){
+        var aumento = ((i.real - i.prev) / i.prev * 100).toFixed(1);
+        alertas.push({tipo:'aumento',nome:i.nome,prev:i.prev,real:i.real,pct:aumento,projeto:p.nome});
+      }
+    });
+  });
+
+  if(alertas.length === 0){
+    html = '<div style="text-align:center;padding:40px;color:var(--muted)">Nenhum alerta no momento</div>';
+  } else {
+    html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">';
+    alertas.forEach(function(a){
+      var cor = a.tipo === 'economia' ? 'var(--accent)' : 'var(--red)';
+      var icone = a.tipo === 'economia' ? '📈' : '⚠️';
+      html += '<div style="background:var(--bg2);border-left:4px solid '+cor+';border-radius:8px;padding:16px">';
+      html += '<div style="font-weight:bold;margin-bottom:8px">'+icone+' '+a.nome+'</div>';
+      html += '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">'+a.projeto+'</div>';
+      html += '<div>Previsto: <strong>R$ '+(a.prev||0).toFixed(2)+'</strong></div>';
+      html += '<div>Real: <strong style="color:'+cor+'">R$ '+(a.real||0).toFixed(2)+' ('+a.pct+'%)</strong></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  document.getElementById('alertas-content').innerHTML = html;
+}
+
+// ── RENDER COMPRAS DASHBOARD ──
+function renderComprasDash(){
+  var totalComprado = 0, totalItens = 0, maiorGasto = {nome:'',valor:0}, maiorEconomia = {nome:'',valor:0};
+
+  S.projects.forEach(function(p){
+    (p.items||[]).forEach(function(i){
+      totalComprado += Number(i.real)||0;
+      totalItens++;
+      if((i.real||0) > maiorGasto.valor) maiorGasto = {nome:i.nome,valor:i.real,projeto:p.nome};
+      var econ = (Number(i.prev)||0) - (Number(i.real)||0);
+      if(econ > maiorEconomia.valor) maiorEconomia = {nome:i.nome,valor:econ,projeto:p.nome};
+    });
+  });
+
+  var html = '';
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">';
+  html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px">';
+  html += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Total Comprado</div>';
+  html += '<div style="font-family:var(--serif);font-size:22px;font-weight:800;color:var(--text)">R$ '+(totalComprado/1000).toFixed(1)+'k</div>';
+  html += '</div>';
+  html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px">';
+  html += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Total de Itens</div>';
+  html += '<div style="font-family:var(--serif);font-size:22px;font-weight:800;color:var(--text)">'+totalItens+'</div>';
+  html += '</div>';
+  html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px">';
+  html += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Maior Compra</div>';
+  html += '<div style="font-family:var(--serif);font-size:18px;font-weight:800;color:var(--text)">R$ '+(maiorGasto.valor||0).toFixed(2)+'</div>';
+  html += '<div style="font-size:10px;color:var(--muted);margin-top:4px">'+maiorGasto.nome+'</div>';
+  html += '</div>';
+  html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px">';
+  html += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Maior Economia</div>';
+  html += '<div style="font-family:var(--serif);font-size:18px;font-weight:800;color:var(--accent)">R$ '+(maiorEconomia.valor||0).toFixed(2)+'</div>';
+  html += '<div style="font-size:10px;color:var(--muted);margin-top:4px">'+maiorEconomia.nome+'</div>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<h3 style="margin-bottom:16px;font-weight:bold">Top 10 Maiores Compras</h3>';
+  var itens = [];
+  S.projects.forEach(function(p){
+    (p.items||[]).forEach(function(i){
+      itens.push({nome:i.nome,valor:i.real||0,projeto:p.nome});
+    });
+  });
+  itens.sort(function(a,b){return b.valor-a.valor;});
+
+  html += '<table style="width:100%;border-collapse:collapse">';
+  html += '<tr style="border-bottom:1px solid var(--border)">';
+  html += '<th style="text-align:left;padding:10px;color:var(--muted);font-size:9px;text-transform:uppercase">Item</th>';
+  html += '<th style="text-align:right;padding:10px;color:var(--muted);font-size:9px;text-transform:uppercase">Projeto</th>';
+  html += '<th style="text-align:right;padding:10px;color:var(--muted);font-size:9px;text-transform:uppercase">Valor</th>';
+  html += '</tr>';
+  itens.slice(0,10).forEach(function(i){
+    html += '<tr style="border-bottom:1px solid var(--border2)">';
+    html += '<td style="padding:10px;color:var(--text)">'+i.nome+'</td>';
+    html += '<td style="padding:10px;color:var(--muted);text-align:right">'+i.projeto+'</td>';
+    html += '<td style="padding:10px;color:var(--text);text-align:right;font-weight:bold">R$ '+(i.valor||0).toFixed(2)+'</td>';
+    html += '</tr>';
+  });
+  html += '</table>';
+
+  document.getElementById('compras-content').innerHTML = html;
+}
+
+// ── RENDER TIMELINE ──
+function renderTimeline(){
+  var timeline = [];
+  S.projects.forEach(function(p){
+    timeline.push({
+      nome:p.nome,
+      data:p.data,
+      itens:(p.items||[]).length,
+      valor:(p.items||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0),
+      tipo:'projeto'
+    });
+  });
+  timeline.sort(function(a,b){return new Date(b.data||'2025-01-01') - new Date(a.data||'2025-01-01');});
+
+  var html = '<div style="max-width:800px">';
+  timeline.forEach(function(t,i){
+    html += '<div style="display:flex;margin-bottom:20px">';
+    html += '<div style="width:30px;display:flex;flex-direction:column;align-items:center">';
+    html += '<div style="width:12px;height:12px;background:var(--accent);border-radius:50%;margin-top:5px"></div>';
+    if(i < timeline.length-1) html += '<div style="width:2px;height:30px;background:var(--border);margin-top:10px"></div>';
+    html += '</div>';
+    html += '<div style="flex:1;margin-left:20px;background:var(--bg2);border-radius:8px;padding:16px;border:1px solid var(--border)">';
+    html += '<div style="font-weight:bold;font-size:14px;margin-bottom:4px">'+t.nome+'</div>';
+    html += '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+(t.data||'Data não definida')+'</div>';
+    html += '<div style="font-size:11px;color:var(--muted)">'+t.itens+' itens | Total: R$ '+(t.valor||0).toFixed(2)+'</div>';
+    html += '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  document.getElementById('timeline-content').innerHTML = html;
+}
+
+// ── SUGESTOES DE COMPRA (baseado em 18 meses de historico) ──
+function renderSugestoes(){
+  var alvo = document.getElementById('sugestoes-content');
+  alvo.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center">Analisando histórico...</div>';
+  fetch('analise_precos.json?t='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(dados){ construirSugestoes(dados, alvo); })
+    .catch(function(e){ alvo.innerHTML = '<div style="color:var(--red);padding:40px;text-align:center">Erro ao carregar dados: '+e.message+'</div>'; });
+}
+
+function construirSugestoes(dados, alvo){
+  var brl = function(v){ return 'R$ '+(Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  var sugestoes = [];
+
+  Object.keys(dados).forEach(function(nome){
+    var it = dados[nome];
+    var st = it.serie_temporal || [];
+    if(!st.length) return;
+    var meses = st.length;
+
+    // Consumo mensal medio
+    var qtdTotal = st.reduce(function(s,m){return s+(Number(m.qtd)||0);},0);
+    var consumoMes = qtdTotal / meses;
+
+    // Tendencia de preco: media dos ultimos 3 meses vs mediana historica (baseline estavel)
+    // Itens com poucas compras tem dados ruidosos -> tratados como estaveis
+    var precosValidos = st.filter(function(m){return Number(m.preco_medio)>0;});
+    var tendPct = 0, tendencia = 'ESTAVEL';
+    var baseline = it.preco_mediana || it.preco_medio || 0;
+    if(precosValidos.length >= 4 && (it.quantidade_compras||0) >= 8 && baseline > 0){
+      var n = precosValidos.length;
+      var recentes = precosValidos.slice(Math.max(0,n-3));
+      var mediaR = recentes.reduce(function(s,m){return s+m.preco_medio;},0)/recentes.length;
+      tendPct = ((mediaR-baseline)/baseline)*100;
+      // Ignora variacoes absurdas (ruido de dados) acima de 80%
+      if(Math.abs(tendPct) > 80) tendPct = 0;
+      if(tendPct > 5) tendencia = 'SUBINDO';
+      else if(tendPct < -5) tendencia = 'CAINDO';
+    }
+
+    // Melhor fornecedor (menor preco medio)
+    var melhorForn = '', melhorPreco = it.preco_medio || 0;
+    if(it.fornecedores){
+      Object.keys(it.fornecedores).forEach(function(f){
+        var fp = it.fornecedores[f].preco_medio;
+        if(fp > 0 && (melhorForn==='' || fp < melhorPreco)){ melhorPreco = fp; melhorForn = f; }
+      });
+    }
+
+    // Quanto comprar: 3 meses de estoque (mais se subindo, menos se caindo)
+    var fator = tendencia==='SUBINDO' ? 4 : tendencia==='CAINDO' ? 2 : 3;
+    var qtdSugerida = Math.max(1, Math.round(consumoMes * fator));
+
+    // Economia ao comprar do melhor fornecedor vs preco medio
+    var economiaUnit = Math.max(0, (it.preco_medio||0) - melhorPreco);
+    var economiaTotal = economiaUnit * qtdSugerida;
+    var investimento = melhorPreco * qtdSugerida;
+
+    // Prioridade: frequencia x urgencia de preco (boost limitado a 1.5x)
+    var boost = tendencia==='SUBINDO' ? (1 + Math.min(tendPct,50)/100) : tendencia==='CAINDO' ? 0.5 : 1;
+    var prioridade = consumoMes * boost;
+
+    sugestoes.push({
+      nome: nome, consumoMes: consumoMes, tendencia: tendencia, tendPct: tendPct,
+      melhorForn: melhorForn, melhorPreco: melhorPreco, precoMedio: it.preco_medio||0,
+      qtdSugerida: qtdSugerida, economiaTotal: economiaTotal, investimento: investimento,
+      prioridade: prioridade, qtdCompras: it.quantidade_compras||0
+    });
+  });
+
+  sugestoes.sort(function(a,b){return b.prioridade - a.prioridade;});
+
+  var comprarAgora = sugestoes.filter(function(s){return s.tendencia==='SUBINDO';});
+  var aguardar = sugestoes.filter(function(s){return s.tendencia==='CAINDO';});
+  var economiaPotencial = sugestoes.reduce(function(s,x){return s+x.economiaTotal;},0);
+  var investimentoTotal = sugestoes.reduce(function(s,x){return s+x.investimento;},0);
+
+  var html = '';
+  // Cards resumo
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">';
+  html += card('Itens Analisados', sugestoes.length, 'var(--text)', '18 meses de histórico');
+  html += card('🔴 Comprar Agora', comprarAgora.length, 'var(--red)', 'preço subindo — estoque já');
+  html += card('🟢 Pode Aguardar', aguardar.length, 'var(--green)', 'preço caindo');
+  html += card('Economia Potencial', brl(economiaPotencial), 'var(--accent)', 'comprando do melhor fornecedor');
+  html += '</div>';
+
+  // Aviso
+  html += '<div style="background:var(--bg3);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin-bottom:20px;font-size:12px;color:var(--muted)">';
+  html += '💡 <strong style="color:var(--text)">Como funciona:</strong> a quantidade sugerida = consumo mensal médio × (4 meses se preço subindo, 3 normal, 2 se caindo). O fornecedor indicado é o de menor preço médio histórico de cada item.';
+  html += '</div>';
+
+  // Tabela
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html += '<thead><tr style="border-bottom:2px solid var(--border);text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase">';
+  html += '<th style="padding:10px 8px">Item</th><th style="padding:10px 8px">Recomendação</th><th style="padding:10px 8px;text-align:right">Consumo/mês</th><th style="padding:10px 8px;text-align:right">Comprar</th><th style="padding:10px 8px">Melhor Fornecedor</th><th style="padding:10px 8px;text-align:right">Preço</th><th style="padding:10px 8px;text-align:right">Economia</th>';
+  html += '</tr></thead><tbody>';
+
+  sugestoes.slice(0, 50).forEach(function(s){
+    var badge, cor;
+    if(s.tendencia==='SUBINDO'){ badge='🔴 COMPRE AGORA'; cor='var(--red)'; }
+    else if(s.tendencia==='CAINDO'){ badge='🟢 AGUARDE'; cor='var(--green)'; }
+    else { badge='🟡 REPOR NORMAL'; cor='var(--amber)'; }
+    var seta = s.tendPct>5?'↑':s.tendPct<-5?'↓':'→';
+    html += '<tr style="border-bottom:1px solid var(--border)">';
+    html += '<td style="padding:10px 8px;color:var(--text)">'+s.nome+'</td>';
+    html += '<td style="padding:10px 8px"><span style="color:'+cor+';font-weight:bold">'+badge+'</span><br><span style="font-size:10px;color:var(--muted)">'+seta+' '+Math.abs(s.tendPct).toFixed(0)+'% no preço</span></td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:var(--muted)">'+s.consumoMes.toFixed(1)+' un</td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:var(--text);font-weight:bold">'+s.qtdSugerida+' un</td>';
+    html += '<td style="padding:10px 8px;color:var(--muted);font-size:11px">'+(s.melhorForn||'—')+'</td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:var(--text)">'+brl(s.melhorPreco)+'</td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:'+(s.economiaTotal>0?'var(--accent)':'var(--muted)')+'">'+(s.economiaTotal>0?brl(s.economiaTotal):'—')+'</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  if(sugestoes.length > 50) html += '<div style="text-align:center;color:var(--muted);font-size:11px;margin-top:12px">Mostrando os 50 itens de maior prioridade de '+sugestoes.length+' analisados</div>';
+
+  alvo.innerHTML = html;
+
+  function card(lbl, val, cor, sub){
+    var h = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px">';
+    h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">'+lbl+'</div>';
+    h += '<div style="font-family:var(--serif);font-size:22px;font-weight:800;color:'+cor+'">'+val+'</div>';
+    h += '<div style="font-size:10px;color:var(--muted);margin-top:4px">'+sub+'</div>';
+    h += '</div>';
+    return h;
+  }
+}
+
+// ── EXPORTAR PDF ──
+function exportarPDF(){
+  var csv = 'RELATORIO - PROJETOS SUPRIMENTOS\n';
+  csv += 'Gerado em: '+new Date().toLocaleDateString('pt-BR')+'\n';
+  csv += '============================================\n\n';
+
+  var tPrev = 0, tReal = 0;
+  S.projects.forEach(function(p){
+    var pPrev = (p.items||[]).reduce(function(s,i){return s+(i.extra?0:(Number(i.prev)||0));},0) + (p.services||[]).reduce(function(s,i){return s+(i.extra?0:(Number(i.prev)||0));},0);
+    var pReal = (p.items||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0) + (p.services||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0);
+    tPrev += pPrev;
+    tReal += pReal;
+  });
+
+  csv += 'RESUMO GERAL\n';
+  csv += 'Total Previsto: R$ ' + tPrev.toFixed(2) + '\n';
+  csv += 'Total Real: R$ ' + tReal.toFixed(2) + '\n';
+  csv += 'Economia: R$ ' + (tPrev - tReal).toFixed(2) + '\n';
+  csv += '\n============================================\n\n';
+  csv += 'PROJETOS\n';
+  csv += 'Nome,Itens,Servicos,Previsto,Real,Economia\n';
+
+  S.projects.forEach(function(p){
+    var pPrev = (p.items||[]).reduce(function(s,i){return s+(i.extra?0:(Number(i.prev)||0));},0) + (p.services||[]).reduce(function(s,i){return s+(i.extra?0:(Number(i.prev)||0));},0);
+    var pReal = (p.items||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0) + (p.services||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0);
+    csv += p.nome+','+(p.items||[]).length+','+(p.services||[]).length+','+pPrev.toFixed(2)+','+pReal.toFixed(2)+','+(pPrev-pReal).toFixed(2)+'\n';
+  });
+
+  var nome = 'relatorio-projetos-'+new Date().toISOString().slice(0,10)+'-'+new Date().getTime()+'.csv';
+  fetch('/save-report', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({filename:nome, content:csv})
+  })
+  .then(function(r){return r.json();})
+  .then(function(res){
+    if(res.ok){
+      toast('Relatório salvo na pasta Relatorios!');
+      alert('✅ Relatório salvo em:\n\n'+res.path);
+    } else {
+      toast('Erro ao salvar: '+res.erro,'error');
+    }
+  })
+  .catch(function(e){
+    // Fallback: download pelo navegador se o servidor Python nao responder
+    var blob = new Blob([csv], {type:'text/csv'});
+    var url = window.URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = nome;
+    document.body.appendChild(a); a.click();
+    window.URL.revokeObjectURL(url); document.body.removeChild(a);
+    toast('Relatório baixado (pasta Downloads)');
+  });
+}
+
+// ── ABRIR MODAL METAS ──
+function abrirModalMeta(){
+  var metas = JSON.parse(localStorage.getItem('dc_metas')||'{}');
+  var html = '<div style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:15px;margin-bottom:20px">';
+  html += '<div style="color:var(--accent);font-weight:bold;margin-bottom:8px">O que sao Metas de Orcamento?</div>';
+  html += '<div style="font-size:12px;color:var(--text)">Define um limite maximo de gasto para cada projeto. Vira verde se dentro do orcamento, vermelho se passar.</div>';
+  html += '</div>';
+  html += '<div style="margin-bottom:20px">';
+  S.projects.forEach(function(p){
+    var meta = metas[p.id]||0;
+    var total = (p.items||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0) + (p.services||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0);
+    var pct = meta ? ((total/meta)*100).toFixed(0) : 0;
+    var passou = meta && total > meta;
+    var corBorda = passou ? 'var(--red)' : 'var(--border)';
+    var corTexto = passou ? 'var(--red)' : 'var(--text)';
+    html += '<div style="background:var(--bg3);border-left:4px solid '+corBorda+';padding:15px;border-radius:8px;margin-bottom:10px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">';
+    html += '<strong style="color:'+corTexto+'">'+p.nome+'</strong>';
+    html += '<div style="display:flex;gap:8px;flex-direction:column;align-items:flex-end">';
+    html += '<input type="number" id="meta-'+p.id+'" value="'+meta+'" style="width:140px;padding:8px;border:1px solid var(--border);border-radius:4px;background:var(--bg2);color:var(--text)" placeholder="Meta em R$">';
+    if(meta) {
+      var barColor = passou ? 'var(--red)' : 'var(--accent)';
+      html += '<div style="width:140px;height:24px;background:var(--bg2);border-radius:4px;overflow:hidden;border:1px solid var(--border)">';
+      html += '<div style="height:100%;width:'+Math.min(pct,100)+'%;background:'+barColor+';display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text);font-weight:bold">'+pct+'%</div>';
+      html += '</div>';
+      html += '<div style="font-size:11px;color:var(--muted);text-align:right">Gasto: R$ '+total.toFixed(2)+'</div>';
+      if(passou) html += '<div style="font-size:11px;color:var(--red);font-weight:bold">PASSOU DO ORCAMENTO!</div>';
+    }
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin-top:20px;display:flex;gap:10px">';
+  html += '<button class="btn btn-primary" onclick="salvarMeta()" style="flex:1">Salvar Metas</button>';
+  html += '<button class="btn btn-ghost" onclick="closeModal(\'modal-metas\')" style="flex:1">Cancelar</button>';
+  html += '</div>';
+  document.getElementById('metas-content').innerHTML = html;
+  openModal('modal-metas');
+}
+
+function salvarMeta(){
+  var metas = {};
+  S.projects.forEach(function(p){
+    var val = document.getElementById('meta-'+p.id);
+    if(val) metas[p.id] = Number(val.value)||0;
+  });
+  localStorage.setItem('dc_metas',JSON.stringify(metas));
+  toast('Metas salvas com sucesso!');
+  closeModal('modal-metas');
+}
 
 renderAll();
 
+// ── REDE DE SEGURANÇA: restaura dados do arquivo dados.json se forem mais recentes ──
+// Protege contra perda: se o localStorage foi limpo/zerado, recupera do disco.
+(function(){
+  fetch('/dados.json?t='+Date.now())
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(arquivo){
+      if(arquivo && arquivo.projects && arquivo.projects.length){
+        var tArquivo = arquivo._savedAt || 0;
+        // Usa o arquivo se ele for mais novo que o localStorage (ex: apos um reset/limpeza)
+        if(tArquivo > _lsTime){
+          S = arquivo;
+          localStorage.setItem('dc_v5', JSON.stringify(S));
+          renderAll();
+          console.log('✅ Dados restaurados de dados.json (mais recentes que o navegador)');
+        }
+      } else {
+        // Arquivo ainda nao existe: cria o primeiro backup com o estado atual
+        salvarEmArquivo();
+      }
+    })
+    .catch(function(){});
+})();
+
 </script>
 
-<script src="integrar_chandon.js"></script>
-<script src="integrar_ceara.js"></script>
-<script src="integrar_darkstore.js"></script>
+<!-- integrar_chandon.js, integrar_ceara.js e integrar_darkstore.js desativados -->
 </body>
 </html>
 
