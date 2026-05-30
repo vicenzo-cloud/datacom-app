@@ -2,6 +2,7 @@
 dados.json
 dados.backup.json
 Relatorios/
+Backups/
 
 # Arquivos arquivados (entulho movido na limpeza)
 _arquivo_morto/

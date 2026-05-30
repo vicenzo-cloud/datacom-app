@@ -40,6 +40,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     shutil.copy2(caminho, bkp)
                 with open(caminho, 'w', encoding='utf-8') as f:
                     f.write(body)
+                # Backup diario versionado (1 por dia, na pasta Backups)
+                try:
+                    import datetime
+                    pasta_bkp = Path(__file__).parent / 'Backups'
+                    pasta_bkp.mkdir(exist_ok=True)
+                    hoje = datetime.date.today().isoformat()
+                    diario = pasta_bkp / ('dados_' + hoje + '.json')
+                    with open(diario, 'w', encoding='utf-8') as f:
+                        f.write(body)
+                    # Mantem apenas os 30 backups diarios mais recentes
+                    backups = sorted(pasta_bkp.glob('dados_*.json'))
+                    for antigo in backups[:-30]:
+                        antigo.unlink()
+                except Exception:
+                    pass
                 resp = _json.dumps({'ok': True}).encode('utf-8')
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json; charset=utf-8')

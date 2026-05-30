@@ -2687,8 +2687,8 @@ function renderSugestoes(){
     .catch(function(e){ alvo.innerHTML = '<div style="color:var(--red);padding:40px;text-align:center">Erro ao carregar dados: '+e.message+'</div>'; });
 }
 
+var _sugestoesData = [];
 function construirSugestoes(dados, alvo){
-  var brl = function(v){ return 'R$ '+(Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
   var sugestoes = [];
 
   Object.keys(dados).forEach(function(nome){
@@ -2748,6 +2748,7 @@ function construirSugestoes(dados, alvo){
   });
 
   sugestoes.sort(function(a,b){return b.prioridade - a.prioridade;});
+  _sugestoesData = sugestoes;
 
   var comprarAgora = sugestoes.filter(function(s){return s.tendencia==='SUBINDO';});
   var aguardar = sugestoes.filter(function(s){return s.tendencia==='CAINDO';});
@@ -2764,17 +2765,57 @@ function construirSugestoes(dados, alvo){
   html += '</div>';
 
   // Aviso
-  html += '<div style="background:var(--bg3);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin-bottom:20px;font-size:12px;color:var(--muted)">';
+  html += '<div style="background:var(--bg3);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:12px;color:var(--muted)">';
   html += '💡 <strong style="color:var(--text)">Como funciona:</strong> a quantidade sugerida = consumo mensal médio × (4 meses se preço subindo, 3 normal, 2 se caindo). O fornecedor indicado é o de menor preço médio histórico de cada item.';
   html += '</div>';
 
-  // Tabela
-  html += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  // Toolbar: busca + filtro + exportar
+  html += '<div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">';
+  html += '<input id="sug-busca" type="text" placeholder="🔎 Buscar item..." oninput="renderTabelaSugestoes()" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px">';
+  html += '<select id="sug-filtro" onchange="renderTabelaSugestoes()" style="padding:9px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px">';
+  html += '<option value="todos">Todas as recomendações</option><option value="SUBINDO">🔴 Comprar agora</option><option value="CAINDO">🟢 Pode aguardar</option><option value="ESTAVEL">🟡 Repor normal</option>';
+  html += '</select>';
+  html += '<button class="btn btn-secondary btn-sm" onclick="exportarSugestoes()" style="white-space:nowrap">⬇️ Exportar lista</button>';
+  html += '</div>';
+
+  html += '<div id="sug-tabela-wrap"></div>';
+
+  alvo.innerHTML = html;
+  renderTabelaSugestoes();
+
+  function card(lbl, val, cor, sub){
+    var h = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px">';
+    h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">'+lbl+'</div>';
+    h += '<div style="font-family:var(--serif);font-size:22px;font-weight:800;color:'+cor+'">'+val+'</div>';
+    h += '<div style="font-size:10px;color:var(--muted);margin-top:4px">'+sub+'</div>';
+    h += '</div>';
+    return h;
+  }
+}
+
+// Renderiza a tabela de sugestoes aplicando busca + filtro
+function renderTabelaSugestoes(){
+  var wrap = document.getElementById('sug-tabela-wrap');
+  if(!wrap) return;
+  var termo = (document.getElementById('sug-busca')||{}).value || '';
+  termo = termo.trim().toLowerCase();
+  var filtro = (document.getElementById('sug-filtro')||{}).value || 'todos';
+
+  var lista = _sugestoesData.filter(function(s){
+    if(filtro!=='todos' && s.tendencia!==filtro) return false;
+    if(termo && s.nome.toLowerCase().indexOf(termo)<0 && (s.melhorForn||'').toLowerCase().indexOf(termo)<0) return false;
+    return true;
+  });
+
+  var html = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
   html += '<thead><tr style="border-bottom:2px solid var(--border);text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase">';
   html += '<th style="padding:10px 8px">Item</th><th style="padding:10px 8px">Recomendação</th><th style="padding:10px 8px;text-align:right">Consumo/mês</th><th style="padding:10px 8px;text-align:right">Comprar</th><th style="padding:10px 8px">Melhor Fornecedor</th><th style="padding:10px 8px;text-align:right">Preço</th><th style="padding:10px 8px;text-align:right">Economia</th>';
   html += '</tr></thead><tbody>';
 
-  sugestoes.slice(0, 50).forEach(function(s){
+  if(!lista.length){
+    html += '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--muted)">Nenhum item encontrado.</td></tr>';
+  }
+  lista.slice(0, 80).forEach(function(s){
     var badge, cor;
     if(s.tendencia==='SUBINDO'){ badge='🔴 COMPRE AGORA'; cor='var(--red)'; }
     else if(s.tendencia==='CAINDO'){ badge='🟢 AGUARDE'; cor='var(--green)'; }
@@ -2791,18 +2832,55 @@ function construirSugestoes(dados, alvo){
     html += '</tr>';
   });
   html += '</tbody></table>';
-  if(sugestoes.length > 50) html += '<div style="text-align:center;color:var(--muted);font-size:11px;margin-top:12px">Mostrando os 50 itens de maior prioridade de '+sugestoes.length+' analisados</div>';
+  html += '<div style="text-align:center;color:var(--muted);font-size:11px;margin-top:12px">'+lista.length+' itens'+(lista.length>80?' (mostrando os 80 primeiros)':'')+'</div>';
+  wrap.innerHTML = html;
+}
 
-  alvo.innerHTML = html;
+// Exporta a lista de sugestoes (respeitando o filtro atual) para CSV na pasta Relatorios
+function exportarSugestoes(){
+  var filtro = (document.getElementById('sug-filtro')||{}).value || 'todos';
+  var termo = ((document.getElementById('sug-busca')||{}).value||'').trim().toLowerCase();
+  var lista = _sugestoesData.filter(function(s){
+    if(filtro!=='todos' && s.tendencia!==filtro) return false;
+    if(termo && s.nome.toLowerCase().indexOf(termo)<0 && (s.melhorForn||'').toLowerCase().indexOf(termo)<0) return false;
+    return true;
+  });
+  if(!lista.length){ toast('Nada para exportar','error'); return; }
 
-  function card(lbl, val, cor, sub){
-    var h = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px">';
-    h += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">'+lbl+'</div>';
-    h += '<div style="font-family:var(--serif);font-size:22px;font-weight:800;color:'+cor+'">'+val+'</div>';
-    h += '<div style="font-size:10px;color:var(--muted);margin-top:4px">'+sub+'</div>';
-    h += '</div>';
-    return h;
-  }
+  var nomeRec = {SUBINDO:'Comprar agora', CAINDO:'Pode aguardar', ESTAVEL:'Repor normal'};
+  var csv = 'LISTA DE COMPRAS SUGERIDA\n';
+  csv += 'Gerado em: '+new Date().toLocaleString('pt-BR')+'\n';
+  csv += 'Baseado em 18 meses de historico\n\n';
+  csv += 'Item;Recomendacao;Variacao Preco %;Consumo Mensal;Qtd a Comprar;Melhor Fornecedor;Preco Unit;Investimento;Economia\n';
+  lista.forEach(function(s){
+    csv += [
+      '"'+s.nome.replace(/"/g,"'")+'"',
+      nomeRec[s.tendencia]||s.tendencia,
+      s.tendPct.toFixed(0)+'%',
+      s.consumoMes.toFixed(1),
+      s.qtdSugerida,
+      '"'+(s.melhorForn||'').replace(/"/g,"'")+'"',
+      s.melhorPreco.toFixed(2),
+      s.investimento.toFixed(2),
+      s.economiaTotal.toFixed(2)
+    ].join(';')+'\n';
+  });
+  var totInv = lista.reduce(function(a,s){return a+s.investimento;},0);
+  var totEco = lista.reduce(function(a,s){return a+s.economiaTotal;},0);
+  csv += '\nTOTAL;;;;;;;'+totInv.toFixed(2)+';'+totEco.toFixed(2)+'\n';
+
+  var nome = 'lista-compras-'+new Date().toISOString().slice(0,10)+'-'+new Date().getTime()+'.csv';
+  fetch('/save-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:nome, content:csv})})
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.ok){ toast('Lista salva na pasta Relatorios!'); alert('✅ Lista de compras salva em:\n\n'+res.path); }
+      else { toast('Erro ao salvar: '+res.erro,'error'); }
+    })
+    .catch(function(){
+      var blob = new Blob([csv],{type:'text/csv'}); var url=window.URL.createObjectURL(blob);
+      var a=document.createElement('a'); a.href=url; a.download=nome; document.body.appendChild(a); a.click();
+      window.URL.revokeObjectURL(url); document.body.removeChild(a); toast('Lista baixada (Downloads)');
+    });
 }
 
 // ── EXPORTAR PDF ──
