@@ -2198,27 +2198,21 @@ function discardNFAudit(idx){
 }
 
 function deleteNFAudit(idx){
-  console.log('🗑️ deleteNFAudit idx='+idx, 'antes S.nfs.length='+S.nfs.length);
+  if(idx==null || idx<0 || idx>=S.nfs.length){ toast('❌ NF não encontrada','error'); return; }
   var nfNum = S.nfs[idx].numero;
-  var nfValor = S.nfs[idx].valor;
+  var nfValor = Number(S.nfs[idx].valor)||0;
   var nfsAntes = S.nfs.length;
 
-  // Remove de S.nfs
+  // Remove a NF pela posição
   S.nfs.splice(idx, 1);
   var nfsDepois = S.nfs.length;
-
-  // Salva no localStorage
   persist();
 
-  // Verifica se foi realmente removida do sistema
-  var nfAindaExiste = S.nfs.some(function(n){ return n.numero === nfNum; });
-
-  console.log('🗑️ depois S.nfs.length='+nfsDepois+', NF ainda existe: '+nfAindaExiste);
-
-  if(nfsDepois < nfsAntes && !nfAindaExiste){
-    toast('✅ NF '+nfNum+' (R$ '+nfValor.toFixed(2)+') DELETADA do sistema! Restam: '+nfsDepois+' NFs');
+  // Sucesso = a lista diminuiu de tamanho (numeros podem repetir entre duplicatas)
+  if(nfsDepois < nfsAntes){
+    toast('✅ NF '+nfNum+' (R$ '+nfValor.toFixed(2)+') removida. Restam '+nfsDepois+' NFs.');
   } else {
-    toast('❌ Erro ao deletar NF do sistema!', 'error');
+    toast('❌ Erro ao remover a NF','error');
   }
 
   runAuditoria();
