@@ -2716,6 +2716,21 @@ function mudarUnidadeSugestao(){
   construirSugestoes((_dadosPorUnidade && _dadosPorUnidade[u]) || {}, document.getElementById('sug-corpo'));
 }
 
+// Detecta a unidade/embalagem de compra a partir do nome do item
+function unidadeCompra(nome){
+  var n = (nome||'').toUpperCase();
+  var m;
+  // Pacote com N unidades: "PCT C/-50UN", "C/ 50 UN", "CX C/100", "PACOTE 50"
+  m = n.match(/C\/\s*-?\s*(\d+)\s*UN/) || n.match(/PCT[^0-9]*(\d+)/) || n.match(/PACOTE[^0-9]*(\d+)/) || n.match(/CX[^0-9]*C\/?\s*(\d+)/);
+  if(m && +m[1]>1) return {fator:+m[1], rotulo:'pacote(s) c/'+m[1]};
+  // Rolo/metragem so para cabos/fios: "305M", "100M", "500MT", "1500 M"
+  if(/CABO|FIO|CORDOALHA/.test(n)){
+    m = n.match(/(\d{2,5})\s*M(?:T|ETROS?)?\b/);
+    if(m && +m[1]>=50) return {fator:+m[1], rotulo:'rolo(s) '+m[1]+'m'};
+  }
+  return {fator:1, rotulo:'un'};
+}
+
 var _sugestoesData = [];
 function construirSugestoes(dados, alvo){
   var sugestoes = [];
@@ -2773,7 +2788,12 @@ function construirSugestoes(dados, alvo){
 
     // Gasto medio por mes em R$ (independe da unidade: metro, pacote, peca)
     var gastoMes = (it.valor_total||0) / globalMeses;
-    // Quantidade de 1 mes (referencia; pode estar em unidade inconsistente)
+    // Quantidade/mes na unidade nativa = gasto / preco unitario
+    var precoUnitRef = (it.preco_medio||0);
+    var qtdMes = precoUnitRef>0 ? gastoMes/precoUnitRef : 0;
+    // Converte para unidade de compra real (rolo, pacote) detectada no nome
+    var emb = unidadeCompra(nome);
+    var qtdComprar = Math.max(1, Math.round(qtdMes / emb.fator));
     var qtdSugerida = Math.max(1, Math.round(consumoMes));
 
     // Economia mensal: % de diferenca do melhor fornecedor vs preco medio, aplicado ao gasto
@@ -2788,7 +2808,8 @@ function construirSugestoes(dados, alvo){
     sugestoes.push({
       nome: nome, consumoMes: consumoMes, gastoMes: gastoMes, tendencia: tendencia, tendPct: tendPct,
       melhorForn: melhorForn, melhorPreco: melhorPreco, precoMedio: precoMed,
-      qtdSugerida: qtdSugerida, economiaMes: economiaMes, economiaPct: economiaPct,
+      qtdSugerida: qtdSugerida, qtdMes: qtdMes, qtdComprar: qtdComprar, embRotulo: emb.rotulo,
+      economiaMes: economiaMes, economiaPct: economiaPct,
       prioridade: prioridade, qtdCompras: it.quantidade_compras||0
     });
   });
@@ -2855,11 +2876,11 @@ function renderTabelaSugestoes(){
 
   var html = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
   html += '<thead><tr style="border-bottom:2px solid var(--border);text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase">';
-  html += '<th style="padding:10px 8px">Item</th><th style="padding:10px 8px">Recomendação</th><th style="padding:10px 8px;text-align:right">Gasto/mês</th><th style="padding:10px 8px">Melhor Fornecedor</th><th style="padding:10px 8px;text-align:right">Preço unit.</th><th style="padding:10px 8px;text-align:right">Economia/mês</th>';
+  html += '<th style="padding:10px 8px">Item</th><th style="padding:10px 8px">Recomendação</th><th style="padding:10px 8px;text-align:right">Gasto/mês</th><th style="padding:10px 8px;text-align:right">Comprar/mês</th><th style="padding:10px 8px">Melhor Fornecedor</th><th style="padding:10px 8px;text-align:right">Preço unit.</th><th style="padding:10px 8px;text-align:right">Economia/mês</th>';
   html += '</tr></thead><tbody>';
 
   if(!lista.length){
-    html += '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--muted)">Nenhum item encontrado.</td></tr>';
+    html += '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--muted)">Nenhum item encontrado.</td></tr>';
   }
   lista.slice(0, 80).forEach(function(s){
     var badge, cor;
@@ -2871,6 +2892,7 @@ function renderTabelaSugestoes(){
     html += '<td style="padding:10px 8px;color:var(--text)">'+s.nome+'</td>';
     html += '<td style="padding:10px 8px"><span style="color:'+cor+';font-weight:bold">'+badge+'</span><br><span style="font-size:10px;color:var(--muted)">'+seta+' '+Math.abs(s.tendPct).toFixed(0)+'% no preço</span></td>';
     html += '<td style="padding:10px 8px;text-align:right;color:var(--text);font-weight:bold">'+brl(s.gastoMes)+'</td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:var(--text)">'+s.qtdComprar.toLocaleString("pt-BR")+'<br><span style="font-size:9px;color:var(--muted)">'+s.embRotulo+'</span></td>';
     html += '<td style="padding:10px 8px;color:var(--muted);font-size:11px">'+(s.melhorForn||'—')+'</td>';
     html += '<td style="padding:10px 8px;text-align:right;color:var(--muted)">'+brl(s.melhorPreco)+'</td>';
     html += '<td style="padding:10px 8px;text-align:right;color:'+(s.economiaMes>0?'var(--accent)':'var(--muted)')+'">'+(s.economiaMes>0?brl(s.economiaMes):'—')+'</td>';
@@ -2899,13 +2921,15 @@ function exportarSugestoes(){
   var csv = 'LISTA DE COMPRAS SUGERIDA\n';
   csv += 'Unidade de negocio: '+unidadeLabel+'\n';
   csv += 'Gerado em: '+new Date().toLocaleString('pt-BR')+'\n\n';
-  csv += 'Item;Recomendacao;Variacao Preco %;Gasto Mensal R$;Melhor Fornecedor;Preco Unit;Economia Mensal R$\n';
+  csv += 'Item;Recomendacao;Variacao Preco %;Gasto Mensal R$;Comprar/mes;Unidade;Melhor Fornecedor;Preco Unit;Economia Mensal R$\n';
   lista.forEach(function(s){
     csv += [
       '"'+s.nome.replace(/"/g,"'")+'"',
       nomeRec[s.tendencia]||s.tendencia,
       s.tendPct.toFixed(0)+'%',
       s.gastoMes.toFixed(2),
+      s.qtdComprar,
+      '"'+s.embRotulo+'"',
       '"'+(s.melhorForn||'').replace(/"/g,"'")+'"',
       s.melhorPreco.toFixed(2),
       s.economiaMes.toFixed(2)
@@ -2913,7 +2937,7 @@ function exportarSugestoes(){
   });
   var totGasto = lista.reduce(function(a,s){return a+s.gastoMes;},0);
   var totEco = lista.reduce(function(a,s){return a+s.economiaMes;},0);
-  csv += '\nTOTAL;;;'+totGasto.toFixed(2)+';;;'+totEco.toFixed(2)+'\n';
+  csv += '\nTOTAL;;;'+totGasto.toFixed(2)+';;;;;'+totEco.toFixed(2)+'\n';
 
   var nome = 'lista-compras-'+unidadeSlug+'-'+new Date().toISOString().slice(0,10)+'-'+new Date().getTime()+'.csv';
   fetch('/save-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:nome, content:csv})})
