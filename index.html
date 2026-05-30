@@ -2720,6 +2720,11 @@ var _sugestoesData = [];
 function construirSugestoes(dados, alvo){
   var sugestoes = [];
 
+  // Numero total de meses do periodo (para gasto medio mensal real)
+  var mesesSet = {};
+  Object.keys(dados).forEach(function(nome){ (dados[nome].serie_temporal||[]).forEach(function(m){ if(m.mes) mesesSet[m.mes]=1; }); });
+  var globalMeses = Math.max(1, Object.keys(mesesSet).length);
+
   Object.keys(dados).forEach(function(nome){
     var it = dados[nome];
     var st = it.serie_temporal || [];
@@ -2766,22 +2771,24 @@ function construirSugestoes(dados, alvo){
     }
     if(melhorPreco<=0) melhorPreco = it.preco_medio || 0;
 
-    // Quanto comprar: consumo de 1 mes (media mensal)
+    // Gasto medio por mes em R$ (independe da unidade: metro, pacote, peca)
+    var gastoMes = (it.valor_total||0) / globalMeses;
+    // Quantidade de 1 mes (referencia; pode estar em unidade inconsistente)
     var qtdSugerida = Math.max(1, Math.round(consumoMes));
 
-    // Economia ao comprar do melhor fornecedor vs preco medio
-    var economiaUnit = Math.max(0, (it.preco_medio||0) - melhorPreco);
-    var economiaTotal = economiaUnit * qtdSugerida;
-    var investimento = melhorPreco * qtdSugerida;
+    // Economia mensal: % de diferenca do melhor fornecedor vs preco medio, aplicado ao gasto
+    var precoMed = it.preco_medio||0;
+    var economiaPct = precoMed>0 ? Math.max(0,(precoMed - melhorPreco)/precoMed) : 0;
+    var economiaMes = gastoMes * economiaPct;
 
-    // Prioridade: frequencia x urgencia de preco (boost limitado a 1.5x)
+    // Prioridade: gasto mensal x urgencia de preco (boost limitado a 1.5x)
     var boost = tendencia==='SUBINDO' ? (1 + Math.min(tendPct,50)/100) : tendencia==='CAINDO' ? 0.5 : 1;
-    var prioridade = consumoMes * boost;
+    var prioridade = gastoMes * boost;
 
     sugestoes.push({
-      nome: nome, consumoMes: consumoMes, tendencia: tendencia, tendPct: tendPct,
-      melhorForn: melhorForn, melhorPreco: melhorPreco, precoMedio: it.preco_medio||0,
-      qtdSugerida: qtdSugerida, economiaTotal: economiaTotal, investimento: investimento,
+      nome: nome, consumoMes: consumoMes, gastoMes: gastoMes, tendencia: tendencia, tendPct: tendPct,
+      melhorForn: melhorForn, melhorPreco: melhorPreco, precoMedio: precoMed,
+      qtdSugerida: qtdSugerida, economiaMes: economiaMes, economiaPct: economiaPct,
       prioridade: prioridade, qtdCompras: it.quantidade_compras||0
     });
   });
@@ -2791,21 +2798,21 @@ function construirSugestoes(dados, alvo){
 
   var comprarAgora = sugestoes.filter(function(s){return s.tendencia==='SUBINDO';});
   var aguardar = sugestoes.filter(function(s){return s.tendencia==='CAINDO';});
-  var economiaPotencial = sugestoes.reduce(function(s,x){return s+x.economiaTotal;},0);
-  var investimentoTotal = sugestoes.reduce(function(s,x){return s+x.investimento;},0);
+  var gastoMensalTotal = sugestoes.reduce(function(s,x){return s+x.gastoMes;},0);
+  var economiaMensal = sugestoes.reduce(function(s,x){return s+x.economiaMes;},0);
 
   var html = '';
   // Cards resumo
   html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">';
-  html += card('Itens Analisados', sugestoes.length, 'var(--text)', '18 meses de histórico');
-  html += card('🔴 Comprar Agora', comprarAgora.length, 'var(--red)', 'preço subindo — estoque já');
-  html += card('🟢 Pode Aguardar', aguardar.length, 'var(--green)', 'preço caindo');
-  html += card('Economia Potencial', brl(economiaPotencial), 'var(--accent)', 'comprando do melhor fornecedor');
+  html += card('Itens Analisados', sugestoes.length, 'var(--text)', 'no período');
+  html += card('Gasto Médio / Mês', brl(gastoMensalTotal), 'var(--text)', 'soma de todos os itens');
+  html += card('🔴 Comprar Agora', comprarAgora.length, 'var(--red)', 'preço subindo');
+  html += card('Economia / Mês', brl(economiaMensal), 'var(--accent)', 'comprando do melhor fornecedor');
   html += '</div>';
 
   // Aviso
   html += '<div style="background:var(--bg3);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:12px;color:var(--muted)">';
-  html += '💡 <strong style="color:var(--text)">Como funciona:</strong> a quantidade sugerida = consumo médio de <strong>1 mês</strong>. O fornecedor indicado é o de menor preço entre os de volume relevante (compras recorrentes).';
+  html += '💡 <strong style="color:var(--text)">Como funciona:</strong> mostra o <strong>gasto médio mensal em R$</strong> de cada item (valor é confiável; a quantidade varia conforme a unidade — metro, pacote, peça). O fornecedor indicado é o de menor preço entre os de volume relevante.';
   html += '</div>';
 
   // Toolbar: busca + filtro + exportar
@@ -2848,11 +2855,11 @@ function renderTabelaSugestoes(){
 
   var html = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
   html += '<thead><tr style="border-bottom:2px solid var(--border);text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase">';
-  html += '<th style="padding:10px 8px">Item</th><th style="padding:10px 8px">Recomendação</th><th style="padding:10px 8px;text-align:right">Consumo/mês</th><th style="padding:10px 8px;text-align:right">Comprar</th><th style="padding:10px 8px">Melhor Fornecedor</th><th style="padding:10px 8px;text-align:right">Preço</th><th style="padding:10px 8px;text-align:right">Economia</th>';
+  html += '<th style="padding:10px 8px">Item</th><th style="padding:10px 8px">Recomendação</th><th style="padding:10px 8px;text-align:right">Gasto/mês</th><th style="padding:10px 8px">Melhor Fornecedor</th><th style="padding:10px 8px;text-align:right">Preço unit.</th><th style="padding:10px 8px;text-align:right">Economia/mês</th>';
   html += '</tr></thead><tbody>';
 
   if(!lista.length){
-    html += '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--muted)">Nenhum item encontrado.</td></tr>';
+    html += '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--muted)">Nenhum item encontrado.</td></tr>';
   }
   lista.slice(0, 80).forEach(function(s){
     var badge, cor;
@@ -2863,11 +2870,10 @@ function renderTabelaSugestoes(){
     html += '<tr style="border-bottom:1px solid var(--border)">';
     html += '<td style="padding:10px 8px;color:var(--text)">'+s.nome+'</td>';
     html += '<td style="padding:10px 8px"><span style="color:'+cor+';font-weight:bold">'+badge+'</span><br><span style="font-size:10px;color:var(--muted)">'+seta+' '+Math.abs(s.tendPct).toFixed(0)+'% no preço</span></td>';
-    html += '<td style="padding:10px 8px;text-align:right;color:var(--muted)">'+s.consumoMes.toFixed(1)+' un</td>';
-    html += '<td style="padding:10px 8px;text-align:right;color:var(--text);font-weight:bold">'+s.qtdSugerida+' un</td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:var(--text);font-weight:bold">'+brl(s.gastoMes)+'</td>';
     html += '<td style="padding:10px 8px;color:var(--muted);font-size:11px">'+(s.melhorForn||'—')+'</td>';
-    html += '<td style="padding:10px 8px;text-align:right;color:var(--text)">'+brl(s.melhorPreco)+'</td>';
-    html += '<td style="padding:10px 8px;text-align:right;color:'+(s.economiaTotal>0?'var(--accent)':'var(--muted)')+'">'+(s.economiaTotal>0?brl(s.economiaTotal):'—')+'</td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:var(--muted)">'+brl(s.melhorPreco)+'</td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:'+(s.economiaMes>0?'var(--accent)':'var(--muted)')+'">'+(s.economiaMes>0?brl(s.economiaMes):'—')+'</td>';
     html += '</tr>';
   });
   html += '</tbody></table>';
@@ -2893,23 +2899,21 @@ function exportarSugestoes(){
   var csv = 'LISTA DE COMPRAS SUGERIDA\n';
   csv += 'Unidade de negocio: '+unidadeLabel+'\n';
   csv += 'Gerado em: '+new Date().toLocaleString('pt-BR')+'\n\n';
-  csv += 'Item;Recomendacao;Variacao Preco %;Consumo Mensal;Qtd a Comprar;Melhor Fornecedor;Preco Unit;Investimento;Economia\n';
+  csv += 'Item;Recomendacao;Variacao Preco %;Gasto Mensal R$;Melhor Fornecedor;Preco Unit;Economia Mensal R$\n';
   lista.forEach(function(s){
     csv += [
       '"'+s.nome.replace(/"/g,"'")+'"',
       nomeRec[s.tendencia]||s.tendencia,
       s.tendPct.toFixed(0)+'%',
-      s.consumoMes.toFixed(1),
-      s.qtdSugerida,
+      s.gastoMes.toFixed(2),
       '"'+(s.melhorForn||'').replace(/"/g,"'")+'"',
       s.melhorPreco.toFixed(2),
-      s.investimento.toFixed(2),
-      s.economiaTotal.toFixed(2)
+      s.economiaMes.toFixed(2)
     ].join(';')+'\n';
   });
-  var totInv = lista.reduce(function(a,s){return a+s.investimento;},0);
-  var totEco = lista.reduce(function(a,s){return a+s.economiaTotal;},0);
-  csv += '\nTOTAL;;;;;;;'+totInv.toFixed(2)+';'+totEco.toFixed(2)+'\n';
+  var totGasto = lista.reduce(function(a,s){return a+s.gastoMes;},0);
+  var totEco = lista.reduce(function(a,s){return a+s.economiaMes;},0);
+  csv += '\nTOTAL;;;'+totGasto.toFixed(2)+';;;'+totEco.toFixed(2)+'\n';
 
   var nome = 'lista-compras-'+unidadeSlug+'-'+new Date().toISOString().slice(0,10)+'-'+new Date().getTime()+'.csv';
   fetch('/save-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:nome, content:csv})})
