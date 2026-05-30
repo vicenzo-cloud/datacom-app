@@ -2766,9 +2766,8 @@ function construirSugestoes(dados, alvo){
     }
     if(melhorPreco<=0) melhorPreco = it.preco_medio || 0;
 
-    // Quanto comprar: 3 meses de estoque (mais se subindo, menos se caindo)
-    var fator = tendencia==='SUBINDO' ? 4 : tendencia==='CAINDO' ? 2 : 3;
-    var qtdSugerida = Math.max(1, Math.round(consumoMes * fator));
+    // Quanto comprar: consumo de 1 mes (media mensal)
+    var qtdSugerida = Math.max(1, Math.round(consumoMes));
 
     // Economia ao comprar do melhor fornecedor vs preco medio
     var economiaUnit = Math.max(0, (it.preco_medio||0) - melhorPreco);
@@ -2806,7 +2805,7 @@ function construirSugestoes(dados, alvo){
 
   // Aviso
   html += '<div style="background:var(--bg3);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:12px;color:var(--muted)">';
-  html += '💡 <strong style="color:var(--text)">Como funciona:</strong> a quantidade sugerida = consumo mensal médio × (4 meses se preço subindo, 3 normal, 2 se caindo). O fornecedor indicado é o de menor preço médio histórico de cada item.';
+  html += '💡 <strong style="color:var(--text)">Como funciona:</strong> a quantidade sugerida = consumo médio de <strong>1 mês</strong>. O fornecedor indicado é o de menor preço entre os de volume relevante (compras recorrentes).';
   html += '</div>';
 
   // Toolbar: busca + filtro + exportar
