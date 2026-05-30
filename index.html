@@ -642,7 +642,7 @@ function chartOpts(){return {responsive:true,maintainAspectRatio:false,plugins:{
 function saveProject(){
   const nome=document.getElementById('p-nome').value.trim();
   if(!nome){toast('Nome obrigatório','error');return;}
-  S.projects.push({id:uid(),nome,desc:document.getElementById('p-desc').value.trim(),cliente:document.getElementById('p-cliente').value.trim(),data:document.getElementById('p-data').value,items:[],services:[]});
+  S.projects.push({id:uid(),nome,desc:document.getElementById('p-desc').value.trim(),cliente:document.getElementById('p-cliente').value.trim(),data:document.getElementById('p-data').value,criadoEm:new Date().toISOString(),items:[],services:[]});
   persist();closeModal('modal-proj');
   ['p-nome','p-desc','p-cliente','p-data'].forEach(function(id){document.getElementById(id).value='';});
   renderAll();toast('Projeto criado!');
@@ -2313,6 +2313,15 @@ var _lsTime = (S && S._savedAt) ? S._savedAt : 0;
   }
 })();
 
+// Backfill: registra data de inserção para projetos que ainda não têm
+(function(){
+  var mudou=false;
+  S.projects.forEach(function(p){
+    if(!p.criadoEm){ p.criadoEm = new Date().toISOString(); mudou=true; }
+  });
+  if(mudou) persist();
+})();
+
 // Migrate old keys
 (function(){
   ['dc_v4','dc_v3','datacom_v2'].forEach(function(key){
@@ -2658,17 +2667,31 @@ function renderComprasDash(){
 
 // ── RENDER TIMELINE ──
 function renderTimeline(){
+  // Backfill: garante data de inserção (registra a partir de agora se faltar)
+  var precisaSalvar=false;
+  S.projects.forEach(function(p){ if(!p.criadoEm){ p.criadoEm=new Date().toISOString(); precisaSalvar=true; } });
+  if(precisaSalvar) persist();
+
   var timeline = [];
   S.projects.forEach(function(p){
     timeline.push({
       nome:p.nome,
       data:p.data,
+      criadoEm:p.criadoEm||'',
       itens:(p.items||[]).length,
       valor:(p.items||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0),
       tipo:'projeto'
     });
   });
-  timeline.sort(function(a,b){return new Date(b.data||'2025-01-01') - new Date(a.data||'2025-01-01');});
+  // Ordena pela data de inserção no app (mais recente primeiro)
+  timeline.sort(function(a,b){return new Date(b.criadoEm||0) - new Date(a.criadoEm||0);});
+
+  var fmtIns = function(iso){
+    if(!iso) return 'não registrado';
+    var d = new Date(iso);
+    if(isNaN(d)) return 'não registrado';
+    return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  };
 
   var html = '<div style="max-width:800px">';
   timeline.forEach(function(t,i){
@@ -2679,7 +2702,8 @@ function renderTimeline(){
     html += '</div>';
     html += '<div style="flex:1;margin-left:20px;background:var(--bg2);border-radius:8px;padding:16px;border:1px solid var(--border)">';
     html += '<div style="font-weight:bold;font-size:14px;margin-bottom:4px">'+t.nome+'</div>';
-    html += '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+(t.data||'Data não definida')+'</div>';
+    html += '<div style="font-size:11px;color:var(--accent);margin-bottom:4px">🗓️ Adicionado no app: '+fmtIns(t.criadoEm)+'</div>';
+    if(t.data) html += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Data do projeto: '+t.data+'</div>';
     html += '<div style="font-size:11px;color:var(--muted)">'+t.itens+' itens | Total: R$ '+(t.valor||0).toFixed(2)+'</div>';
     html += '</div>';
     html += '</div>';
