@@ -2746,14 +2746,25 @@ function construirSugestoes(dados, alvo){
       else if(tendPct < -5) tendencia = 'CAINDO';
     }
 
-    // Melhor fornecedor (menor preco medio)
-    var melhorForn = '', melhorPreco = it.preco_medio || 0;
+    // Melhor fornecedor: menor preco APENAS entre fornecedores com volume
+    // relevante (>=10% do total), pra evitar compras unicas com preco furado.
+    var melhorForn = '', melhorPreco = 0;
     if(it.fornecedores){
-      Object.keys(it.fornecedores).forEach(function(f){
-        var fp = it.fornecedores[f].preco_medio;
-        if(fp > 0 && (melhorForn==='' || fp < melhorPreco)){ melhorPreco = fp; melhorForn = f; }
+      var fornNomes = Object.keys(it.fornecedores);
+      var totalQtdForn = fornNomes.reduce(function(s,f){return s+(it.fornecedores[f].qtd||0);},0);
+      fornNomes.forEach(function(f){
+        var info = it.fornecedores[f];
+        var fp = info.preco_medio;
+        var relevante = totalQtdForn>0 ? (info.qtd||0) >= totalQtdForn*0.1 : true;
+        if(fp > 0 && relevante && (melhorForn==='' || fp < melhorPreco)){ melhorPreco = fp; melhorForn = f; }
       });
+      // Fallback: se nenhum fornecedor com volume, usa o de maior quantidade
+      if(melhorForn===''){
+        var maxQ = -1;
+        fornNomes.forEach(function(f){ if((it.fornecedores[f].qtd||0) > maxQ){ maxQ = it.fornecedores[f].qtd||0; melhorForn = f; melhorPreco = it.fornecedores[f].preco_medio; } });
+      }
     }
+    if(melhorPreco<=0) melhorPreco = it.preco_medio || 0;
 
     // Quanto comprar: 3 meses de estoque (mais se subindo, menos se caindo)
     var fator = tendencia==='SUBINDO' ? 4 : tendencia==='CAINDO' ? 2 : 3;
