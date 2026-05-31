@@ -1344,28 +1344,53 @@ function detectAnomalies(nfs){
   // 1. Duplicatas
   const dupeMap={};nfs.forEach(function(n){const k=n.numero+'|'+n.valor;if(!dupeMap[k])dupeMap[k]=[];dupeMap[k].push(n);});
   const dupes=Object.values(dupeMap).filter(function(g){return g.length>1;});
-  if(dupes.length){results.push({type:'danger',sev:'high',icon:'⚠',title:'Possíveis NFs duplicadas',sub:dupes.length+' grupos com mesmo número e valor',detail:'Verifique se essas notas foram lançadas em duplicidade. Pode indicar pagamento duplo ou erro de importação.',items:dupes.slice(0,5).map(function(g){return 'NF '+g[0].numero+' — '+g[0].fornecedor+' — '+brl(g[0].valor)+' × '+g.length+'x';})});}
+  if(dupes.length){var dupNfs=[];dupes.forEach(function(g){g.forEach(function(n){dupNfs.push(n);});});results.push({type:'danger',sev:'high',icon:'⚠',title:'Possíveis NFs duplicadas',sub:dupes.length+' grupos com mesmo número e valor',detail:'Verifique se essas notas foram lançadas em duplicidade. Pode indicar pagamento duplo ou erro de importação.',nfsRel:dupNfs,items:dupes.slice(0,5).map(function(g){return 'NF '+g[0].numero+' — '+g[0].fornecedor+' — '+brl(g[0].valor)+' × '+g.length+'x';})});}
 
   // 2. Outliers
   const outliers=nfs.filter(function(n){return n.valor>threshold;}).sort(function(a,b){return b.valor-a.valor;});
-  if(outliers.length){results.push({type:'warn',sev:'med',icon:'📈',title:'Valores muito acima da média',sub:'Média: '+brl(mean)+' · Limiar: '+brl(threshold),detail:'Estes valores são estatisticamente incomuns (>3 desvios padrão). Verifique se são compras planejadas ou erros de lançamento.',items:outliers.slice(0,5).map(function(n){return 'NF '+n.numero+' — '+n.fornecedor+' — '+brl(n.valor);})});}
+  if(outliers.length){results.push({type:'warn',sev:'med',icon:'📈',title:'Valores muito acima da média',sub:'Média: '+brl(mean)+' · Limiar: '+brl(threshold),detail:'Estes valores são estatisticamente incomuns (>3 desvios padrão). Verifique se são compras planejadas ou erros de lançamento.',nfsRel:outliers,items:outliers.slice(0,5).map(function(n){return 'NF '+n.numero+' — '+n.fornecedor+' — '+brl(n.valor);})});}
 
   // 3. Sem categoria
   const semCat=nfs.filter(function(n){return !n.obs||n.obs==='nan'||n.obs==='-';});
-  if(semCat.length){results.push({type:'info',sev:'low',icon:'🏷',title:'NFs sem categoria',sub:semCat.length+' notas sem classificação ('+brl(semCat.reduce(function(s,n){return s+n.valor;},0))+')',detail:'Classifique estas NFs para melhorar a análise por categoria e facilitar a gestão de custos.',items:semCat.slice(0,4).map(function(n){return 'NF '+n.numero+' — '+n.fornecedor+' — '+brl(n.valor);})});}
+  if(semCat.length){results.push({type:'info',sev:'low',icon:'🏷',title:'NFs sem categoria',sub:semCat.length+' notas sem classificação ('+brl(semCat.reduce(function(s,n){return s+n.valor;},0))+')',detail:'Classifique estas NFs para melhorar a análise por categoria e facilitar a gestão de custos.',nfsRel:semCat,items:semCat.slice(0,4).map(function(n){return 'NF '+n.numero+' — '+n.fornecedor+' — '+brl(n.valor);})});}
 
   // 4. Fornecedor alta frequência
   const fornCount={};nfs.forEach(function(n){fornCount[n.fornecedor]=(fornCount[n.fornecedor]||0)+1;});
   const topForn=Object.entries(fornCount).sort(function(a,b){return b[1]-a[1];})[0];
-  if(topForn&&topForn[1]>20){const fornVal=nfs.filter(function(n){return n.fornecedor===topForn[0];}).reduce(function(s,n){return s+n.valor;},0);results.push({type:'info',sev:'low',icon:'🔁',title:'Fornecedor com alta frequência',sub:topForn[0]+' aparece '+topForn[1]+'x — Total: '+brl(fornVal),detail:'Alta concentração em um único fornecedor pode indicar oportunidade de negociar desconto por volume ou formalizar contrato.',items:['Verifique se há condição especial ou contrato negociado','Considere formalizar um contrato para este fornecedor']});}
+  if(topForn&&topForn[1]>20){var fornNfs=nfs.filter(function(n){return n.fornecedor===topForn[0];});const fornVal=fornNfs.reduce(function(s,n){return s+n.valor;},0);results.push({type:'info',sev:'low',icon:'🔁',title:'Fornecedor com alta frequência',sub:topForn[0]+' aparece '+topForn[1]+'x — Total: '+brl(fornVal),detail:'Alta concentração em um único fornecedor pode indicar oportunidade de negociar desconto por volume ou formalizar contrato.',nfsRel:fornNfs,items:['Verifique se há condição especial ou contrato negociado','Considere formalizar um contrato para este fornecedor']});}
 
   // 5. Dia concentrado
   const dayMap={};nfs.forEach(function(n){if(n.data)dayMap[n.data]=(dayMap[n.data]||0)+n.valor;});
   const topDay=Object.entries(dayMap).sort(function(a,b){return b[1]-a[1];})[0];
-  if(topDay&&topDay[1]>50000){results.push({type:'warn',sev:'med',icon:'📅',title:'Dia com gasto muito concentrado',sub:topDay[0]+' — Total: '+brl(topDay[1]),detail:'Concentrar compras em um único dia pode dificultar o controle de aprovação. Verifique se houve autorização adequada.',items:['Verifique aprovações para as compras deste dia','Distribua compras ao longo do mês quando possível']});}
+  if(topDay&&topDay[1]>50000){var diaNfs=nfs.filter(function(n){return n.data===topDay[0];}).sort(function(a,b){return b.valor-a.valor;});results.push({type:'warn',sev:'med',icon:'📅',title:'Dia com gasto muito concentrado',sub:topDay[0]+' — Total: '+brl(topDay[1]),detail:'Concentrar compras em um único dia pode dificultar o controle de aprovação. Verifique se houve autorização adequada.',nfsRel:diaNfs,items:['Verifique aprovações para as compras deste dia','Distribua compras ao longo do mês quando possível']});}
 
   if(!results.length){results.push({type:'ok',sev:'ok',icon:'✓',title:'Nenhuma discrepância detectada',sub:'Os dados estão dentro dos padrões esperados',detail:'Continue monitorando regularmente para manter a saúde financeira.',items:[]});}
   return results;
+}
+
+// Monta a tabela com as NFs especificas que geraram o alerta
+function tabelaNFsAlerta(a){
+  var nfs = a.nfsRel||[];
+  if(!nfs.length) return '';
+  var lim = 100;
+  var mostra = nfs.slice(0, lim);
+  var h = '<div style="margin:6px 0 12px">';
+  h += '<div style="font-size:11px;color:var(--text);font-weight:bold;margin-bottom:6px">📋 Notas fiscais deste alerta ('+nfs.length+')</div>';
+  h += '<div style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:6px">';
+  h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  h += '<thead><tr style="position:sticky;top:0;background:var(--bg3);color:var(--muted);font-size:9px;text-transform:uppercase;text-align:left"><th style="padding:6px 8px">NF</th><th style="padding:6px 8px">Fornecedor</th><th style="padding:6px 8px">Data</th><th style="padding:6px 8px;text-align:right">Valor</th></tr></thead><tbody>';
+  mostra.forEach(function(n){
+    h += '<tr style="border-top:1px solid var(--border)">';
+    h += '<td style="padding:6px 8px;color:var(--text)">'+(n.numero||'—')+'</td>';
+    h += '<td style="padding:6px 8px;color:var(--muted)">'+((n.fornecedor||'—').length>34?(n.fornecedor||'').slice(0,34)+'…':(n.fornecedor||'—'))+'</td>';
+    h += '<td style="padding:6px 8px;color:var(--muted)">'+(n.data||'—')+'</td>';
+    h += '<td style="padding:6px 8px;text-align:right;color:var(--text)">'+brl(n.valor)+'</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+  if(nfs.length>lim) h += '<div style="font-size:10px;color:var(--muted);margin-top:4px">Mostrando as primeiras '+lim+' de '+nfs.length+' notas.</div>';
+  h += '</div>';
+  return h;
 }
 
 // ── INTEL TAB ──
@@ -1412,7 +1437,8 @@ function renderIntelTab(){
       +'</div>'
       +'<div class="fc-body" id="fcb-'+fid+'" style="display:'+(_intelExpanded[fid]?'block':'none')+'">'
       +(a.detail?'<div style="font-size:11px;color:var(--muted);margin:10px 0 12px;line-height:1.6">'+a.detail+'</div>':'')
-      +(a.items.length?'<div class="fc-items">'+a.items.map(function(i){return '<div class="fc-item">'+i+'</div>';}).join('')+'</div>':'')
+      +tabelaNFsAlerta(a)
+      +(!(a.nfsRel&&a.nfsRel.length)&&a.items.length?'<div class="fc-items">'+a.items.map(function(i){return '<div class="fc-item">'+i+'</div>';}).join('')+'</div>':'')
       +(fs.note?'<div class="fc-note-saved">📝 '+fs.note+'</div>':'')
       +'<input class="fc-note-inp" id="fnote-'+fid+'" placeholder="Adicionar anotação..." value="'+(fs.note||'').replace(/"/g,'&quot;')+'">'
       +'<div class="fc-actions">'
