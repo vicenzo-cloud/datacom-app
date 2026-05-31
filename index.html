@@ -644,8 +644,8 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeOut(e,id){if(e.target.id===id)closeModal(id);}
 function destroyChart(k){if(charts[k]){charts[k].destroy();delete charts[k];}}
 
-function tooltipOpts(){return {backgroundColor:'#1a1f1d',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8e4',bodyColor:'#6b7c72',titleFont:{family:"'IBM Plex Mono',monospace",size:11},bodyFont:{family:"'IBM Plex Mono',monospace",size:11},callbacks:{label:function(ctx){return ' '+brl(ctx.raw);}}};}
-function chartOpts(){return {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tooltipOpts()},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7c72',font:{size:10,family:"'IBM Plex Mono',monospace"},maxRotation:35}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7c72',font:{size:10,family:"'IBM Plex Mono',monospace"},callback:function(v){return 'R$'+(v/1000).toFixed(0)+'k';}}}}};}
+function tooltipOpts(){return {backgroundColor:'#1a1f1d',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8e4',bodyColor:'#aab3ae',titleFont:{family:"'IBM Plex Mono',monospace",size:11},bodyFont:{family:"'IBM Plex Mono',monospace",size:11},callbacks:{label:function(ctx){return ' '+brl(ctx.raw);}}};}
+function chartOpts(){return {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tooltipOpts()},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#aab3ae',font:{size:10,family:"'IBM Plex Mono',monospace"},maxRotation:35}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#aab3ae',font:{size:10,family:"'IBM Plex Mono',monospace"},callback:function(v){return 'R$'+(v/1000).toFixed(0)+'k';}}}}};}
 
 // ── PROJECT CRUD ──
 function saveProject(){
@@ -1079,9 +1079,9 @@ function renderDashboard(){
       data:{labels:hLabels,datasets:[{data:hVals,backgroundColor:'rgba(77,159,255,0.8)',borderRadius:4}]},
       options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{
         legend:{display:false},
-        tooltip:{backgroundColor:'#1a1f1d',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8e4',bodyColor:'#6b7c72',titleFont:{family:"'IBM Plex Mono',monospace",size:11},bodyFont:{family:"'IBM Plex Mono',monospace",size:11},callbacks:{label:function(ctx){return ' '+brl(ctx.raw)+' ('+(donutTotal>0?(ctx.raw/donutTotal*100).toFixed(1):0)+'%)';}}}
+        tooltip:{backgroundColor:'#1a1f1d',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8e4',bodyColor:'#aab3ae',titleFont:{family:"'IBM Plex Mono',monospace",size:11},bodyFont:{family:"'IBM Plex Mono',monospace",size:11},callbacks:{label:function(ctx){return ' '+brl(ctx.raw)+' ('+(donutTotal>0?(ctx.raw/donutTotal*100).toFixed(1):0)+'%)';}}}
       },scales:{
-        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7c72',font:{size:9,family:"'IBM Plex Mono',monospace"},callback:function(v){return 'R$'+(v/1000).toFixed(0)+'k';}}},
+        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#aab3ae',font:{size:9,family:"'IBM Plex Mono',monospace"},callback:function(v){return 'R$'+(v/1000).toFixed(0)+'k';}}},
         y:{grid:{display:false},ticks:{color:'#e2e8e4',font:{size:10,family:"'IBM Plex Mono',monospace"}}}
       }}});
   }
@@ -1322,15 +1322,15 @@ function renderNFGraficos(){
   destroyNFChart('cat');
   const catMap={};nfs.forEach(function(n){const k=n.obs||'Sem categoria';catMap[k]=(catMap[k]||0)+n.valor;});
   const catSorted=Object.entries(catMap).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
-  nfCharts['cat']=new Chart(document.getElementById('nf-chart-cat'),{type:'doughnut',data:{labels:catSorted.map(function(e){return e[0];}),datasets:[{data:catSorted.map(function(e){return e[1];}),backgroundColor:CC.slice(0,catSorted.length),borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#ffffff',font:{size:10,family:"'IBM Plex Mono',monospace"},padding:10,boxWidth:9,textAlign:'center'}},tooltip:{backgroundColor:'#1a1f1d',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8e4',bodyColor:'#6b7c72',titleFont:{family:"'IBM Plex Mono',monospace",size:11},bodyFont:{family:"'IBM Plex Mono',monospace",size:11},callbacks:{label:function(ctx){return ' '+brl(ctx.raw)+' ('+(total>0?(ctx.raw/total*100).toFixed(1):0)+'%)';}}}}}}); 
+  nfCharts['cat']=new Chart(document.getElementById('nf-chart-cat'),{type:'doughnut',data:{labels:catSorted.map(function(e){return e[0];}),datasets:[{data:catSorted.map(function(e){return e[1];}),backgroundColor:CC.slice(0,catSorted.length),borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#ffffff',font:{size:10,family:"'IBM Plex Mono',monospace"},padding:10,boxWidth:9,textAlign:'center'}},tooltip:{backgroundColor:'#1a1f1d',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8e4',bodyColor:'#aab3ae',titleFont:{family:"'IBM Plex Mono',monospace",size:11},bodyFont:{family:"'IBM Plex Mono',monospace",size:11},callbacks:{label:function(ctx){return ' '+brl(ctx.raw)+' ('+(total>0?(ctx.raw/total*100).toFixed(1):0)+'%)';}}}}}}); 
   destroyNFChart('forn');
   const fornMap={};nfs.forEach(function(n){const k=n.fornecedor||'—';fornMap[k]=(fornMap[k]||0)+n.valor;});
   const fornTop=Object.entries(fornMap).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
-  nfCharts['forn']=new Chart(document.getElementById('nf-chart-forn'),{type:'bar',data:{labels:fornTop.map(function(e){return e[0].length>22?e[0].slice(0,22)+'…':e[0];}),datasets:[{data:fornTop.map(function(e){return e[1];}),backgroundColor:'rgba(240,165,0,0.75)',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tooltipOpts()},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7c72',font:{size:9,family:"'IBM Plex Mono',monospace"},callback:function(v){return 'R$'+(v/1000).toFixed(0)+'k';}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#e2e8e4',font:{size:9,family:"'IBM Plex Mono',monospace"}}}}}});
+  nfCharts['forn']=new Chart(document.getElementById('nf-chart-forn'),{type:'bar',data:{labels:fornTop.map(function(e){return e[0].length>22?e[0].slice(0,22)+'…':e[0];}),datasets:[{data:fornTop.map(function(e){return e[1];}),backgroundColor:'rgba(240,165,0,0.75)',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tooltipOpts()},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#aab3ae',font:{size:9,family:"'IBM Plex Mono',monospace"},callback:function(v){return 'R$'+(v/1000).toFixed(0)+'k';}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#e2e8e4',font:{size:9,family:"'IBM Plex Mono',monospace"}}}}}});
   destroyNFChart('centro');
   const centroMap={};nfs.forEach(function(n){const k=n.centro||'Sem centro';centroMap[k]=(centroMap[k]||0)+n.valor;});
   const centroSorted=Object.entries(centroMap).sort(function(a,b){return b[1]-a[1];}).slice(0,12);
-  nfCharts['centro']=new Chart(document.getElementById('nf-chart-centro'),{type:'bar',data:{labels:centroSorted.map(function(e){return e[0].length>20?e[0].slice(0,20)+'…':e[0];}),datasets:[{data:centroSorted.map(function(e){return e[1];}),backgroundColor:'rgba(192,132,252,0.75)',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tooltipOpts()},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7c72',font:{size:9,family:"'IBM Plex Mono',monospace"},callback:function(v){return 'R$'+(v/1000).toFixed(0)+'k';}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#e2e8e4',font:{size:9,family:"'IBM Plex Mono',monospace"}}}}}});
+  nfCharts['centro']=new Chart(document.getElementById('nf-chart-centro'),{type:'bar',data:{labels:centroSorted.map(function(e){return e[0].length>20?e[0].slice(0,20)+'…':e[0];}),datasets:[{data:centroSorted.map(function(e){return e[1];}),backgroundColor:'rgba(192,132,252,0.75)',borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tooltipOpts()},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#aab3ae',font:{size:9,family:"'IBM Plex Mono',monospace"},callback:function(v){return 'R$'+(v/1000).toFixed(0)+'k';}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#e2e8e4',font:{size:9,family:"'IBM Plex Mono',monospace"}}}}}});
 }
 
 // ── ANOMALY DETECTION ──
@@ -1902,7 +1902,7 @@ function desenharGraficosTemporais(){
         datasets: [{
           label: 'Preço Médio',
           data: data,
-          borderColor: 'var(--blue)',
+          borderColor: '#4d9fff',
           backgroundColor: 'rgba(77, 159, 255, 0.1)',
           tension: 0.4,
           fill: true
@@ -1913,8 +1913,8 @@ function desenharGraficosTemporais(){
         maintainAspectRatio: true,
         plugins: {legend: {display: false}},
         scales: {
-          y: {ticks: {color: 'var(--muted)'}, grid: {color: 'var(--border)'}},
-          x: {ticks: {color: 'var(--muted)'}, grid: {color: 'var(--border)'}}
+          y: {ticks: {color: '#aab3ae'}, grid: {color: 'rgba(255,255,255,0.07)'}},
+          x: {ticks: {color: '#aab3ae'}, grid: {color: 'rgba(255,255,255,0.07)'}}
         }
       }
     });
@@ -3141,7 +3141,7 @@ function construirGastos(d, alvo, unidadeSel){
     _gastoCharts.cat = new Chart(document.getElementById('gasto-chart-cat'), {
       type:'doughnut',
       data:{ labels:cats, datasets:[{ data:cats.map(function(c){return catBloco[c].total;}), backgroundColor:coresCat, borderColor:'#0b0e0d', borderWidth:2 }] },
-      options:{ responsive:true, maintainAspectRatio:false, cutout:'58%', plugins:{ legend:{position:'right',labels:{color:'var(--muted)',font:{size:10},padding:8,boxWidth:11}}, tooltip:{callbacks:{label:function(c){ var tot=cats.reduce(function(a,k){return a+catBloco[k].total;},0); return ' '+brl(c.parsed)+' ('+(c.parsed/tot*100).toFixed(1)+'%)'; }}} } }
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'58%', plugins:{ legend:{position:'right',labels:{color:'#e2e8e4',font:{size:11},padding:8,boxWidth:11}}, tooltip:{callbacks:{label:function(c){ var tot=cats.reduce(function(a,k){return a+catBloco[k].total;},0); return ' '+brl(c.parsed)+' ('+(c.parsed/tot*100).toFixed(1)+'%)'; }}} } }
     });
   }
   // Comparativo inicial
@@ -3150,12 +3150,12 @@ function construirGastos(d, alvo, unidadeSel){
   _gastoCharts.uni = new Chart(document.getElementById('gasto-chart-uni'), {
     type:'bar',
     data:{ labels: topUnis, datasets:[{ data: topUnis.map(function(u){return d.unidades[u].total;}), backgroundColor: topUnis.map(function(u){ return (!ehTodas && u===unidadeSel) ? 'rgba(0,212,138,0.9)' : 'rgba(240,165,0,0.7)'; }), borderRadius:4 }] },
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+brl(c.parsed.x);}}}}, scales:{ x:{ticks:{color:'var(--muted)',font:{size:9},callback:function(v){return kbrl(v);}},grid:{color:'var(--border)'}}, y:{ticks:{color:'var(--text)',font:{size:10}},grid:{display:false}} } }
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+brl(c.parsed.x);}}}}, scales:{ x:{ticks:{color:'#aab3ae',font:{size:10},callback:function(v){return kbrl(v);}},grid:{color:'rgba(255,255,255,0.07)'}}, y:{ticks:{color:'#e2e8e4',font:{size:11}},grid:{display:false}} } }
   });
   _gastoCharts.mes = new Chart(document.getElementById('gasto-chart-mes'), {
     type:'bar',
     data:{ labels: meses.map(fmtMes), datasets:[{ data: serieMes, backgroundColor: serieMes.map(function(v,i){ return i>0 && v>serieMes[i-1] ? 'rgba(255,82,82,0.75)' : 'rgba(0,212,138,0.75)'; }), borderRadius:4 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+brl(c.parsed.y);}}}}, scales:{ y:{ticks:{color:'var(--muted)',font:{size:9},callback:function(v){return kbrl(v);}},grid:{color:'var(--border)'}}, x:{ticks:{color:'var(--text)',font:{size:10}},grid:{display:false}} } }
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+brl(c.parsed.y);}}}}, scales:{ y:{ticks:{color:'#aab3ae',font:{size:10},callback:function(v){return kbrl(v);}},grid:{color:'rgba(255,255,255,0.07)'}}, x:{ticks:{color:'#e2e8e4',font:{size:11}},grid:{display:false}} } }
   });
 
   function cardG(lbl,val,cor,sub){
