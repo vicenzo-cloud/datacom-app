@@ -610,10 +610,19 @@ function load(){
 
 // ── INTEL STATE ──
 let intelFindings=JSON.parse(localStorage.getItem('dc_findings')||'{}');
+let _intelExpanded={};
 function saveFindings(){localStorage.setItem('dc_findings',JSON.stringify(intelFindings));}
-function setFindingStatus(fid,status){if(!intelFindings[fid])intelFindings[fid]={};intelFindings[fid].status=status;saveFindings();renderIntelTab();}
-function saveFindingNote(fid,note){if(!intelFindings[fid])intelFindings[fid]={};intelFindings[fid].note=note;saveFindings();renderIntelTab();}
-function toggleFC(fid){const el=document.getElementById('fcb-'+fid);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+function setFindingStatus(fid,status){
+  if(!intelFindings[fid])intelFindings[fid]={};
+  intelFindings[fid].status=status;
+  saveFindings();
+  _intelExpanded[fid]=true; // mantem o card aberto apos a acao
+  var rotulo={pending:'Reaberto',investigating:'Em investigação',resolved:'Resolvido',ignored:'Ignorado'}[status]||status;
+  toast('🔍 Alerta marcado como: '+rotulo);
+  renderIntelTab();
+}
+function saveFindingNote(fid,note){if(!intelFindings[fid])intelFindings[fid]={};intelFindings[fid].note=note;saveFindings();_intelExpanded[fid]=true;toast('📝 Nota salva');renderIntelTab();}
+function toggleFC(fid){const el=document.getElementById('fcb-'+fid);if(el){var aberto=el.style.display!=='none';el.style.display=aberto?'none':'block';_intelExpanded[fid]=!aberto;}}
 function clearLastAI(){localStorage.removeItem('dc_last_ai');renderIntelTab();}
 let intelTab='alertas';
 function switchIntelTab(t){
@@ -1401,7 +1410,7 @@ function renderIntelTab(){
       +'<div style="flex:1"><div class="fc-title">'+a.icon+' '+a.title+'</div><div class="fc-meta">'+a.sub+'</div></div>'
       +'<span class="fc-status-badge '+status+'">'+statusLabel+'</span>'
       +'</div>'
-      +'<div class="fc-body" id="fcb-'+fid+'" style="display:none">'
+      +'<div class="fc-body" id="fcb-'+fid+'" style="display:'+(_intelExpanded[fid]?'block':'none')+'">'
       +(a.detail?'<div style="font-size:11px;color:var(--muted);margin:10px 0 12px;line-height:1.6">'+a.detail+'</div>':'')
       +(a.items.length?'<div class="fc-items">'+a.items.map(function(i){return '<div class="fc-item">'+i+'</div>';}).join('')+'</div>':'')
       +(fs.note?'<div class="fc-note-saved">📝 '+fs.note+'</div>':'')
