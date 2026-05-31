@@ -1509,7 +1509,7 @@ let precoGlobalTotal = 0;
 let precoAbaAtiva = 'resumo';
 
 function carregarAnalisePrecos(){
-  fetch('analise_precos.json')
+  fetch('analise_precos.json?t='+Date.now())
     .then(r => r.json())
     .then(data => {
       var items = Object.keys(data).map(function(nome){

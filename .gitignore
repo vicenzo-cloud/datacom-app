@@ -10,6 +10,9 @@ _arquivo_morto/
 # Config local do Claude/preview
 .claude/
 
+# Backups pontuais
+*.bak.json
+
 # Python
 __pycache__/
 *.pyc

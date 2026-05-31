@@ -146,6 +146,17 @@ def stats_item(regs):
             'preco_min': round(min(d['precos']), 2),
             'preco_max': round(max(d['precos']), 2),
         }
+    # variacao % (preco do ultimo mes vs primeiro mes com dado)
+    variacao_pct = 0.0
+    if len(serie) >= 2 and serie[0]['preco_medio'] > 0:
+        variacao_pct = round((serie[-1]['preco_medio'] - serie[0]['preco_medio']) / serie[0]['preco_medio'] * 100, 2)
+    # preco previsto = preco medio do mes mais recente (fallback: media geral)
+    preco_previsto = serie[-1]['preco_medio'] if serie else round(sum(precos)/len(precos), 2)
+    # NF mais cara / mais barata (por preco unitario)
+    reg_caro = max(regs, key=lambda r: r['preco_unit'])
+    reg_barato = min(regs, key=lambda r: r['preco_unit'])
+    def nf_info(r):
+        return {'numero': r['nota'], 'preco': round(r['preco_unit'], 2), 'fornecedor': r['fornecedor'], 'data': r['data']}
     return {
         'quantidade_compras': len(regs),
         'qtd_total': round(sum(r['qtd'] for r in regs), 2),
@@ -153,7 +164,12 @@ def stats_item(regs):
         'preco_mediana': round(statistics.median(precos), 2),
         'preco_minimo': round(min(precos), 2),
         'preco_maximo': round(max(precos), 2),
+        'variacao_pct': variacao_pct,
         'valor_total': round(valor_total, 2),
+        'preco_previsto': preco_previsto,
+        'margem_sugerida_pct': 30,
+        'nf_mais_cara': nf_info(reg_caro),
+        'nf_mais_barata': nf_info(reg_barato),
         'fornecedores': fornecedores,
         'serie_temporal': serie,
     }
@@ -266,3 +282,24 @@ print('Salvo gasto_por_categoria.json: %d categorias' % len(cats_set))
 for c in sorted(cats_set):
     tot = sum(cat_unidades['__TODAS__'][c].values()) - cat_unidades['__TODAS__'][c]['total']
     print('   %-22s R$ %12.2f' % (c, cat_unidades['__TODAS__'][c]['total']))
+
+# ── ANALISE_PRECOS.JSON (aba Precos / Curva ABC) — dados ja filtrados ──
+# Usa __TODAS__ (sem registros de preco extremo) e mantem so categorias de
+# seguranca (exclui Material/Diversos e Combustivel, ex: parafuso, agua sanitaria, gasolina).
+CATS_SEGURANCA = {'CFTV', 'Alarme', 'Controle de Acesso', 'Rede/Infraestrutura', 'Energia'}
+precos_out = {}
+for nome, regs in compras['__TODAS__'].items():
+    if categoria(nome) not in CATS_SEGURANCA:
+        continue
+    s = stats_item(regs)
+    if s:
+        precos_out[nome] = s
+SAIDA_PRECOS = Path(__file__).parent / 'analise_precos.json'
+# Backup do arquivo antigo (gerado no outro PC) antes de sobrescrever
+if SAIDA_PRECOS.exists():
+    import shutil
+    shutil.copy2(SAIDA_PRECOS, Path(__file__).parent / 'analise_precos.bak.json')
+with open(SAIDA_PRECOS, 'w', encoding='utf-8') as f:
+    json.dump(precos_out, f, ensure_ascii=False)
+tot_precos = sum(i['valor_total'] for i in precos_out.values())
+print('Salvo analise_precos.json: %d itens de seguranca (filtrados), R$ %.2f' % (len(precos_out), tot_precos))
