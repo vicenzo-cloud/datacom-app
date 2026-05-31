@@ -11,11 +11,25 @@ from pathlib import Path
 from collections import defaultdict
 
 DOWNLOADS = Path.home() / 'Downloads'
-SAIDA = Path(__file__).parent / 'analise_por_unidade.json'
+APP = Path(__file__).parent
+SAIDA = APP / 'analise_por_unidade.json'
 
-# Ajuste aqui se os nomes dos arquivos mudarem:
-ARQ_DETALHADA = DOWNLOADS / 'RelatorioListagemEntradaMercadoria (2).xls'
-ARQ_RESUMIDA  = DOWNLOADS / 'RelatorioListagemEntradaMercadoriaResumida.xls'
+# Prioriza os arquivos enviados pela app (entrada_detalhada/resumida.xls);
+# se não existirem, usa os nomes padrão do Downloads.
+def _achar(preferido, *alternativos):
+    if preferido.exists():
+        return preferido
+    for a in alternativos:
+        if a.exists():
+            return a
+    return preferido  # retorna o preferido mesmo ausente (erro claro depois)
+
+ARQ_DETALHADA = _achar(APP / 'entrada_detalhada.xls',
+                       DOWNLOADS / 'RelatorioListagemEntradaMercadoria (2).xls')
+ARQ_RESUMIDA  = _achar(APP / 'entrada_resumida.xls',
+                       DOWNLOADS / 'RelatorioListagemEntradaMercadoriaResumida.xls')
+print('Detalhada:', ARQ_DETALHADA.name)
+print('Resumida :', ARQ_RESUMIDA.name)
 
 def parse_xls(fn):
     raw = open(fn, encoding='utf-8', errors='ignore').read()

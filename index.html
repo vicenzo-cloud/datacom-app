@@ -514,8 +514,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
 
       <!-- SUGESTOES DE COMPRA -->
       <div class="page" id="page-sugestoes">
-        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">🛒 Sugestões de Compra</h2>
-        <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Recomendações baseadas no histórico de compras importado</p>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+          <div>
+            <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">🛒 Sugestões de Compra</h2>
+            <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Recomendações baseadas no histórico de compras importado</p>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('modal-importar')">📥 Atualizar dados</button>
+        </div>
         <div id="sugestoes-content"></div>
       </div>
 
@@ -534,6 +539,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
 <div class="modal-overlay" id="modal-metas" onclick="closeOut(event,'modal-metas')">
   <div class="modal"><div class="modal-hd"><div class="modal-title">Metas de Orçamento</div><button class="modal-x" onclick="closeModal('modal-metas')">✕</button></div>
   <div id="metas-content" style="padding:20px;max-height:600px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR RELATORIOS -->
+<div class="modal-overlay" id="modal-importar" onclick="closeOut(event,'modal-importar')">
+  <div class="modal" style="max-width:600px"><div class="modal-hd"><div class="modal-title">📥 Atualizar dados de compras</div><button class="modal-x" onclick="closeModal('modal-importar')">✕</button></div>
+  <div style="padding:20px">
+    <div style="background:var(--bg3);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin-bottom:18px;font-size:12px;color:#aab3ae;line-height:1.6">
+      Exporte do seu sistema os <strong style="color:#e2e8e4">dois relatórios de Entrada de Mercadoria do mesmo período</strong> e selecione abaixo. A app reprocessa Sugestões, Gastos e Preços automaticamente (já filtra os valores extremos).
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:12px;color:#e2e8e4;font-weight:bold;display:block;margin-bottom:6px">1. Relatório DETALHADO (com Item e Preço)</label>
+      <input type="file" id="imp-detalhada" accept=".xls,.xlsx,.html,.htm" style="width:100%;font-size:12px;color:var(--text)">
+    </div>
+    <div style="margin-bottom:18px">
+      <label style="font-size:12px;color:#e2e8e4;font-weight:bold;display:block;margin-bottom:6px">2. Relatório RESUMIDO (com a coluna Unidade)</label>
+      <input type="file" id="imp-resumida" accept=".xls,.xlsx,.html,.htm" style="width:100%;font-size:12px;color:var(--text)">
+    </div>
+    <button class="btn btn-primary" id="btn-importar" onclick="importarRelatorios()" style="width:100%">Processar e atualizar</button>
+    <div id="imp-status" style="margin-top:14px;font-size:12px;color:#aab3ae;white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
+  </div>
   </div>
 </div>
 
@@ -2773,6 +2799,51 @@ function renderSugestoes(){
 function mudarUnidadeSugestao(){
   var u = (document.getElementById('sug-unidade')||{}).value || '__TODAS__';
   construirSugestoes((_dadosPorUnidade && _dadosPorUnidade[u]) || {}, document.getElementById('sug-corpo'));
+}
+
+function lerArquivoTexto(input){
+  return new Promise(function(resolve,reject){
+    var f = input.files && input.files[0];
+    if(!f){ resolve(null); return; }
+    var r = new FileReader();
+    r.onload = function(){ resolve(r.result); };
+    r.onerror = function(){ reject(new Error('Falha ao ler '+f.name)); };
+    r.readAsText(f, 'utf-8');
+  });
+}
+
+function importarRelatorios(){
+  var st = document.getElementById('imp-status');
+  var btn = document.getElementById('btn-importar');
+  st.style.color='#aab3ae';
+  Promise.all([lerArquivoTexto(document.getElementById('imp-detalhada')), lerArquivoTexto(document.getElementById('imp-resumida'))])
+  .then(function(arqs){
+    var det=arqs[0], res=arqs[1];
+    if(!det || !res){ st.style.color='var(--red)'; st.textContent='Selecione os DOIS relatórios (detalhado e resumido).'; return Promise.reject('faltou arquivo'); }
+    btn.disabled=true; btn.textContent='Enviando...'; st.textContent='Enviando relatório detalhado...';
+    return fetch('/upload-relatorio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:'detalhada',content:det})})
+      .then(function(r){return r.json();})
+      .then(function(){ st.textContent='Enviando relatório resumido...'; return fetch('/upload-relatorio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:'resumida',content:res})}); })
+      .then(function(r){return r.json();})
+      .then(function(){ st.textContent='Processando dados (pode levar alguns segundos)...'; btn.textContent='Processando...'; return fetch('/reprocessar',{method:'POST'}); })
+      .then(function(r){return r.json();})
+      .then(function(res){
+        if(res.ok){
+          st.style.color='var(--accent)';
+          st.textContent='✅ Dados atualizados!\n\n'+(res.log||'');
+          toast('Dados de compras atualizados!');
+          // Recarrega as análises que dependem dos arquivos
+          _dadosPorUnidade=null; _dadosGasto=null; _dadosCat=null; precoGlobalItems=[];
+          renderSugestoes();
+          setTimeout(function(){ closeModal('modal-importar'); }, 2500);
+        } else {
+          st.style.color='var(--red)';
+          st.textContent='❌ Erro ao processar:\n'+(res.erro||res.log||'desconhecido');
+        }
+      });
+  })
+  .catch(function(e){ if(e!=='faltou arquivo'){ st.style.color='var(--red)'; st.textContent='Erro: '+(e.message||e); } })
+  .then(function(){ btn.disabled=false; btn.textContent='Processar e atualizar'; });
 }
 
 // Detecta a unidade/embalagem de compra a partir do nome do item

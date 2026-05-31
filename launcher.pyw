@@ -25,6 +25,45 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
     def do_POST(self):
+        if self.path == '/upload-relatorio':
+            # Recebe um relatorio .xls enviado pela app e salva no disco
+            import json as _json
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length).decode('utf-8')
+            try:
+                data = _json.loads(body)
+                tipo = data.get('tipo')  # 'detalhada' ou 'resumida'
+                conteudo = data.get('content', '')
+                nome = 'entrada_detalhada.xls' if tipo == 'detalhada' else 'entrada_resumida.xls'
+                with open(Path(__file__).parent / nome, 'w', encoding='utf-8') as f:
+                    f.write(conteudo)
+                resp = _json.dumps({'ok': True, 'arquivo': nome, 'tamanho': len(conteudo)}).encode('utf-8')
+                self.send_response(200)
+            except Exception as e:
+                resp = _json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8')
+                self.send_response(500)
+            self.send_header('Content-type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(resp)
+            return
+        if self.path == '/reprocessar':
+            # Roda o gerar_analise_unidade.py e devolve o log
+            import json as _json, subprocess, sys
+            try:
+                script = Path(__file__).parent / 'gerar_analise_unidade.py'
+                proc = subprocess.run([sys.executable, str(script)],
+                                      capture_output=True, text=True, timeout=120,
+                                      cwd=str(Path(__file__).parent))
+                ok = proc.returncode == 0
+                resp = _json.dumps({'ok': ok, 'log': (proc.stdout or '')[-3000:], 'erro': (proc.stderr or '')[-1500:]}).encode('utf-8')
+                self.send_response(200 if ok else 500)
+            except Exception as e:
+                resp = _json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8')
+                self.send_response(500)
+            self.send_header('Content-type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(resp)
+            return
         if self.path == '/save-data':
             # Persiste os dados dos projetos/NFs em dados.json (backup em disco)
             import json as _json
@@ -199,7 +238,11 @@ try {
             return
         return super().do_GET()
 
-servidor = socketserver.TCPServer(('localhost', porta), Handler)
+class ServidorThreaded(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+servidor = ServidorThreaded(('localhost', porta), Handler)
 thread = threading.Thread(target=servidor.serve_forever, daemon=True)
 thread.start()
 

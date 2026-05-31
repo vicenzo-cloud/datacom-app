@@ -13,6 +13,10 @@ _arquivo_morto/
 # Backups pontuais
 *.bak.json
 
+# Relatórios .xls enviados pela app (dados de runtime)
+entrada_detalhada.xls
+entrada_resumida.xls
+
 # Python
 __pycache__/
 *.pyc
