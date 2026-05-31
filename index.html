@@ -2627,40 +2627,121 @@ function buscaGlobal(){
 
 // ── RENDER ALERTAS ──
 function renderAlertas(){
-  var html = '';
-  var alertas = [];
+  var alvo = document.getElementById('alertas-content');
+  alvo.innerHTML = '<div style="color:var(--muted);padding:30px;text-align:center">Analisando alertas...</div>';
+  Promise.all([
+    fetch('gasto_por_unidade.json?t='+Date.now()).then(function(r){return r.json();}).catch(function(){return null;}),
+    fetch('analise_por_unidade.json?t='+Date.now()).then(function(r){return r.json();}).catch(function(){return null;})
+  ]).then(function(res){ construirAlertas(res[0], res[1], alvo); });
+}
 
-  // Verificar preços que caíram mais de 10%
+function construirAlertas(gasto, porUni, alvo){
+  var fmtMes = function(m){ var p=m.split('/'); var n=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return n[parseInt(p[0],10)]+'/'+p[1].slice(2); };
+  var altaUnidade=[], altaPreco=[], desvioProj=[];
+
+  // 1. Gasto da unidade disparou no último mês (>30% vs mês anterior)
+  if(gasto && gasto.meses && gasto.meses.length>=2){
+    var mA=gasto.meses[gasto.meses.length-2], mB=gasto.meses[gasto.meses.length-1];
+    Object.keys(gasto.unidades).forEach(function(u){
+      var a=gasto.unidades[u][mA]||0, b=gasto.unidades[u][mB]||0;
+      if(a>500 && b>a*1.3){ altaUnidade.push({unidade:u, ant:a, atual:b, pct:((b-a)/a*100), mes:mB}); }
+    });
+    altaUnidade.sort(function(x,y){return (y.atual-y.ant)-(x.atual-x.ant);});
+  }
+
+  // 2. Itens com preço subindo (>15% recente vs mediana, com volume)
+  if(porUni && porUni['__TODAS__']){
+    var todos=porUni['__TODAS__'];
+    Object.keys(todos).forEach(function(nome){
+      var it=todos[nome], st=it.serie_temporal||[];
+      if((it.quantidade_compras||0)<8 || st.length<4) return;
+      var base=it.preco_mediana||it.preco_medio||0;
+      var rec=st.slice(-3); var mr=rec.reduce(function(s,m){return s+m.preco_medio;},0)/rec.length;
+      if(base>0){ var pct=(mr-base)/base*100; if(pct>15 && pct<300){ altaPreco.push({nome:nome, pct:pct, atual:mr, base:base}); } }
+    });
+    altaPreco.sort(function(x,y){return y.pct-x.pct;});
+  }
+
+  // 3. Desvio nos projetos (real > previsto +10%)
   S.projects.forEach(function(p){
     (p.items||[]).forEach(function(i){
-      if(i.prev && i.real && (i.real < i.prev * 0.9)){
-        var economia = ((i.prev - i.real) / i.prev * 100).toFixed(1);
-        alertas.push({tipo:'economia',nome:i.nome,prev:i.prev,real:i.real,pct:economia,projeto:p.nome});
-      }
-      if(i.prev && i.real && (i.real > i.prev * 1.1)){
-        var aumento = ((i.real - i.prev) / i.prev * 100).toFixed(1);
-        alertas.push({tipo:'aumento',nome:i.nome,prev:i.prev,real:i.real,pct:aumento,projeto:p.nome});
-      }
+      if(i.prev && i.real && i.real > i.prev*1.1){ desvioProj.push({nome:i.nome, projeto:p.nome, prev:i.prev, real:i.real, pct:((i.real-i.prev)/i.prev*100)}); }
     });
   });
+  desvioProj.sort(function(x,y){return (y.real-y.prev)-(x.real-x.prev);});
 
-  if(alertas.length === 0){
-    html = '<div style="text-align:center;padding:40px;color:var(--muted)">Nenhum alerta no momento</div>';
-  } else {
-    html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">';
-    alertas.forEach(function(a){
-      var cor = a.tipo === 'economia' ? 'var(--accent)' : 'var(--red)';
-      var icone = a.tipo === 'economia' ? '📈' : '⚠️';
-      html += '<div style="background:var(--bg2);border-left:4px solid '+cor+';border-radius:8px;padding:16px">';
-      html += '<div style="font-weight:bold;margin-bottom:8px">'+icone+' '+a.nome+'</div>';
-      html += '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">'+a.projeto+'</div>';
-      html += '<div>Previsto: <strong>R$ '+(a.prev||0).toFixed(2)+'</strong></div>';
-      html += '<div>Real: <strong style="color:'+cor+'">R$ '+(a.real||0).toFixed(2)+' ('+a.pct+'%)</strong></div>';
-      html += '</div>';
-    });
-    html += '</div>';
+  var total = altaUnidade.length+altaPreco.length+desvioProj.length;
+  var html='';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px">';
+  html += '<div style="font-size:13px;color:#aab3ae">'+total+' alerta(s) ativo(s)</div>';
+  html += '<button class="btn btn-secondary btn-sm" onclick="exportarRelatorioMes()">📄 Exportar relatório do mês</button>';
+  html += '</div>';
+
+  if(total===0){ html += '<div style="text-align:center;padding:40px;color:var(--muted)">Nenhum alerta no momento 👍</div>'; alvo.innerHTML=html; return; }
+
+  function secao(titulo, cor, icone, itensHtml){
+    if(!itensHtml) return '';
+    return '<div style="margin-bottom:24px"><div style="font-size:12px;font-weight:bold;color:'+cor+';margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">'+icone+' '+titulo+'</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">'+itensHtml+'</div></div>';
   }
-  document.getElementById('alertas-content').innerHTML = html;
+  function card(cor, titulo, linhas){
+    return '<div style="background:var(--bg2);border-left:4px solid '+cor+';border-radius:8px;padding:14px"><div style="font-weight:bold;font-size:13px;margin-bottom:8px;color:var(--text)">'+titulo+'</div>'+linhas+'</div>';
+  }
+
+  // Seção 1: gasto unidade disparou
+  var s1 = altaUnidade.map(function(a){
+    return card('var(--red)', '🏢 '+a.unidade, '<div style="font-size:12px;color:var(--muted)">Gasto em '+fmtMes(a.mes)+': <strong style="color:var(--red)">'+brl(a.atual)+'</strong> (+'+a.pct.toFixed(0)+'% vs mês anterior '+brl(a.ant)+')</div>');
+  }).join('');
+  html += secao('Gasto da unidade disparou', 'var(--red)', '📈', s1);
+
+  // Seção 2: preço subindo
+  var s2 = altaPreco.slice(0,12).map(function(a){
+    return card('var(--amber)', '🔺 '+a.nome, '<div style="font-size:12px;color:var(--muted)">Preço subiu <strong style="color:var(--amber)">+'+a.pct.toFixed(0)+'%</strong> (de '+brl(a.base)+' para '+brl(a.atual)+'). Considere antecipar a compra ou renegociar.</div>');
+  }).join('');
+  html += secao('Itens com preço subindo', 'var(--amber)', '🔺', s2);
+
+  // Seção 3: desvio projetos
+  var s3 = desvioProj.slice(0,12).map(function(a){
+    return card('var(--red)', '⚠️ '+a.nome, '<div style="font-size:12px;color:var(--muted)">'+a.projeto+'<br>Real <strong style="color:var(--red)">'+brl(a.real)+'</strong> vs previsto '+brl(a.prev)+' (+'+a.pct.toFixed(0)+'%)</div>');
+  }).join('');
+  html += secao('Estouro de orçamento em projetos', 'var(--red)', '💸', s3);
+
+  alvo.innerHTML = html;
+  window._dadosAlertas = {altaUnidade:altaUnidade, altaPreco:altaPreco, desvioProj:desvioProj, gasto:gasto};
+}
+
+// Relatório do mês consolidado (CSV salvo em Relatorios)
+function exportarRelatorioMes(){
+  var d = window._dadosAlertas||{};
+  var g = d.gasto;
+  var L=[];
+  L.push('RELATORIO MENSAL - PROJETOS SUPRIMENTOS');
+  L.push('Gerado em: '+new Date().toLocaleString('pt-BR'));
+  L.push('');
+  if(g && g.meses && g.meses.length){
+    var ult=g.meses[g.meses.length-1];
+    L.push('GASTO POR UNIDADE NO MES '+ult);
+    L.push('Unidade;Gasto no mes;Total periodo');
+    Object.keys(g.unidades).sort(function(a,b){return (g.unidades[b][ult]||0)-(g.unidades[a][ult]||0);}).forEach(function(u){
+      L.push(u+';'+((g.unidades[u][ult]||0).toFixed(2))+';'+((g.unidades[u].total||0).toFixed(2)));
+    });
+    L.push('TOTAL;'+((g.totais_mes[ult]||0).toFixed(2))+';'+((g.total_geral||0).toFixed(2)));
+    L.push('');
+  }
+  L.push('ALERTAS - GASTO DE UNIDADE DISPAROU');
+  (d.altaUnidade||[]).forEach(function(a){ L.push(a.unidade+';+'+a.pct.toFixed(0)+'%;de '+a.ant.toFixed(2)+' para '+a.atual.toFixed(2)); });
+  L.push('');
+  L.push('ALERTAS - ITENS COM PRECO SUBINDO');
+  (d.altaPreco||[]).slice(0,30).forEach(function(a){ L.push('"'+a.nome.replace(/"/g,"'")+'";+'+a.pct.toFixed(0)+'%;de '+a.base.toFixed(2)+' para '+a.atual.toFixed(2)); });
+  L.push('');
+  L.push('ALERTAS - ESTOURO DE ORCAMENTO EM PROJETOS');
+  (d.desvioProj||[]).forEach(function(a){ L.push('"'+a.nome.replace(/"/g,"'")+'";'+a.projeto+';real '+a.real.toFixed(2)+' vs prev '+a.prev.toFixed(2)); });
+
+  var csv=L.join('\n');
+  var nome='relatorio-mensal-'+new Date().toISOString().slice(0,10)+'.csv';
+  fetch('/save-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:nome,content:csv})})
+    .then(function(r){return r.json();})
+    .then(function(res){ if(res.ok){ toast('Relatório do mês salvo!'); alert('✅ Relatório salvo em:\n\n'+res.path); } else { toast('Erro: '+res.erro,'error'); } })
+    .catch(function(){ var b=new Blob([csv],{type:'text/csv'}); var u=URL.createObjectURL(b); var a=document.createElement('a'); a.href=u; a.download=nome; document.body.appendChild(a); a.click(); URL.revokeObjectURL(u); document.body.removeChild(a); toast('Relatório baixado'); });
 }
 
 // ── RENDER COMPRAS DASHBOARD ──
