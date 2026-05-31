@@ -17,6 +17,10 @@ _arquivo_morto/
 entrada_detalhada.xls
 entrada_resumida.xls
 
+# Config com senha + arquivo de acesso da rede (não versionar)
+config.json
+ACESSO_REDE.txt
+
 # Python
 __pycache__/
 *.pyc

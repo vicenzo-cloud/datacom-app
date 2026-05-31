@@ -21,10 +21,84 @@ os.chdir(Path(__file__).parent)
 
 porta = encontrar_porta()
 
+import json as _cfgjson, secrets
+
+# ── Autenticacao da equipe (acesso pela rede) ──
+CONFIG_PATH = Path(__file__).parent / 'config.json'
+def carregar_senha():
+    try:
+        if CONFIG_PATH.exists():
+            return _cfgjson.loads(CONFIG_PATH.read_text(encoding='utf-8')).get('senha', 'vigillare')
+    except Exception:
+        pass
+    CONFIG_PATH.write_text(_cfgjson.dumps({'senha': 'vigillare'}, ensure_ascii=False), encoding='utf-8')
+    return 'vigillare'
+SENHA = carregar_senha()
+SESSOES = set()
+
+def ip_local():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80)); ip = s.getsockname()[0]; s.close()
+        return ip
+    except Exception:
+        return '127.0.0.1'
+
+def cookie_token(headers):
+    c = headers.get('Cookie', '') or ''
+    for parte in c.split(';'):
+        parte = parte.strip()
+        if parte.startswith('dc_session='):
+            return parte[len('dc_session='):]
+    return None
+
+LOGIN_HTML = """<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login - Projetos Suprimentos</title>
+<style>body{background:#0b0e0d;color:#e2e8e4;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+.box{background:#14181a;padding:34px;border-radius:14px;border:1px solid #2a2f2d;width:300px;text-align:center}
+.box h1{font-size:18px;margin:0}.sub{font-size:12px;color:#6b7c72;margin:4px 0 18px}
+input{width:100%;padding:11px;margin:0 0 12px;border-radius:7px;border:1px solid #2a2f2d;background:#0b0e0d;color:#e2e8e4;box-sizing:border-box;font-size:14px}
+button{width:100%;padding:11px;border-radius:7px;border:none;background:#00d48a;color:#0b0e0d;font-weight:bold;cursor:pointer;font-size:14px}
+.err{color:#ff5252;font-size:12px;min-height:18px;margin-top:10px}</style></head>
+<body><div class="box"><h1>Projetos Suprimentos</h1><div class="sub">Acesso restrito · informe a senha da equipe</div>
+<input type="password" id="s" placeholder="Senha" autofocus onkeydown="if(event.key==='Enter')entrar()">
+<button onclick="entrar()">Entrar</button><div class="err" id="e"></div></div>
+<script>function entrar(){var s=document.getElementById('s').value;
+fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({senha:s})})
+.then(function(r){return r.json();}).then(function(d){if(d.ok){location.href='/';}else{document.getElementById('e').textContent='Senha incorreta';}})
+.catch(function(){document.getElementById('e').textContent='Erro de conexão';});}</script></body></html>"""
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
+    def _autenticado(self):
+        ip = self.client_address[0]
+        if ip in ('127.0.0.1', '::1', 'localhost'):
+            return True  # maquina host sempre liberada
+        return cookie_token(self.headers) in SESSOES
     def do_POST(self):
+        if self.path == '/login':
+            import json as _json
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length).decode('utf-8')
+            try:
+                senha = _json.loads(body).get('senha', '')
+            except Exception:
+                senha = ''
+            if senha == SENHA:
+                tok = secrets.token_hex(16); SESSOES.add(tok)
+                resp = _json.dumps({'ok': True}).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Set-Cookie', 'dc_session=' + tok + '; Path=/; Max-Age=86400; SameSite=Lax')
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.end_headers(); self.wfile.write(resp)
+            else:
+                resp = _json.dumps({'ok': False}).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.end_headers(); self.wfile.write(resp)
+            return
+        if not self._autenticado():
+            self.send_response(401); self.end_headers(); return
         if self.path == '/upload-relatorio':
             # Recebe um relatorio .xls enviado pela app e salva no disco
             import json as _json
@@ -136,6 +210,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(404)
         self.end_headers()
     def do_GET(self):
+        if not self._autenticado():
+            body = LOGIN_HTML.encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.end_headers(); self.wfile.write(body)
+            return
         if self.path == '/' or self.path == '':
             self.path = '/index.html'
         elif self.path == '/setup':
@@ -242,9 +322,22 @@ class ServidorThreaded(socketserver.ThreadingMixIn, socketserver.TCPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-servidor = ServidorThreaded(('localhost', porta), Handler)
+servidor = ServidorThreaded(('0.0.0.0', porta), Handler)
 thread = threading.Thread(target=servidor.serve_forever, daemon=True)
 thread.start()
+
+# Grava o endereco de acesso da rede num arquivo para o usuario compartilhar
+try:
+    _ip = ip_local()
+    _txt = ('COMO OUTRAS PESSOAS ACESSAM (mesma rede / Wi-Fi):\n\n'
+            '  1. Abra o navegador no computador da pessoa\n'
+            '  2. Acesse:  http://' + _ip + ':' + str(porta) + '\n'
+            '  3. Senha da equipe:  ' + SENHA + '\n\n'
+            '(Para trocar a senha, edite o arquivo config.json e reinicie o app.)\n'
+            'Obs: este computador precisa estar ligado e com o app aberto.\n')
+    (Path(__file__).parent / 'ACESSO_REDE.txt').write_text(_txt, encoding='utf-8')
+except Exception:
+    pass
 
 import json, random, string
 

@@ -3468,23 +3468,19 @@ function salvarMeta(){
 
 renderAll();
 
-// ── REDE DE SEGURANÇA: restaura dados do arquivo dados.json se forem mais recentes ──
-// Protege contra perda: se o localStorage foi limpo/zerado, recupera do disco.
+// ── DADOS CENTRALIZADOS: o arquivo dados.json no servidor é a fonte da verdade ──
+// Todos os usuários (host + rede) carregam o mesmo estado ao abrir/recarregar.
 (function(){
   fetch('/dados.json?t='+Date.now())
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(arquivo){
       if(arquivo && arquivo.projects && arquivo.projects.length){
-        var tArquivo = arquivo._savedAt || 0;
-        // Usa o arquivo se ele for mais novo que o localStorage (ex: apos um reset/limpeza)
-        if(tArquivo > _lsTime){
-          S = arquivo;
-          localStorage.setItem('dc_v5', JSON.stringify(S));
-          renderAll();
-          console.log('✅ Dados restaurados de dados.json (mais recentes que o navegador)');
-        }
+        // O servidor é a fonte da verdade: usa sempre o estado central
+        S = arquivo;
+        localStorage.setItem('dc_v5', JSON.stringify(S));
+        renderAll();
       } else {
-        // Arquivo ainda nao existe: cria o primeiro backup com o estado atual
+        // Arquivo ainda nao existe: cria o primeiro com o estado atual (semeado)
         salvarEmArquivo();
       }
     })
