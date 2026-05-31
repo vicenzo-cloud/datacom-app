@@ -515,7 +515,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
       <!-- SUGESTOES DE COMPRA -->
       <div class="page" id="page-sugestoes">
         <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">🛒 Sugestões de Compra</h2>
-        <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Recomendações baseadas no histórico de compras dos últimos 18 meses</p>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Recomendações baseadas no histórico de compras importado</p>
         <div id="sugestoes-content"></div>
       </div>
 
@@ -830,7 +830,7 @@ function renderTopbar(){
   if(S.view==='comp'){document.getElementById('nav-comp').classList.add('active');title.childNodes[0].textContent='Comparativo ';sub.textContent='Análise de redução';}
   else if(S.view==='audit'){document.getElementById('nav-audit').classList.add('active');title.childNodes[0].textContent='Auditoria ';sub.textContent='Integridade de dados';}
   else if(S.view==='preco'){document.getElementById('nav-preco').classList.add('active');title.childNodes[0].textContent='Análise de Preços ';sub.textContent='Inteligência comercial';}
-  else if(S.view==='sugestoes'){title.childNodes[0].textContent='Sugestões de Compra ';sub.textContent='Baseado em 18 meses de histórico';}
+  else if(S.view==='sugestoes'){title.childNodes[0].textContent='Sugestões de Compra ';sub.textContent='Baseado no histórico de compras';}
   else if(S.view==='gastos'){title.childNodes[0].textContent='Gastos por Unidade ';sub.textContent='Por unidade e mês a mês';}
   if(S.view==='dashboard'){document.getElementById('nav-dashboard').classList.add('active');title.childNodes[0].textContent='Dashboard ';sub.textContent='Visão geral';}
   else if(S.view==='nf'){document.getElementById('nav-nf').classList.add('active');title.childNodes[0].textContent='Notas Fiscais ';sub.textContent='Relatório';btnNF.style.display='flex';}
