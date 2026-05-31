@@ -1698,7 +1698,8 @@ function renderAbaResumo(){
 
   // Gráfico ABC — Donut + Pareto lado a lado
   html += '<div class="card" style="margin-bottom:20px;padding:20px">';
-  html += '<div style="font-size:12px;color:#e2e8e4;margin-bottom:14px;text-transform:uppercase;letter-spacing:.1em;font-weight:bold">Curva ABC — Distribuição + Pareto</div>';
+  html += '<div style="font-size:12px;color:#e2e8e4;margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em;font-weight:bold">Curva ABC — Distribuição + Pareto</div>';
+  html += '<div style="font-size:11px;color:#aab3ae;line-height:1.5;margin-bottom:14px;max-width:900px">A Curva ABC classifica os itens pelo quanto pesam no gasto total: <strong style="color:#ff7676">Classe A</strong> = poucos itens que somam ~80% do valor (prioridade na negociação) · <strong style="color:#f0a500">Classe B</strong> = ~15% · <strong style="color:#2ee6a0">Classe C</strong> = muitos itens de baixo valor (~5%). A linha de Pareto mostra o % acumulado.</div>';
   html += '<div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(300px,1.7fr);gap:24px;align-items:center">';
   html += '<div><div style="font-size:12px;color:#cbd5d1;text-align:center;margin-bottom:8px">Distribuição do Valor</div><canvas id="preco-chart-donut" style="max-height:280px"></canvas></div>';
   html += '<div><div style="font-size:12px;color:#cbd5d1;text-align:center;margin-bottom:8px">Pareto — Valor por Item + % Acumulado</div><canvas id="preco-chart-abc" style="max-height:280px"></canvas></div>';
