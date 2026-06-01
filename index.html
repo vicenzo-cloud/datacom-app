@@ -481,6 +481,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
           </div>
         </div>
 
+        <!-- BUSCA DE ITEM PARA ANALISAR -->
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+          <input type="text" id="preco-busca-item" list="preco-itens-list" placeholder="🔎 Buscar um item para ver a análise completa..." style="flex:1;padding:11px 14px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);font-size:13px" onkeydown="if(event.key==='Enter')analisarItemBusca()">
+          <datalist id="preco-itens-list"></datalist>
+          <button class="btn btn-primary" onclick="analisarItemBusca()">Analisar item</button>
+        </div>
+
         <!-- ABAS -->
         <div class="tabs" style="margin-bottom:20px;background:var(--bg3);border-radius:10px;padding:4px">
           <button class="tab active" id="aba-resumo" onclick="mudarAbaPreco('resumo')">📊 Resumo</button>
@@ -1558,6 +1565,10 @@ function carregarAnalisePrecos(){
       precoGlobalItems = items;
       precoGlobalTotal = total;
 
+      // Popula o autocomplete da busca de item
+      var dl = document.getElementById('preco-itens-list');
+      if(dl) dl.innerHTML = items.map(function(i){return '<option value="'+i.nome.replace(/"/g,'&quot;')+'">';}).join('');
+
       mudarAbaPreco('resumo');
     })
     .catch(e => {
@@ -1949,6 +1960,15 @@ function desenharGraficosTemporais(){
 
 function exportarAnalise(){
   toast('Exportação será implementada em breve!', 'warning');
+}
+
+function analisarItemBusca(){
+  var termo = ((document.getElementById('preco-busca-item')||{}).value || '').trim().toLowerCase();
+  if(!termo){ toast('Digite o nome de um item','error'); return; }
+  var item = precoGlobalItems.find(function(i){return i.nome.toLowerCase()===termo;})
+          || precoGlobalItems.find(function(i){return i.nome.toLowerCase().indexOf(termo)>=0;});
+  if(!item){ toast('Item não encontrado','error'); return; }
+  abrirModalPrecoDiscrepancia(item.nome);
 }
 
 function abrirModalPrecoDiscrepancia(nomeItem){
