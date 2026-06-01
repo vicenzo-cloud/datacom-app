@@ -2779,6 +2779,17 @@ function renderComprasDash(){
   });
 
   var html = '';
+  // ── Busca de item: melhor x pior fornecedor ──
+  html += '<div class="card" style="padding:18px;margin-bottom:20px">';
+  html += '<div style="font-size:12px;color:#e2e8e4;font-weight:bold;margin-bottom:4px">🔎 Onde comprar melhor — análise por item</div>';
+  html += '<div style="font-size:11px;color:#aab3ae;margin-bottom:12px">Busque um item para ver o fornecedor mais barato e o mais caro do histórico.</div>';
+  html += '<div style="display:flex;gap:8px;align-items:center">';
+  html += '<input type="text" id="compras-busca-item" list="compras-itens-list" placeholder="Digite o nome do item..." style="flex:1;padding:11px 14px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);font-size:13px" onkeydown="if(event.key===\'Enter\')buscarFornecedorItem()">';
+  html += '<datalist id="compras-itens-list"></datalist>';
+  html += '<button class="btn btn-primary" onclick="buscarFornecedorItem()">Ver fornecedores</button>';
+  html += '</div><div id="compras-forn-result" style="margin-top:14px"></div>';
+  html += '</div>';
+
   html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">';
   html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px">';
   html += '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Total Comprado</div>';
@@ -2825,6 +2836,63 @@ function renderComprasDash(){
   html += '</table>';
 
   document.getElementById('compras-content').innerHTML = html;
+
+  // Carrega os dados de análise (fornecedores por item) e popula o autocomplete
+  function popularBuscaCompras(){
+    var dl = document.getElementById('compras-itens-list');
+    if(dl && _dadosPorUnidade && _dadosPorUnidade['__TODAS__']){
+      dl.innerHTML = Object.keys(_dadosPorUnidade['__TODAS__']).map(function(n){return '<option value="'+n.replace(/"/g,'&quot;')+'">';}).join('');
+    }
+  }
+  if(_dadosPorUnidade && _dadosPorUnidade['__TODAS__']){ popularBuscaCompras(); }
+  else {
+    fetch('analise_por_unidade.json?t='+Date.now()).then(function(r){return r.json();}).then(function(d){ _dadosPorUnidade=d; popularBuscaCompras(); }).catch(function(){});
+  }
+}
+
+// Busca um item e mostra melhor (mais barato) e pior (mais caro) fornecedor
+function buscarFornecedorItem(){
+  var alvo = document.getElementById('compras-forn-result');
+  var termo = ((document.getElementById('compras-busca-item')||{}).value || '').trim().toLowerCase();
+  if(!termo){ toast('Digite o nome de um item','error'); return; }
+  var dados = (_dadosPorUnidade && _dadosPorUnidade['__TODAS__']) || {};
+  var nome = Object.keys(dados).find(function(n){return n.toLowerCase()===termo;})
+          || Object.keys(dados).find(function(n){return n.toLowerCase().indexOf(termo)>=0;});
+  if(!nome){ alvo.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px">Item não encontrado no histórico de compras.</div>'; return; }
+  var it = dados[nome];
+  var forn = it.fornecedores||{};
+  var lista = Object.keys(forn).map(function(f){return {nome:f, pm:forn[f].preco_medio, qtd:forn[f].qtd, min:forn[f].preco_min, max:forn[f].preco_max};});
+  if(!lista.length){ alvo.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px">Sem dados de fornecedor para este item.</div>'; return; }
+  lista.sort(function(a,b){return a.pm-b.pm;});
+  var melhor=lista[0], pior=lista[lista.length-1];
+
+  var h='';
+  h += '<div style="font-weight:bold;color:var(--text);margin-bottom:4px">'+nome+'</div>';
+  h += '<div style="font-size:11px;color:var(--muted);margin-bottom:12px">'+it.quantidade_compras+' compras · preço médio R$ '+it.preco_medio.toFixed(2)+'</div>';
+  // Cards melhor x pior
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">';
+  h += '<div style="background:var(--bg3);border-left:4px solid var(--green);border-radius:8px;padding:14px">';
+  h += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">🟢 Melhor fornecedor (mais barato)</div>';
+  h += '<div style="font-weight:bold;color:var(--green);font-size:16px">R$ '+melhor.pm.toFixed(2)+'</div>';
+  h += '<div style="font-size:12px;color:var(--text);margin-top:4px">'+melhor.nome+'</div>';
+  h += '<div style="font-size:10px;color:var(--muted);margin-top:4px">'+melhor.qtd+' un compradas · faixa R$ '+melhor.min.toFixed(2)+'–'+melhor.max.toFixed(2)+'</div>';
+  h += '</div>';
+  h += '<div style="background:var(--bg3);border-left:4px solid var(--red);border-radius:8px;padding:14px">';
+  h += '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">🔴 Pior fornecedor (mais caro)</div>';
+  h += '<div style="font-weight:bold;color:var(--red);font-size:16px">R$ '+pior.pm.toFixed(2)+'</div>';
+  h += '<div style="font-size:12px;color:var(--text);margin-top:4px">'+pior.nome+'</div>';
+  h += '<div style="font-size:10px;color:var(--muted);margin-top:4px">'+pior.qtd+' un compradas · faixa R$ '+pior.min.toFixed(2)+'–'+pior.max.toFixed(2)+'</div>';
+  h += '</div></div>';
+  var economiaPct = pior.pm>0 ? ((pior.pm-melhor.pm)/pior.pm*100) : 0;
+  if(lista.length>1) h += '<div style="font-size:12px;color:var(--accent);margin-bottom:12px">💡 Comprando do '+melhor.nome+' em vez do '+pior.nome+', você economiza <strong>'+economiaPct.toFixed(0)+'%</strong> por unidade.</div>';
+  // Tabela completa de fornecedores
+  h += '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="border-bottom:2px solid var(--border);color:var(--muted);font-size:10px;text-transform:uppercase;text-align:left"><th style="padding:7px">Fornecedor</th><th style="padding:7px;text-align:right">Preço médio</th><th style="padding:7px;text-align:right">Qtd comprada</th></tr></thead><tbody>';
+  lista.forEach(function(f,idx){
+    var cor = idx===0?'var(--green)':(idx===lista.length-1?'var(--red)':'var(--text)');
+    h += '<tr style="border-bottom:1px solid var(--border)"><td style="padding:7px;color:'+cor+'">'+f.nome+'</td><td style="padding:7px;text-align:right;color:'+cor+';font-weight:bold">R$ '+f.pm.toFixed(2)+'</td><td style="padding:7px;text-align:right;color:var(--muted)">'+f.qtd+'</td></tr>';
+  });
+  h += '</tbody></table>';
+  alvo.innerHTML = h;
 }
 
 // ── RENDER TIMELINE ──
