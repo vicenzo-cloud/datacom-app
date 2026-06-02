@@ -296,6 +296,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
     <div class="nav-item" id="nav-timeline" onclick="switchView('timeline')"><span class="icon">⟳</span><span class="lbl">Timeline</span></div>
     <div class="nav-item" id="nav-sugestoes" onclick="switchView('sugestoes')"><span class="icon">🛒</span><span class="lbl">Sugestões</span></div>
     <div class="nav-item" id="nav-gastos" onclick="switchView('gastos')"><span class="icon">💰</span><span class="lbl">Gastos/Unidade</span></div>
+    <div class="nav-item" id="nav-subestimados" onclick="switchView('subestimados')"><span class="icon">📉</span><span class="lbl">Subestimados</span></div>
     <p class="sidebar-section">Projetos</p>
     <div id="proj-list"></div>
     <button class="btn-new-proj" onclick="openModal('modal-proj')">+ Novo projeto</button>
@@ -536,6 +537,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
         <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">💰 Gastos por Unidade de Negócio</h2>
         <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Quanto cada unidade gastou e a variação mês a mês</p>
         <div id="gastos-content"></div>
+      </div>
+
+      <!-- ITENS SUBESTIMADOS -->
+      <div class="page" id="page-subestimados">
+        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">📉 Itens Subestimados</h2>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Itens cujo preço previsto costuma ficar abaixo do real — orce mais alto no futuro</p>
+        <div id="subestimados-content"></div>
       </div>
 
     </div>
@@ -875,6 +883,7 @@ function renderTopbar(){
   else if(S.view==='preco'){document.getElementById('nav-preco').classList.add('active');title.childNodes[0].textContent='Análise de Preços ';sub.textContent='Inteligência comercial';}
   else if(S.view==='sugestoes'){title.childNodes[0].textContent='Sugestões de Compra ';sub.textContent='Baseado no histórico de compras';}
   else if(S.view==='gastos'){title.childNodes[0].textContent='Gastos por Unidade ';sub.textContent='Por unidade e mês a mês';}
+  else if(S.view==='subestimados'){title.childNodes[0].textContent='Itens Subestimados ';sub.textContent='Previsto abaixo do real';}
   if(S.view==='dashboard'){document.getElementById('nav-dashboard').classList.add('active');title.childNodes[0].textContent='Dashboard ';sub.textContent='Visão geral';}
   else if(S.view==='nf'){document.getElementById('nav-nf').classList.add('active');title.childNodes[0].textContent='Notas Fiscais ';sub.textContent='Relatório';btnNF.style.display='flex';}
   else if(S.view==='projeto'){
@@ -1143,6 +1152,7 @@ function renderPages(){
   document.getElementById('page-timeline').classList.toggle('active',S.view==='timeline');
   document.getElementById('page-sugestoes').classList.toggle('active',S.view==='sugestoes');
   document.getElementById('page-gastos').classList.toggle('active',S.view==='gastos');
+  document.getElementById('page-subestimados').classList.toggle('active',S.view==='subestimados');
   if(S.view==='dashboard')renderDashboard();
   if(S.view==='projeto')renderProjeto();
   if(S.view==='nf')renderNFPage();
@@ -1154,6 +1164,7 @@ function renderPages(){
   if(S.view==='timeline')renderTimeline();
   if(S.view==='sugestoes')renderSugestoes();
   if(S.view==='gastos')renderGastos();
+  if(S.view==='subestimados')renderSubestimados();
 }
 
 // ── DASHBOARD ──
@@ -3556,6 +3567,79 @@ function compararMeses(){
   html += '<td style="padding:7px;color:'+corT+'">'+(totD>0?'+':'')+brl(totD).replace('R$ ','')+'</td></tr>';
   html += '</tbody></table>';
   wrap.innerHTML = html;
+}
+
+// ── ITENS SUBESTIMADOS (previsto < real) ──
+function renderSubestimados(){
+  var alvo = document.getElementById('subestimados-content');
+  // Detecta quantidade no nome (x20 / ×20 / (x20)) ou usa qtd do serviço
+  function qtdDe(nome, qtd){
+    if(qtd && qtd>1) return qtd;
+    var m = (nome||'').match(/[x×]\s*(\d{1,5})\)?/i);
+    return m ? parseInt(m[1],10) : 1;
+  }
+  var mapa = {};
+  S.projects.forEach(function(p){
+    var lin = (p.items||[]).map(function(i){return {i:i,q:qtdDe(i.nome,1)};})
+      .concat((p.services||[]).map(function(i){return {i:i,q:qtdDe(i.nome,i.qtd)};}));
+    lin.forEach(function(o){
+      var i=o.i, prev=Number(i.prev)||0, real=Number(i.real)||0;
+      if(prev<=0) return; // sem previsto não dá pra comparar
+      var nome=(i.nome||'').trim();
+      var m = mapa[nome] || (mapa[nome]={nome:nome, ocorr:0, acima:0, prevAcima:0, realAcima:0, qtdAcima:0, projetos:{}});
+      m.ocorr++;
+      if(real>prev){
+        m.acima++; m.prevAcima+=prev; m.realAcima+=real; m.qtdAcima+=o.q; m.projetos[p.nome]=1;
+      }
+    });
+  });
+  var lista = Object.keys(mapa).map(function(k){return mapa[k];}).filter(function(m){return m.acima>0;});
+  lista.forEach(function(m){
+    m.dif = m.realAcima - m.prevAcima;
+    m.pct = m.prevAcima>0 ? (m.dif/m.prevAcima*100) : 0;
+    m.freq = m.ocorr>0 ? (m.acima/m.ocorr*100) : 0;
+    m.nProj = Object.keys(m.projetos).length;
+  });
+  lista.sort(function(a,b){return b.dif-a.dif;});
+
+  if(!lista.length){ alvo.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">Nenhum item ficou acima do previsto 👍</div>'; return; }
+
+  var totDif = lista.reduce(function(s,m){return s+m.dif;},0);
+  var recorrentes = lista.filter(function(m){return m.acima>=2;}).length;
+  var maior = lista[0];
+
+  var html='';
+  // Cards resumo
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">';
+  html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Itens subestimados</div><div style="font-family:var(--serif);font-size:22px;font-weight:800;color:var(--red)">'+lista.length+'</div><div style="font-size:10px;color:var(--muted);margin-top:4px">'+recorrentes+' recorrentes (2+ vezes)</div></div>';
+  html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Total gasto a mais</div><div style="font-family:var(--serif);font-size:22px;font-weight:800;color:var(--red)">'+brl(totDif)+'</div><div style="font-size:10px;color:var(--muted);margin-top:4px">acima do previsto</div></div>';
+  html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Maior subestimação</div><div style="font-family:var(--serif);font-size:18px;font-weight:800;color:var(--red)">'+brl(maior.dif)+'</div><div style="font-size:10px;color:var(--muted);margin-top:4px">'+maior.nome.slice(0,30)+'</div></div>';
+  html += '</div>';
+
+  html += '<div style="background:var(--bg3);border-left:3px solid var(--amber);padding:12px 16px;border-radius:6px;margin-bottom:18px;font-size:12px;color:#aab3ae;line-height:1.6">💡 <strong style="color:#e2e8e4">Como usar:</strong> estes itens custaram <strong style="color:var(--red)">mais do que você previu</strong>. A coluna "frequência" mostra se isso acontece sempre. Considere orçar esses itens com o valor mais próximo do real (coluna "previsto sugerido").</div>';
+
+  // Tabela
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="border-bottom:2px solid var(--border);text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase">';
+  html += '<th style="padding:10px 8px">Item</th><th style="padding:10px 8px;text-align:center">Qtd</th><th style="padding:10px 8px;text-align:center">Frequência</th><th style="padding:10px 8px;text-align:right">Previsto</th><th style="padding:10px 8px;text-align:right">Real</th><th style="padding:10px 8px;text-align:right">A mais</th><th style="padding:10px 8px;text-align:right">Previsto sugerido</th>';
+  html += '</tr></thead><tbody>';
+  lista.slice(0,100).forEach(function(m){
+    var freqCor = m.freq>=100?'var(--red)':m.freq>=50?'var(--amber)':'var(--muted)';
+    var freqTxt = m.acima+'/'+m.ocorr+(m.ocorr>1?' projetos':'');
+    var sugerido = m.realAcima/Math.max(1,m.acima); // média do real quando estourou
+    html += '<tr style="border-bottom:1px solid var(--border)">';
+    html += '<td style="padding:10px 8px;color:var(--text)">'+m.nome+'</td>';
+    html += '<td style="padding:10px 8px;text-align:center;color:var(--muted)">'+m.qtdAcima+'</td>';
+    html += '<td style="padding:10px 8px;text-align:center;color:'+freqCor+';font-weight:bold">'+m.freq.toFixed(0)+'%<br><span style="font-size:9px;color:var(--muted);font-weight:normal">'+freqTxt+'</span></td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:var(--muted)">'+brl(m.prevAcima)+'</td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:var(--text)">'+brl(m.realAcima)+'</td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:var(--red);font-weight:bold">+'+brl(m.dif)+'<br><span style="font-size:9px;font-weight:normal">+'+m.pct.toFixed(0)+'%</span></td>';
+    html += '<td style="padding:10px 8px;text-align:right;color:var(--accent)">'+brl(m.realAcima)+'</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  if(lista.length>100) html += '<div style="text-align:center;color:var(--muted);font-size:11px;margin-top:12px">Mostrando os 100 de maior impacto de '+lista.length+'</div>';
+
+  alvo.innerHTML = html;
 }
 
 // ── EXPORTAR PDF ──
