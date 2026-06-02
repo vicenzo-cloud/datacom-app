@@ -328,13 +328,33 @@ thread.start()
 
 # Grava o endereco de acesso da rede num arquivo para o usuario compartilhar
 try:
-    _ip = ip_local()
-    _txt = ('COMO OUTRAS PESSOAS ACESSAM (mesma rede / Wi-Fi):\n\n'
-            '  1. Abra o navegador no computador da pessoa\n'
-            '  2. Acesse:  http://' + _ip + ':' + str(porta) + '\n'
-            '  3. Senha da equipe:  ' + SENHA + '\n\n'
-            '(Para trocar a senha, edite o arquivo config.json e reinicie o app.)\n'
-            'Obs: este computador precisa estar ligado e com o app aberto.\n')
+    _hostname = socket.gethostname()
+    # Lista todos os IPv4 da maquina (Wi-Fi, Ethernet, etc.)
+    _ips = []
+    try:
+        for _info in socket.getaddrinfo(_hostname, None, socket.AF_INET):
+            _a = _info[4][0]
+            if _a not in _ips and not _a.startswith('127.') and not _a.startswith('169.'):
+                _ips.append(_a)
+    except Exception:
+        pass
+    if not _ips:
+        _ips = [ip_local()]
+    _linhas_ip = ''.join(['        http://' + _a + ':' + str(porta) + '\n' for _a in _ips])
+    _txt = ('COMO OUTRAS PESSOAS ACESSAM (mesma rede / Wi-Fi)\n'
+            '================================================\n\n'
+            'OPCAO 1 (recomendada - NAO muda quando o IP troca):\n'
+            '        http://' + _hostname + ':' + str(porta) + '\n\n'
+            'OPCAO 2 (por IP - pode mudar de tempos em tempos):\n'
+            + _linhas_ip + '\n'
+            'Senha da equipe:  ' + SENHA + '\n\n'
+            '------------------------------------------------\n'
+            'IMPORTANTE - se nao abrir no outro computador:\n'
+            '  - Libere a porta no Firewall do Windows (uma vez).\n'
+            '    Abra o PowerShell COMO ADMINISTRADOR e cole:\n'
+            '    New-NetFirewallRule -DisplayName "Projetos Suprimentos" -Direction Inbound -Protocol TCP -LocalPort ' + str(porta) + ' -Action Allow\n'
+            '  - Este computador precisa estar ligado e com o app aberto.\n'
+            '  - Para trocar a senha: edite config.json e reabra o app.\n')
     (Path(__file__).parent / 'ACESSO_REDE.txt').write_text(_txt, encoding='utf-8')
 except Exception:
     pass
