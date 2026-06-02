@@ -4,22 +4,31 @@ import socketserver
 import threading
 import socket
 import os
+import sys
+import webbrowser
 from pathlib import Path
-
-def encontrar_porta(inicial=5000):
-    for porta in range(inicial, inicial + 100):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.bind(('localhost', porta))
-            s.close()
-            return porta
-        except OSError:
-            continue
-    return inicial
 
 os.chdir(Path(__file__).parent)
 
-porta = encontrar_porta()
+# ── INSTANCIA UNICA: porta fixa 5000 ──
+# Se a porta ja estiver em uso, ja existe um app rodando. Em vez de abrir
+# outra copia (que brigaria pelos dados), abre o app no navegador e sai.
+porta = 5000
+def _porta_em_uso(p):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(0.5)
+    try:
+        usado = (s.connect_ex(('127.0.0.1', p)) == 0)
+    finally:
+        s.close()
+    return usado
+
+if _porta_em_uso(porta):
+    try:
+        webbrowser.open('http://localhost:' + str(porta))
+    except Exception:
+        pass
+    sys.exit(0)
 
 import json as _cfgjson, secrets
 
