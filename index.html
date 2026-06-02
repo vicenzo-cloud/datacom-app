@@ -1000,11 +1000,26 @@ function renderComparativo(){
     +'<div class="mc"><div class="mc-lbl">'+(avgMatPct>=0?'Média redução':'Média aumento')+' — Materiais</div><div class="mc-val" style="color:'+_fv(avgMatPct).c+'">'+_fv(avgMatPct).t+'</div><div class="mc-sub">resultado: '+(totEcoMat>=0?'economia ':'estouro ')+brl(Math.abs(totEcoMat))+'</div></div>'
     +'<div class="mc"><div class="mc-lbl">'+(avgSvcPct>=0?'Média redução':'Média aumento')+' — Serviços</div><div class="mc-val" style="color:'+_fv(avgSvcPct).c+'">'+_fv(avgSvcPct).t+'</div><div class="mc-sub">resultado: '+(totEcoSvc>=0?'economia ':'estouro ')+brl(Math.abs(totEcoSvc))+'</div></div>'
     +'</div>'
-    +'<div class="comp-section" style="border-left:4px solid #c084fc;margin-bottom:20px">'
-    +'<div style="font-size:13px;font-weight:bold;color:#c084fc;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">📋 Total do projeto: '+(totDiff>0?('aumentou +'+Math.abs(totPct).toFixed(1)+'%'):('reduziu − '+Math.abs(totPct).toFixed(1)+'%'))+' ('+(totDiff>0?'+':'− ')+brl(Math.abs(totDiff))+')</div>'
-    +'<div style="font-size:11px;color:#aab3ae;margin-bottom:14px">'+naoValidados.length+' item(ns) acima do previsto'+(pendentes?' · '+pendentes+' pendente(s) de justificativa':(naoValidados.length?' · todos revisados':''))+'. Justifique e marque ✓ (justificado) ou ✕ (não justificado).</div>'
-    +(naoValidados.length ? naoValidados.map(function(n){return _cardItemAcima(n,'var(--bg2)');}).join('') : '<div style="color:var(--muted);padding:16px;text-align:center">Nenhum item ficou acima do previsto 👍</div>')
+    +'<div style="border:1px solid var(--border);border-left:4px solid #c084fc;border-radius:14px;background:linear-gradient(135deg,rgba(192,132,252,0.10),rgba(192,132,252,0.02));padding:20px 22px;margin-bottom:14px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">'
+    +'<div>'
+    +'<div style="font-size:10px;color:#c084fc;text-transform:uppercase;letter-spacing:.12em;font-weight:bold;margin-bottom:8px">📋 Resultado total do projeto</div>'
+    +'<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">'
+    +'<span style="font-family:var(--serif);font-size:32px;font-weight:800;color:'+corTot+';line-height:1">'+sinalTot+Math.abs(totPct).toFixed(1)+'%</span>'
+    +'<span style="font-size:15px;font-weight:700;color:'+corTot+'">'+(totDiff>0?'+':'− ')+brl(Math.abs(totDiff))+'</span>'
+    +'<span style="font-size:12px;color:var(--muted)">'+(totDiff>0?'acima':'abaixo')+' do previsto</span>'
     +'</div>'
+    +'<div style="font-size:12px;color:var(--muted);margin-top:6px">O projeto '+(totDiff>0?'<strong style="color:var(--red)">aumentou</strong>':'<strong style="color:var(--accent)">reduziu</strong>')+' considerando todos os itens (validados + não validados).</div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +'<span style="background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:8px 14px;font-size:12px;color:var(--text)"><strong style="color:var(--red)">'+naoValidados.length+'</strong> acima do previsto</span>'
+    +(pendentes?'<span style="background:var(--amber-dim);border:1px solid rgba(240,165,0,.25);border-radius:20px;padding:8px 14px;font-size:12px;color:var(--amber)"><strong>'+pendentes+'</strong> pendente(s)</span>':(naoValidados.length?'<span style="background:var(--accent-dim);border:1px solid rgba(0,212,138,.25);border-radius:20px;padding:8px 14px;font-size:12px;color:var(--accent)">✓ todos revisados</span>':''))
+    +'</div>'
+    +'</div></div>'
+    +(naoValidados.length ?
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding-left:2px">Itens acima do previsto — escreva a justificativa e marque ✓ (sai do cálculo) ou ✕ (conta na %):</div>'
+      +naoValidados.map(function(n){return _cardItemAcima(n,'var(--bg2)');}).join('')
+      : '')
     +'<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;display:flex;gap:32px;font-size:11px;font-family:var(--mono)">'
     +'<span style="color:var(--muted)">Média geral (mat+svc validados): <strong style="color:'+_fv(avgRedPct).c+'">'+_fv(avgRedPct).t+'</strong></span>'
     +'<span style="color:var(--muted)">Resultado total: <strong style="color:'+(totEco>=0?'var(--accent)':'var(--red)')+'">'+(totEco>=0?'economia ':'estouro ')+brl(Math.abs(totEco))+'</strong></span>'
