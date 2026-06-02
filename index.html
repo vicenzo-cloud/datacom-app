@@ -897,6 +897,8 @@ function toggleProjSelect(id){
 function selectAllProjs(){S.projects.forEach(function(p){selectedProjs.add(p.id);});renderComparativo();}
 function clearAllProjs(){selectedProjs.clear();renderComparativo();}
 
+// Formata variação: pct>=0 = redução (verde, −); pct<0 = aumento (vermelho, +)
+function _fv(pct){ return pct>=0 ? {t:'− '+pct.toFixed(1)+'%', c:'var(--accent)'} : {t:'+ '+Math.abs(pct).toFixed(1)+'%', c:'var(--red)'}; }
 function renderComparativo(){
   // Selector
   const selDiv = document.getElementById('comp-selector');
@@ -933,15 +935,19 @@ function renderComparativo(){
     var tPrev=mPrev+sPrev, tReal=mReal+sReal, diff=tReal-tPrev;
     var pct=tPrev?((diff/tPrev)*100):0;
 
-    // Validated materials only (real <= prev, not extra)
-    var ecoMat=items.filter(function(i){return !i.extra&&i.prev>0&&i.real<=i.prev;});
+    // Conta no "validado": economia normal (real<=prev) OU estouro NAO justificado.
+    // Estouro JUSTIFICADO (justificado===true) fica de fora do calculo da %.
+    var regraValidado=function(i){
+      if(i.real > i.prev) return i.justificado !== true;
+      return !i.extra && i.prev>0;
+    };
+    var ecoMat=items.filter(regraValidado);
     var ecoMatPrev=ecoMat.reduce(function(s,i){return s+i.prev;},0);
     var ecoMatReal=ecoMat.reduce(function(s,i){return s+i.real;},0);
     var ecoMatSave=ecoMatPrev-ecoMatReal;
     var ecoMatPct=ecoMatPrev?((ecoMatSave/ecoMatPrev)*100):0;
 
-    // Validated services only (real <= prev, not extra)
-    var ecoSvc=svcs.filter(function(i){return !i.extra&&i.prev>0&&i.real<=i.prev;});
+    var ecoSvc=svcs.filter(regraValidado);
     var ecoSvcPrev=ecoSvc.reduce(function(s,i){return s+i.prev;},0);
     var ecoSvcReal=ecoSvc.reduce(function(s,i){return s+i.real;},0);
     var ecoSvcSave=ecoSvcPrev-ecoSvcReal;
@@ -991,8 +997,8 @@ function renderComparativo(){
     '<div class="comp-metric-grid">'
     +'<div class="mc blue"><div class="mc-lbl">Projetos analisados</div><div class="mc-val blue">'+selected.length+'</div><div class="mc-sub">selecionados</div></div>'
     +'<div class="mc"><div class="mc-lbl">Variação TOTAL (tudo incluído)</div><div class="mc-val" style="color:'+corTot+'">'+sinalTot+Math.abs(totPct).toFixed(1)+'%</div><div class="mc-sub" style="color:'+corTot+'">'+(totDiff>0?'+':'− ')+brl(Math.abs(totDiff))+' vs previsto</div></div>'
-    +'<div class="mc green"><div class="mc-lbl">Média redução — Materiais</div><div class="mc-val green">− '+avgMatPct.toFixed(1)+'%</div><div class="mc-sub">economia: '+brl(totEcoMat)+'</div></div>'
-    +'<div class="mc amber"><div class="mc-lbl">Média redução — Serviços</div><div class="mc-val amber">− '+avgSvcPct.toFixed(1)+'%</div><div class="mc-sub">economia: '+brl(totEcoSvc)+'</div></div>'
+    +'<div class="mc"><div class="mc-lbl">'+(avgMatPct>=0?'Média redução':'Média aumento')+' — Materiais</div><div class="mc-val" style="color:'+_fv(avgMatPct).c+'">'+_fv(avgMatPct).t+'</div><div class="mc-sub">resultado: '+(totEcoMat>=0?'economia ':'estouro ')+brl(Math.abs(totEcoMat))+'</div></div>'
+    +'<div class="mc"><div class="mc-lbl">'+(avgSvcPct>=0?'Média redução':'Média aumento')+' — Serviços</div><div class="mc-val" style="color:'+_fv(avgSvcPct).c+'">'+_fv(avgSvcPct).t+'</div><div class="mc-sub">resultado: '+(totEcoSvc>=0?'economia ':'estouro ')+brl(Math.abs(totEcoSvc))+'</div></div>'
     +'</div>'
     +'<div class="comp-section" style="border-left:4px solid #c084fc;margin-bottom:20px">'
     +'<div style="font-size:13px;font-weight:bold;color:#c084fc;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">📋 Total do projeto: '+(totDiff>0?('aumentou +'+Math.abs(totPct).toFixed(1)+'%'):('reduziu − '+Math.abs(totPct).toFixed(1)+'%'))+' ('+(totDiff>0?'+':'− ')+brl(Math.abs(totDiff))+')</div>'
@@ -1000,8 +1006,8 @@ function renderComparativo(){
     +(naoValidados.length ? naoValidados.map(function(n){return _cardItemAcima(n,'var(--bg2)');}).join('') : '<div style="color:var(--muted);padding:16px;text-align:center">Nenhum item ficou acima do previsto 👍</div>')
     +'</div>'
     +'<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;display:flex;gap:32px;font-size:11px;font-family:var(--mono)">'
-    +'<span style="color:var(--muted)">Média geral (mat+svc validados): <strong style="color:var(--accent)">− '+avgRedPct.toFixed(1)+'%</strong></span>'
-    +'<span style="color:var(--muted)">Economia total: <strong style="color:var(--accent)">'+brl(totEco)+'</strong></span>'
+    +'<span style="color:var(--muted)">Média geral (mat+svc validados): <strong style="color:'+_fv(avgRedPct).c+'">'+_fv(avgRedPct).t+'</strong></span>'
+    +'<span style="color:var(--muted)">Resultado total: <strong style="color:'+(totEco>=0?'var(--accent)':'var(--red)')+'">'+(totEco>=0?'economia ':'estouro ')+brl(Math.abs(totEco))+'</strong></span>'
     +'<span style="color:var(--muted)">Maior economia: <strong style="color:var(--accent)">'+maxEco.p.nome+'</strong></span>'
     +'</div>'
 
@@ -1011,38 +1017,39 @@ function renderComparativo(){
     +'<div class="comp-section">'
     +'<div class="comp-section-title">% de redução nos itens validados por projeto</div>'
     +rows.map(function(r){
-      var w=r.ecoPct>0?(r.ecoPct/Math.max.apply(null,rows.map(function(x){return x.ecoPct;}))*100).toFixed(1):'0';
+      var maxAbsEco=Math.max.apply(null,rows.map(function(x){return Math.abs(x.ecoPct);}))||1;
+      var w=(Math.abs(r.ecoPct)/maxAbsEco*100).toFixed(1);
+      var fv=_fv(r.ecoPct);
       return '<div class="comp-proj-row">'
         +'<div class="comp-proj-name">'+r.p.nome+'</div>'
-        +'<div class="comp-bar-track"><div class="comp-bar-fill" style="width:'+w+'%;background:var(--accent)"></div></div>'
-        +'<div class="comp-pct" style="color:var(--accent)">− '+r.ecoPct.toFixed(1)+'%</div>'
-        +'<div class="comp-val">economia: '+brl(r.ecoSave)+'</div>'
+        +'<div class="comp-bar-track"><div class="comp-bar-fill" style="width:'+w+'%;background:'+fv.c+'"></div></div>'
+        +'<div class="comp-pct" style="color:'+fv.c+'">'+fv.t+'</div>'
+        +'<div class="comp-val">'+(r.ecoSave>=0?'economia: ':'estouro: ')+brl(Math.abs(r.ecoSave))+'</div>'
         +'</div>';
     }).join('')
     +'<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:24px;font-size:11px;font-family:var(--mono)">'
-    +'<span style="color:var(--muted)">Média de redução: <strong style="color:var(--accent)">− '+avgRedPct.toFixed(1)+'%</strong></span>'
+    +'<span style="color:var(--muted)">Média validada: <strong style="color:'+_fv(avgRedPct).c+'">'+_fv(avgRedPct).t+'</strong></span>'
     +'<span style="color:var(--muted)">Maior economia: <strong style="color:var(--accent)">'+maxEco.p.nome+' (− '+brl(maxEco.ecoSave)+')</strong></span>'
     +'</div></div>'
 
     // Tabela resumo
     +'<div class="comp-section">'
     +'<div class="comp-section-title">Resumo completo</div>'
-    +'<table class="tbl"><thead><tr><th>Projeto</th><th>Previsto</th><th>Real</th><th>Economia validada</th><th>% Redução</th></tr></thead><tbody>'
+    +'<table class="tbl"><thead><tr><th>Projeto</th><th>Previsto</th><th>Real</th><th>Resultado validado</th><th>% Variação validada</th></tr></thead><tbody>'
     +rows.map(function(r){
-      var bc=r.pct>0?'badge-red':'badge-green';
-      var ec=r.ecoPct>0?'badge-green':'badge-muted';
+      var fM=_fv(r.ecoMatPct), fS=_fv(r.ecoSvcPct);
       return '<tr><td style="color:var(--text)">'+r.p.nome+'</td>'
         +'<td>'+brl(r.tPrev)+'</td>'
         +'<td>'+brl(r.tReal)+'</td>'
-        +'<td style="color:var(--accent)">− '+brl(r.ecoSave)+'</td>'
-        +'<td><span class="badge '+(r.ecoMatPct>0?'badge-green':'badge-muted')+'">Mat: − '+r.ecoMatPct.toFixed(1)+'%</span> <span class="badge '+(r.ecoSvcPct>0?'badge-amber':'badge-muted')+'">Svc: − '+r.ecoSvcPct.toFixed(1)+'%</span></td>'
+        +'<td style="color:'+(r.ecoSave>=0?'var(--accent)':'var(--red)')+'">'+(r.ecoSave>=0?'− ':'+ ')+brl(Math.abs(r.ecoSave))+'</td>'
+        +'<td><span class="badge" style="color:'+fM.c+'">Mat: '+fM.t+'</span> <span class="badge" style="color:'+fS.c+'">Svc: '+fS.t+'</span></td>'
         +'</tr>';
     }).join('')
     +'<tr class="total-row"><td style="color:var(--text)">Total / Média</td>'
     +'<td>'+brl(totPrev)+'</td>'
     +'<td>'+brl(totReal)+'</td>'
-    +'<td style="color:var(--accent)">− '+brl(totEco)+'</td>'
-    +'<td><span class="badge badge-green">Mat: − '+avgMatPct.toFixed(1)+'%</span> <span class="badge badge-amber">Svc: − '+avgSvcPct.toFixed(1)+'%</span></td>'
+    +'<td style="color:'+(totEco>=0?'var(--accent)':'var(--red)')+'">'+(totEco>=0?'− ':'+ ')+brl(Math.abs(totEco))+'</td>'
+    +'<td><span class="badge" style="color:'+_fv(avgMatPct).c+'">Mat: '+_fv(avgMatPct).t+'</span> <span class="badge" style="color:'+_fv(avgSvcPct).c+'">Svc: '+_fv(avgSvcPct).t+'</span></td>'
     +'</tr>'
     +'</tbody></table></div>';
 }
@@ -1078,25 +1085,28 @@ function _cardItemAcima(n, bg){
   var prev=Number(i.prev)||0, real=Number(i.real)||0, dif=real-prev;
   var difPct=prev>0?(dif/prev*100):100;
   var st=i.justificado; // true / false / undefined
-  var borda = st===true?'var(--accent)':st===false?'var(--red)':'var(--amber)';
-  var selo = st===true?'<span style="color:var(--accent);font-weight:bold">✓ Justificado</span>':st===false?'<span style="color:var(--red);font-weight:bold">✕ Não justificado</span>':'<span style="color:var(--amber)">Pendente</span>';
-  var h = '<div style="background:'+(bg||'var(--bg3)')+';border-left:4px solid '+borda+';border-radius:8px;padding:14px;margin-bottom:12px">';
-  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">';
-  h += '<div><div style="font-weight:bold;color:var(--text);font-size:13px">'+i.nome+'</div><div style="font-size:11px;color:var(--muted)">'+n.proj+' · '+n.tipo+'</div></div>';
-  h += '<div style="text-align:right;font-size:12px">'+selo+'</div>';
-  h += '</div>';
-  h += '<div style="display:flex;gap:24px;margin:10px 0;font-size:12px;flex-wrap:wrap">';
-  h += '<div><span style="color:var(--muted)">Previsto:</span> <strong>'+brl(prev)+'</strong></div>';
-  h += '<div><span style="color:var(--muted)">Real:</span> <strong style="color:var(--red)">'+brl(real)+'</strong></div>';
-  h += '<div><span style="color:var(--muted)">Acima em:</span> <strong style="color:var(--red)">+'+brl(dif)+' (+'+difPct.toFixed(0)+'%)</strong></div>';
-  h += '</div>';
-  h += '<div style="display:flex;gap:8px;align-items:flex-end">';
-  h += '<textarea id="just-'+i.id+'" placeholder="Justificativa para o valor acima do previsto..." style="flex:1;min-height:48px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;font-family:inherit;resize:vertical">'+(i.justificativa||'').replace(/</g,'&lt;')+'</textarea>';
-  h += '<button class="btn btn-secondary btn-sm" onclick="salvarJustificativaNV(\''+n.projId+'\',\''+i.id+'\')" title="Salvar justificativa">💾</button>';
-  h += '<button class="btn btn-sm" style="background:var(--accent-dim);color:var(--accent);border:1px solid rgba(0,212,138,.3)" onclick="setJustificadoNV(\''+n.projId+'\',\''+i.id+'\',true)" title="Justificado">✓</button>';
-  h += '<button class="btn btn-sm" style="background:var(--red-dim);color:var(--red);border:1px solid rgba(255,82,82,.3)" onclick="setJustificadoNV(\''+n.projId+'\',\''+i.id+'\',false)" title="Não justificado">✕</button>';
-  h += '</div>';
-  h += '</div>';
+  var conf = st===true ? {borda:'var(--accent)', selo:'✓ Justificado · fora da %', cor:'var(--accent)'}
+           : st===false ? {borda:'var(--red)', selo:'✕ Não justificado · conta na %', cor:'var(--red)'}
+           : {borda:'var(--amber)', selo:'⏳ Pendente · conta na %', cor:'var(--amber)'};
+  var chip=function(lbl,val,cor){ return '<div style="background:var(--bg3);border-radius:6px;padding:6px 12px;min-width:90px"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">'+lbl+'</div><div style="font-size:13px;font-weight:bold;color:'+(cor||'var(--text)')+'">'+val+'</div></div>'; };
+  var h='<div style="background:'+(bg||'var(--bg2)')+';border:1px solid var(--border);border-left:4px solid '+conf.borda+';border-radius:10px;padding:14px 16px;margin-bottom:10px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">';
+  h+='<div><div style="font-weight:bold;color:var(--text);font-size:13px">'+i.nome+'</div><div style="font-size:10px;color:var(--muted)">'+n.proj+' · '+n.tipo+'</div></div>';
+  h+='<div style="font-size:11px;font-weight:bold;color:'+conf.cor+';background:var(--bg3);padding:4px 10px;border-radius:20px">'+conf.selo+'</div>';
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">';
+  h+=chip('Previsto', brl(prev));
+  h+=chip('Real', brl(real), 'var(--red)');
+  h+=chip('Acima em', '+'+brl(dif)+' · +'+difPct.toFixed(0)+'%', 'var(--red)');
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px;align-items:stretch">';
+  h+='<textarea id="just-'+i.id+'" placeholder="Justificativa para o valor acima do previsto..." style="flex:1;min-height:44px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--bg3);color:var(--text);font-size:12px;font-family:inherit;resize:vertical">'+(i.justificativa||'').replace(/</g,'&lt;')+'</textarea>';
+  h+='<div style="display:flex;flex-direction:column;gap:6px">';
+  h+='<button class="btn btn-secondary btn-sm" onclick="salvarJustificativaNV(\''+n.projId+'\',\''+i.id+'\')" title="Salvar justificativa">💾 Salvar</button>';
+  h+='<div style="display:flex;gap:6px">';
+  h+='<button class="btn btn-sm" style="flex:1;background:'+(st===true?'var(--accent)':'var(--accent-dim)')+';color:'+(st===true?'#0b0e0d':'var(--accent)')+';border:1px solid rgba(0,212,138,.3);font-weight:bold" onclick="setJustificadoNV(\''+n.projId+'\',\''+i.id+'\',true)" title="Justificado — sai do cálculo da %">✓</button>';
+  h+='<button class="btn btn-sm" style="flex:1;background:'+(st===false?'var(--red)':'var(--red-dim)')+';color:'+(st===false?'#fff':'var(--red)')+';border:1px solid rgba(255,82,82,.3);font-weight:bold" onclick="setJustificadoNV(\''+n.projId+'\',\''+i.id+'\',false)" title="Não justificado — conta na %">✕</button>';
+  h+='</div></div></div></div>';
   return h;
 }
 function renderNaoValidados(){
