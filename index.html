@@ -994,7 +994,11 @@ function renderComparativo(){
     +'<div class="mc green"><div class="mc-lbl">Média redução — Materiais</div><div class="mc-val green">− '+avgMatPct.toFixed(1)+'%</div><div class="mc-sub">economia: '+brl(totEcoMat)+'</div></div>'
     +'<div class="mc amber"><div class="mc-lbl">Média redução — Serviços</div><div class="mc-val amber">− '+avgSvcPct.toFixed(1)+'%</div><div class="mc-sub">economia: '+brl(totEcoSvc)+'</div></div>'
     +'</div>'
-    +'<div style="margin-bottom:20px"><button class="btn btn-secondary" onclick="abrirModalNaoValidados()">⚠ Itens acima do previsto — revisar e justificar ('+naoValidados.length+(pendentes?' · '+pendentes+' pendentes':'')+')</button></div>'
+    +'<div class="comp-section" style="border-left:4px solid #c084fc;margin-bottom:20px">'
+    +'<div style="font-size:13px;font-weight:bold;color:#c084fc;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">📋 Total do projeto: '+(totDiff>0?('aumentou +'+Math.abs(totPct).toFixed(1)+'%'):('reduziu − '+Math.abs(totPct).toFixed(1)+'%'))+' ('+(totDiff>0?'+':'− ')+brl(Math.abs(totDiff))+')</div>'
+    +'<div style="font-size:11px;color:#aab3ae;margin-bottom:14px">'+naoValidados.length+' item(ns) acima do previsto'+(pendentes?' · '+pendentes+' pendente(s) de justificativa':(naoValidados.length?' · todos revisados':''))+'. Justifique e marque ✓ (justificado) ou ✕ (não justificado).</div>'
+    +(naoValidados.length ? naoValidados.map(function(n){return _cardItemAcima(n,'var(--bg2)');}).join('') : '<div style="color:var(--muted);padding:16px;text-align:center">Nenhum item ficou acima do previsto 👍</div>')
+    +'</div>'
     +'<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;display:flex;gap:32px;font-size:11px;font-family:var(--mono)">'
     +'<span style="color:var(--muted)">Média geral (mat+svc validados): <strong style="color:var(--accent)">− '+avgRedPct.toFixed(1)+'%</strong></span>'
     +'<span style="color:var(--muted)">Economia total: <strong style="color:var(--accent)">'+brl(totEco)+'</strong></span>'
@@ -1069,37 +1073,37 @@ function setJustificadoNV(projId, itemId, val){
   renderNaoValidados();
   if(S.view==='comp') renderComparativo();
 }
+function _cardItemAcima(n, bg){
+  var i=n.item;
+  var prev=Number(i.prev)||0, real=Number(i.real)||0, dif=real-prev;
+  var difPct=prev>0?(dif/prev*100):100;
+  var st=i.justificado; // true / false / undefined
+  var borda = st===true?'var(--accent)':st===false?'var(--red)':'var(--amber)';
+  var selo = st===true?'<span style="color:var(--accent);font-weight:bold">✓ Justificado</span>':st===false?'<span style="color:var(--red);font-weight:bold">✕ Não justificado</span>':'<span style="color:var(--amber)">Pendente</span>';
+  var h = '<div style="background:'+(bg||'var(--bg3)')+';border-left:4px solid '+borda+';border-radius:8px;padding:14px;margin-bottom:12px">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">';
+  h += '<div><div style="font-weight:bold;color:var(--text);font-size:13px">'+i.nome+'</div><div style="font-size:11px;color:var(--muted)">'+n.proj+' · '+n.tipo+'</div></div>';
+  h += '<div style="text-align:right;font-size:12px">'+selo+'</div>';
+  h += '</div>';
+  h += '<div style="display:flex;gap:24px;margin:10px 0;font-size:12px;flex-wrap:wrap">';
+  h += '<div><span style="color:var(--muted)">Previsto:</span> <strong>'+brl(prev)+'</strong></div>';
+  h += '<div><span style="color:var(--muted)">Real:</span> <strong style="color:var(--red)">'+brl(real)+'</strong></div>';
+  h += '<div><span style="color:var(--muted)">Acima em:</span> <strong style="color:var(--red)">+'+brl(dif)+' (+'+difPct.toFixed(0)+'%)</strong></div>';
+  h += '</div>';
+  h += '<div style="display:flex;gap:8px;align-items:flex-end">';
+  h += '<textarea id="just-'+i.id+'" placeholder="Justificativa para o valor acima do previsto..." style="flex:1;min-height:48px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;font-family:inherit;resize:vertical">'+(i.justificativa||'').replace(/</g,'&lt;')+'</textarea>';
+  h += '<button class="btn btn-secondary btn-sm" onclick="salvarJustificativaNV(\''+n.projId+'\',\''+i.id+'\')" title="Salvar justificativa">💾</button>';
+  h += '<button class="btn btn-sm" style="background:var(--accent-dim);color:var(--accent);border:1px solid rgba(0,212,138,.3)" onclick="setJustificadoNV(\''+n.projId+'\',\''+i.id+'\',true)" title="Justificado">✓</button>';
+  h += '<button class="btn btn-sm" style="background:var(--red-dim);color:var(--red);border:1px solid rgba(255,82,82,.3)" onclick="setJustificadoNV(\''+n.projId+'\',\''+i.id+'\',false)" title="Não justificado">✕</button>';
+  h += '</div>';
+  h += '</div>';
+  return h;
+}
 function renderNaoValidados(){
   var lista = window._naoValidados || [];
   var alvo = document.getElementById('naovalidados-content');
   if(!lista.length){ alvo.innerHTML='<div style="text-align:center;color:var(--muted);padding:30px">Nenhum item acima do previsto nos projetos selecionados 👍</div>'; return; }
-  var h='';
-  lista.forEach(function(n){
-    var i=n.item;
-    var prev=Number(i.prev)||0, real=Number(i.real)||0, dif=real-prev;
-    var difPct=prev>0?(dif/prev*100):100;
-    var st=i.justificado; // true / false / undefined
-    var borda = st===true?'var(--accent)':st===false?'var(--red)':'var(--amber)';
-    var selo = st===true?'<span style="color:var(--accent);font-weight:bold">✓ Justificado</span>':st===false?'<span style="color:var(--red);font-weight:bold">✕ Não justificado</span>':'<span style="color:var(--amber)">Pendente</span>';
-    h += '<div style="background:var(--bg3);border-left:4px solid '+borda+';border-radius:8px;padding:14px;margin-bottom:12px">';
-    h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">';
-    h += '<div><div style="font-weight:bold;color:var(--text);font-size:13px">'+i.nome+'</div><div style="font-size:11px;color:var(--muted)">'+n.proj+' · '+n.tipo+'</div></div>';
-    h += '<div style="text-align:right;font-size:12px">'+selo+'</div>';
-    h += '</div>';
-    h += '<div style="display:flex;gap:24px;margin:10px 0;font-size:12px;flex-wrap:wrap">';
-    h += '<div><span style="color:var(--muted)">Previsto:</span> <strong>'+brl(prev)+'</strong></div>';
-    h += '<div><span style="color:var(--muted)">Real:</span> <strong style="color:var(--red)">'+brl(real)+'</strong></div>';
-    h += '<div><span style="color:var(--muted)">Acima em:</span> <strong style="color:var(--red)">+'+brl(dif)+' (+'+difPct.toFixed(0)+'%)</strong></div>';
-    h += '</div>';
-    h += '<div style="display:flex;gap:8px;align-items:flex-end">';
-    h += '<textarea id="just-'+i.id+'" placeholder="Justificativa para o valor acima do previsto..." style="flex:1;min-height:48px;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;font-family:inherit;resize:vertical">'+(i.justificativa||'').replace(/</g,'&lt;')+'</textarea>';
-    h += '<button class="btn btn-secondary btn-sm" onclick="salvarJustificativaNV(\''+n.projId+'\',\''+i.id+'\')" title="Salvar justificativa">💾</button>';
-    h += '<button class="btn btn-sm" style="background:var(--accent-dim);color:var(--accent);border:1px solid rgba(0,212,138,.3)" onclick="setJustificadoNV(\''+n.projId+'\',\''+i.id+'\',true)" title="Justificado">✓</button>';
-    h += '<button class="btn btn-sm" style="background:var(--red-dim);color:var(--red);border:1px solid rgba(255,82,82,.3)" onclick="setJustificadoNV(\''+n.projId+'\',\''+i.id+'\',false)" title="Não justificado">✕</button>';
-    h += '</div>';
-    h += '</div>';
-  });
-  alvo.innerHTML = h;
+  alvo.innerHTML = lista.map(function(n){return _cardItemAcima(n);}).join('');
 }
 
 function renderPages(){
