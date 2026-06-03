@@ -133,6 +133,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
 .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
 .btn-ghost:hover{color:var(--text);border-color:var(--border2)}
 .btn-sm{padding:4px 10px;font-size:10px}
+.dash-filtro-sel{background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:12px;font-family:var(--mono);cursor:pointer;outline:none}
+.dash-filtro-sel:hover{border-color:var(--accent)}
 
 /* NOTE BOX */
 .note-box{padding:12px 16px;border-radius:8px;font-size:11px;display:flex;gap:10px;align-items:flex-start;margin-top:14px}
@@ -320,10 +322,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
 
       <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
-        <div style="display:flex;gap:10px;margin-bottom:20px">
+        <div style="display:flex;gap:10px;margin-bottom:14px">
           <button class="btn btn-secondary btn-sm" onclick="buscaGlobal()" style="flex:1">🔍 Busca Global</button>
           <button class="btn btn-secondary btn-sm" onclick="abrirModalMeta()" style="flex:1">📌 Metas de Orçamento</button>
+          <button class="btn btn-secondary btn-sm" onclick="openModal('modal-importar')" style="flex:1">📥 Importar dados</button>
           <button class="btn btn-secondary btn-sm" onclick="exportarPDF()" style="flex:1">📄 Exportar PDF</button>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:18px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">FILTROS</span>
+          <select id="dash-mes" onchange="setDashMes(this.value)" class="dash-filtro-sel"></select>
+          <select id="dash-proj" onchange="setDashProj(this.value)" class="dash-filtro-sel"></select>
+          <span id="dash-filtro-chip"></span>
         </div>
         <div class="metrics-row">
           <div class="mc blue"><div class="mc-lbl">Projetos</div><div class="mc-val blue" id="d-nproj">0</div></div>
@@ -333,12 +342,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
         </div>
         <div class="grid2" style="margin-bottom:16px">
           <div class="card">
-            <div class="card-hd"><div class="card-title">Previsto vs. Real por projeto</div></div>
+            <div class="card-hd"><div class="card-title" id="dash-bar-title">Previsto vs. Real por projeto</div></div>
             <div style="position:relative;height:280px"><canvas id="dash-bar-chart"></canvas></div>
 
           </div>
           <div class="card">
-            <div class="card-hd"><div class="card-title">Composição geral de custos</div></div>
+            <div class="card-hd"><div class="card-title" id="dash-donut-title">Composição geral de custos</div></div>
             <div style="position:relative;height:240px"><canvas id="dash-donut-chart"></canvas></div>
           </div>
         </div>
@@ -1220,20 +1229,68 @@ function renderPages(){
 }
 
 // ── DASHBOARD ──
+// Mês do projeto: usa a data preenchida; se vazia, cai na data de criação
+function dashMesProj(p){
+  var d=(p.data&&/^\d{4}-\d{2}/.test(p.data))?p.data:(p.criadoEm||'');
+  var m=String(d).match(/^(\d{4})-(\d{2})/);
+  return m?(m[1]+'-'+m[2]):'';
+}
+function dashMesLabel(ym){ var p=ym.split('-'); return p.length===2?(p[1]+'/'+p[0]):ym; }
+function setDashMes(v){ S.dashMes=v; renderDashboard(); }
+function setDashProj(v){ S.dashProj=v; renderDashboard(); }
+function limparDashFiltros(){ S.dashMes=''; S.dashProj=''; renderDashboard(); }
+
 function renderDashboard(){
-  const tPrev=S.projects.reduce(function(s,p){
+  if(S.dashMes===undefined)S.dashMes='';
+  if(S.dashProj===undefined)S.dashProj='';
+  // ── Popular filtro de mês (por data/criação do projeto) ──
+  var meses={};
+  S.projects.forEach(function(p){ var m=dashMesProj(p); if(m)meses[m]=(meses[m]||0)+1; });
+  var mesesOrd=Object.keys(meses).sort().reverse();
+  var selMes=document.getElementById('dash-mes');
+  if(selMes){
+    selMes.innerHTML='<option value="">📅 Todos os meses</option>'+mesesOrd.map(function(m){
+      return '<option value="'+m+'">'+dashMesLabel(m)+' ('+meses[m]+')</option>';
+    }).join('');
+    selMes.value=S.dashMes;
+  }
+  // ── Popular filtro de projeto ──
+  var selProj=document.getElementById('dash-proj');
+  if(selProj){
+    selProj.innerHTML='<option value="">📁 Todos os projetos</option>'+S.projects.map(function(p){
+      return '<option value="'+p.id+'">'+(p.nome||'—')+'</option>';
+    }).join('');
+    selProj.value=S.dashProj;
+  }
+  // ── Aplicar filtros ──
+  var projs=S.projects.filter(function(p){
+    if(S.dashMes && dashMesProj(p)!==S.dashMes) return false;
+    if(S.dashProj && p.id!==S.dashProj) return false;
+    return true;
+  });
+  // ── Chip de filtros ativos ──
+  var chip=document.getElementById('dash-filtro-chip');
+  if(chip){
+    var parts=[];
+    if(S.dashMes) parts.push('<span style="background:var(--accent-dim);color:var(--accent);border:1px solid rgba(0,212,138,.25);border-radius:14px;padding:4px 10px;font-size:11px">📅 '+dashMesLabel(S.dashMes)+'</span>');
+    if(S.dashProj){ var pp=S.projects.find(function(x){return x.id===S.dashProj;}); parts.push('<span style="background:var(--accent-dim);color:var(--accent);border:1px solid rgba(0,212,138,.25);border-radius:14px;padding:4px 10px;font-size:11px">📁 '+(pp?pp.nome:'')+'</span>'); }
+    chip.innerHTML = parts.length ? parts.join(' ')+' <button class="btn btn-ghost btn-sm" onclick="limparDashFiltros()">✕ limpar filtros</button>' : '';
+  }
+  var soUmProj = projs.length===1;
+
+  const tPrev=projs.reduce(function(s,p){
     var pPrev=0;
     (p.items||[]).forEach(function(i){if(!i.extra) pPrev+=Number(i.prev)||0;});
     (p.services||[]).forEach(function(i){if(!i.extra) pPrev+=Number(i.prev)||0;});
     return s+pPrev;
   },0);
-  const tReal=S.projects.reduce(function(s,p){
+  const tReal=projs.reduce(function(s,p){
     var pReal=0;
     (p.items||[]).forEach(function(i){pReal+=Number(i.real)||0;});
     (p.services||[]).forEach(function(i){pReal+=Number(i.real)||0;});
     return s+pReal;
   },0);
-  document.getElementById('d-nproj').textContent=S.projects.length;
+  document.getElementById('d-nproj').textContent=projs.length;
   document.getElementById('d-prev').textContent=brl(tPrev);
   document.getElementById('d-real').textContent=brl(tReal);
   // Variação total: real vs previsto (negativo = redução/economia, positivo = aumento)
@@ -1249,18 +1306,35 @@ function renderDashboard(){
     if(elVarSub){ elVarSub.textContent=(reduziu?'economia ':'estouro ')+brl(Math.abs(diffTot)); elVarSub.style.color=cor; }
   }
   // Dashboard charts
+  var _bt=document.getElementById('dash-bar-title'), _dt=document.getElementById('dash-donut-title');
+  if(_bt)_bt.textContent = soUmProj ? 'Previsto vs. Real por item — '+(projs[0].nome||'') : 'Previsto vs. Real por projeto';
+  if(_dt)_dt.textContent = soUmProj ? 'Composição do custo real — '+(projs[0].nome||'') : 'Composição geral de custos';
   destroyChart('dash-bar'); destroyChart('dash-donut');
-  if(S.projects.length){
-    const labels = S.projects.map(function(p){return p.nome.length>14?p.nome.slice(0,14)+'…':p.nome;});
-    const prevVals = S.projects.map(function(p){
-      return (p.items||[]).filter(function(i){return !i.extra;}).reduce(function(s,i){return s+(Number(i.prev)||0);},0)
-            +(p.services||[]).filter(function(i){return !i.extra;}).reduce(function(s,i){return s+(Number(i.prev)||0);},0);
-    });
-    const realVals = S.projects.map(function(p){
-      return (p.items||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0)
-            +(p.services||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0);
-    });
+  if(projs.length){
+    // Visão por PROJETO (vários) ou por ITEM (quando filtrado a 1 só)
+    var fonte = soUmProj
+      ? (projs[0].items||[]).concat(projs[0].services||[]).filter(function(i){return (Number(i.prev)||0)>0 || (Number(i.real)||0)>0;})
+      : projs;
+    const labels = soUmProj
+      ? fonte.map(function(i){return (i.nome||'—').length>14?i.nome.slice(0,14)+'…':(i.nome||'—');})
+      : projs.map(function(p){return p.nome.length>14?p.nome.slice(0,14)+'…':p.nome;});
+    const prevVals = soUmProj
+      ? fonte.map(function(i){return i.extra?0:(Number(i.prev)||0);})
+      : projs.map(function(p){
+          return (p.items||[]).filter(function(i){return !i.extra;}).reduce(function(s,i){return s+(Number(i.prev)||0);},0)
+                +(p.services||[]).filter(function(i){return !i.extra;}).reduce(function(s,i){return s+(Number(i.prev)||0);},0);
+        });
+    const realVals = soUmProj
+      ? fonte.map(function(i){return Number(i.real)||0;})
+      : projs.map(function(p){
+          return (p.items||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0)
+                +(p.services||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0);
+        });
     var barOpts = JSON.parse(JSON.stringify(chartOpts()));
+    // Clique numa barra (modo multi-projetos) filtra o dashboard para aquele projeto
+    if(!soUmProj){
+      barOpts.onClick=function(evt,els){ if(els&&els.length){ var idx=els[0].index; if(projs[idx]) setDashProj(projs[idx].id); } };
+    }
     barOpts.plugins.legend = {
       display:true,
       position:'bottom',
@@ -1288,7 +1362,10 @@ function renderDashboard(){
     const estouro=Math.max(0,totalRealAll-totalPrevAll);
     const donutTotal=realVals.reduce(function(a,b){return a+b;},0);
     // Barras horizontais ordenadas por gasto real (maior -> menor)
-    const ordenado = S.projects.map(function(p,i){return {nome:p.nome, val:realVals[i]};})
+    const ordenado = (soUmProj
+        ? fonte.map(function(it,i){return {nome:(it.nome||'—'), val:realVals[i]};})
+        : projs.map(function(p,i){return {nome:p.nome, val:realVals[i]};}))
+      .filter(function(o){return o.val>0;})
       .sort(function(a,b){return b.val-a.val;});
     const hLabels = ordenado.map(function(o){return o.nome.length>22?o.nome.slice(0,22)+'…':o.nome;});
     const hVals = ordenado.map(function(o){return o.val;});
@@ -1305,13 +1382,15 @@ function renderDashboard(){
 
   const wrap=document.getElementById('dash-table');
   if(!S.projects.length){wrap.innerHTML='<div class="empty"><div class="empty-icon">◈</div><div class="empty-title">Nenhum projeto</div><div class="empty-sub">Clique em "+ Novo projeto"</div></div>';return;}
+  if(!projs.length){wrap.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">Nenhum projeto no filtro</div><div class="empty-sub">Ajuste o mês/projeto ou <a href="#" onclick="limparDashFiltros();return false" style="color:var(--accent)">limpe os filtros</a></div></div>';return;}
   let html='<table class="tbl"><thead><tr><th>Projeto</th><th>Materiais</th><th>Serviços</th><th>Previsto</th><th>Real</th><th>Desvio</th><th></th></tr></thead><tbody>';
-  S.projects.forEach(function(p){
+  projs.forEach(function(p){
     const mP=(p.items||[]).filter(function(i){return !i.extra;}).reduce(function(s,i){return s+(Number(i.prev)||0);},0),mR=(p.items||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0);
     const sP=(p.services||[]).filter(function(i){return !i.extra;}).reduce(function(s,i){return s+(Number(i.prev)||0);},0),sR=(p.services||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0);
     const tp=mP+sP,tr=mR+sR,d=tr-tp,pct=tp?((d/tp)*100).toFixed(1):0;
     const bc=d>0?'badge-red':'badge-green';
-    html+='<tr><td style="color:var(--text);cursor:pointer" onclick="openProject(\''+p.id+'\')">'+p.nome+'</td>'
+    const ativo = S.dashProj===p.id;
+    html+='<tr><td style="color:var(--text)"><span style="cursor:pointer" onclick="setDashProj(\''+(ativo?'':p.id)+'\')" title="Filtrar dashboard por este projeto">'+(ativo?'🔎 ':'')+p.nome+'</span> <span style="cursor:pointer;color:var(--muted2);font-size:11px" onclick="openProject(\''+p.id+'\')" title="Abrir projeto">↗</span></td>'
       +'<td>'+(p.items||[]).length+' itens</td><td>'+(p.services||[]).length+' serviços</td>'
       +'<td>'+brl(tp)+'</td><td>'+brl(tr)+'</td>'
       +'<td><span class="badge '+bc+'">'+(d>0?'+':'')+pct+'%</span></td>'
