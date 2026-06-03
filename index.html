@@ -1176,10 +1176,20 @@ function exportarItensAcima(){
     +'<tr style="font-weight:bold;background:#f3f3f3"><td colspan="5">TOTAL ACIMA DO PREVISTO ('+lista.length+' itens)</td><td>'+n2(totDif)+'</td><td colspan="3"></td></tr>'
     +'</table></body></html>';
   var nome='itens-acima-previsto-'+new Date().toISOString().slice(0,10)+'.xls';
-  var blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel'});
-  var u=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=u; a.download=nome;
-  document.body.appendChild(a); a.click(); URL.revokeObjectURL(u); document.body.removeChild(a);
-  toast('XLS exportado ('+lista.length+' itens)');
+  // Salva na pasta Relatorios (ao lado do app) — caminho confiável e mostrado ao usuário.
+  // Se o servidor não responder, cai no download do navegador como reserva.
+  fetch('/save-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:nome,content:'﻿'+html})})
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.ok){ toast('XLS salvo ('+lista.length+' itens)'); alert('✅ Relatório salvo em:\n\n'+res.path+'\n\n(atalho "Relatorios Suprimentos" na área de trabalho)'); }
+      else { throw new Error(res.erro||'falha'); }
+    })
+    .catch(function(){
+      var blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel'});
+      var u=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=u; a.download=nome;
+      document.body.appendChild(a); a.click(); URL.revokeObjectURL(u); document.body.removeChild(a);
+      toast('XLS baixado ('+lista.length+' itens)');
+    });
 }
 
 function renderPages(){
