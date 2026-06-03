@@ -1026,7 +1026,10 @@ function renderComparativo(){
     +'</div>'
     +'</div></div>'
     +(naoValidados.length ?
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding-left:2px">Itens acima do previsto — escreva a justificativa e marque ✓ (sai do cálculo) ou ✕ (conta na %):</div>'
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;padding-left:2px">'
+      +'<div style="font-size:11px;color:var(--muted)">Itens acima do previsto — escreva a justificativa e marque ✓ (sai do cálculo) ou ✕ (conta na %):</div>'
+      +'<button class="btn btn-ghost" style="flex:none;white-space:nowrap" onclick="exportarItensAcima()">📄 Exportar XLS</button>'
+      +'</div>'
       +naoValidados.map(function(n){return _cardItemAcima(n,'var(--bg2)');}).join('')
       : '')
     +'<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;display:flex;gap:32px;font-size:11px;font-family:var(--mono)">'
@@ -1138,6 +1141,45 @@ function renderNaoValidados(){
   var alvo = document.getElementById('naovalidados-content');
   if(!lista.length){ alvo.innerHTML='<div style="text-align:center;color:var(--muted);padding:30px">Nenhum item acima do previsto nos projetos selecionados 👍</div>'; return; }
   alvo.innerHTML = lista.map(function(n){return _cardItemAcima(n);}).join('');
+}
+
+function exportarItensAcima(){
+  var lista = window._naoValidados || [];
+  if(!lista.length){ toast('Nenhum item acima do previsto para exportar','error'); return; }
+  var esc=function(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  var n2=function(v){ return (Number(v)||0).toFixed(2).replace('.',','); };
+  var rows='';
+  lista.forEach(function(n){
+    var it=n.item, prev=Number(it.prev)||0, real=Number(it.real)||0, dif=real-prev;
+    var pct=prev?(dif/prev*100):0;
+    var status = it.justificado===true ? 'Justificado (fora da %)' : (it.justificado===false ? 'Nao justificado (conta na %)' : 'Pendente');
+    rows+='<tr>'
+      +'<td>'+esc(n.proj)+'</td>'
+      +'<td>'+esc(it.nome)+'</td>'
+      +'<td>'+esc(n.tipo)+'</td>'
+      +'<td>'+n2(prev)+'</td>'
+      +'<td>'+n2(real)+'</td>'
+      +'<td>'+n2(dif)+'</td>'
+      +'<td>'+pct.toFixed(1).replace('.',',')+'%</td>'
+      +'<td>'+esc(status)+'</td>'
+      +'<td>'+esc(it.justificativa||'')+'</td>'
+      +'</tr>';
+  });
+  var totDif=lista.reduce(function(s,n){return s+((Number(n.item.real)||0)-(Number(n.item.prev)||0));},0);
+  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
+    +'<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Itens acima</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>'
+    +'<body><table border="1">'
+    +'<tr><td colspan="9" style="font-size:14px;font-weight:bold;background:#22382e;color:#fff">Itens acima do previsto — Projetos Suprimentos · '+new Date().toLocaleString('pt-BR')+'</td></tr>'
+    +'<tr style="background:#2d3b34;color:#fff;font-weight:bold">'
+    +'<th>Projeto</th><th>Item</th><th>Tipo</th><th>Previsto (R$)</th><th>Real (R$)</th><th>Acima (R$)</th><th>Acima (%)</th><th>Status</th><th>Justificativa</th></tr>'
+    +rows
+    +'<tr style="font-weight:bold;background:#f3f3f3"><td colspan="5">TOTAL ACIMA DO PREVISTO ('+lista.length+' itens)</td><td>'+n2(totDif)+'</td><td colspan="3"></td></tr>'
+    +'</table></body></html>';
+  var nome='itens-acima-previsto-'+new Date().toISOString().slice(0,10)+'.xls';
+  var blob=new Blob(['﻿'+html],{type:'application/vnd.ms-excel'});
+  var u=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=u; a.download=nome;
+  document.body.appendChild(a); a.click(); URL.revokeObjectURL(u); document.body.removeChild(a);
+  toast('XLS exportado ('+lista.length+' itens)');
 }
 
 function renderPages(){
