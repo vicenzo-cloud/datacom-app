@@ -329,7 +329,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
           <div class="mc blue"><div class="mc-lbl">Projetos</div><div class="mc-val blue" id="d-nproj">0</div></div>
           <div class="mc"><div class="mc-lbl">Previsto total</div><div class="mc-val neu" id="d-prev">R$ 0</div></div>
           <div class="mc red"><div class="mc-lbl">Real total</div><div class="mc-val red" id="d-real">R$ 0</div></div>
-          <div class="mc"><div class="mc-lbl">Notas fiscais</div><div class="mc-val neu" id="d-nf">0</div></div>
+          <div class="mc"><div class="mc-lbl">Variação total (real vs previsto)</div><div class="mc-val neu" id="d-var">0%</div><div class="mc-sub" id="d-var-sub"></div></div>
         </div>
         <div class="grid2" style="margin-bottom:16px">
           <div class="card">
@@ -1184,8 +1184,18 @@ function renderDashboard(){
   document.getElementById('d-nproj').textContent=S.projects.length;
   document.getElementById('d-prev').textContent=brl(tPrev);
   document.getElementById('d-real').textContent=brl(tReal);
-  document.getElementById('d-nf').textContent=S.nfs.length;
-  console.log('DEBUG renderDashboard:', {tPrev, tReal, nProj:S.projects.length});
+  // Variação total: real vs previsto (negativo = redução/economia, positivo = aumento)
+  var diffTot=tReal-tPrev;
+  var varPct=tPrev?(diffTot/tPrev*100):0;
+  var elVar=document.getElementById('d-var');
+  var elVarSub=document.getElementById('d-var-sub');
+  if(elVar){
+    var reduziu=diffTot<=0;
+    var cor=reduziu?'var(--accent)':'var(--red)';
+    elVar.textContent=(reduziu?'− ':'+ ')+Math.abs(varPct).toFixed(1)+'%';
+    elVar.style.color=cor;
+    if(elVarSub){ elVarSub.textContent=(reduziu?'economia ':'estouro ')+brl(Math.abs(diffTot)); elVarSub.style.color=cor; }
+  }
   // Dashboard charts
   destroyChart('dash-bar'); destroyChart('dash-donut');
   if(S.projects.length){
