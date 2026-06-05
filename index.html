@@ -288,18 +288,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
       <h1 id="sl1">Projetos</h1><h1 id="sl2" style="color:var(--accent)">Suprimentos</h1>
     </div>
     <p class="sidebar-section">Navegação</p>
-    <div class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard')"><span class="icon">◈</span><span class="lbl">Dashboard</span></div>
-    <div class="nav-item" id="nav-nf" onclick="switchView('nf')"><span class="icon">◉</span><span class="lbl">Notas Fiscais</span><span class="cnt" id="nf-count">0</span></div>
-    <div class="nav-item" id="nav-comp" onclick="switchView('comp')"><span class="icon">⊞</span><span class="lbl">Comparativo</span></div>
-    <div class="nav-item" id="nav-audit" onclick="switchView('audit')"><span class="icon">✓</span><span class="lbl">Auditoria</span><span class="cnt" id="audit-count">0</span></div>
-    <div class="nav-item" id="nav-preco" onclick="switchView('preco')"><span class="icon">📊</span><span class="lbl">Preços</span></div>
-    <div class="nav-item" id="nav-compras-dash" onclick="switchView('compras-dash')"><span class="icon">📈</span><span class="lbl">Compras</span></div>
-    <div class="nav-item" id="nav-alertas" onclick="switchView('alertas')"><span class="icon">🔔</span><span class="lbl">Alertas</span></div>
-    <div class="nav-item" id="nav-timeline" onclick="switchView('timeline')"><span class="icon">⟳</span><span class="lbl">Timeline</span></div>
-    <div class="nav-item" id="nav-sugestoes" onclick="switchView('sugestoes')"><span class="icon">🛒</span><span class="lbl">Sugestões</span></div>
-    <div class="nav-item" id="nav-gastos" onclick="switchView('gastos')"><span class="icon">💰</span><span class="lbl">Gastos/Unidade</span></div>
-    <div class="nav-item" id="nav-subestimados" onclick="switchView('subestimados')"><span class="icon">📉</span><span class="lbl">Subestimados</span></div>
-    <div class="nav-item" id="nav-mercado" onclick="switchView('mercado')"><span class="icon">💰</span><span class="lbl">Preço de Mercado</span></div>
+    <div class="nav-item active" id="grp-dashboard" onclick="switchView('dashboard')"><span class="icon">◈</span><span class="lbl">Dashboard</span></div>
+    <div class="nav-item" id="grp-notas" onclick="switchView('nf')"><span class="icon">◉</span><span class="lbl">Notas Fiscais</span><span class="cnt" id="nf-count">0</span></div>
+    <div class="nav-item" id="grp-analise" onclick="switchView('comp')"><span class="icon">⊞</span><span class="lbl">Análise</span></div>
+    <div class="nav-item" id="grp-precos" onclick="switchView('preco')"><span class="icon">📊</span><span class="lbl">Preços &amp; Compras</span></div>
+    <div class="nav-item" id="grp-operacao" onclick="switchView('alertas')"><span class="icon">🔔</span><span class="lbl">Operação</span></div>
+    <div class="nav-item" id="grp-timeline" onclick="switchView('timeline')"><span class="icon">⟳</span><span class="lbl">Timeline</span></div>
+    <!-- badge auditoria preservado (oculto) p/ compatibilidade -->
+    <span id="audit-count" style="display:none"></span>
     <p class="sidebar-section">Projetos</p>
     <div id="proj-list"></div>
     <button class="btn-new-proj" onclick="openModal('modal-proj')">+ Novo projeto</button>
@@ -320,6 +316,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
       </div>
     </div>
     <div class="content">
+      <div id="subnav" style="display:none;margin-bottom:18px"></div>
 
       <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
@@ -911,28 +908,61 @@ function renderSidebar(){
   }).join('');
 }
 
+// Grupos de navegação (compacta 12 abas em 6). Nada é removido — só reorganizado.
+var GRUPOS=[
+  {g:'dashboard', views:['dashboard']},
+  {g:'notas',     views:['nf','audit']},
+  {g:'analise',   views:['comp','subestimados']},
+  {g:'precos',    views:['preco','mercado','compras-dash']},
+  {g:'operacao',  views:['alertas','sugestoes','gastos']},
+  {g:'timeline',  views:['timeline']}
+];
+var VIEW_INFO={
+  dashboard:{t:'Dashboard',s:'Visão geral',l:'Dashboard'},
+  nf:{t:'Notas Fiscais',s:'Relatório',l:'Notas Fiscais'},
+  audit:{t:'Auditoria',s:'Integridade de dados',l:'Auditoria'},
+  comp:{t:'Comparativo',s:'Análise de redução',l:'Comparativo'},
+  subestimados:{t:'Itens Subestimados',s:'Previsto abaixo do real',l:'Subestimados'},
+  preco:{t:'Análise de Preços',s:'Inteligência comercial',l:'Análise de Preços'},
+  mercado:{t:'Preço de Mercado',s:'Seu preço vs. mercado',l:'Preço de Mercado'},
+  'compras-dash':{t:'Compras',s:'Visão de compras',l:'Compras'},
+  alertas:{t:'Alertas',s:'Monitoramento',l:'Alertas'},
+  sugestoes:{t:'Sugestões de Compra',s:'Baseado no histórico de compras',l:'Sugestões'},
+  gastos:{t:'Gastos por Unidade',s:'Por unidade e mês a mês',l:'Gastos/Unidade'},
+  timeline:{t:'Timeline',s:'Linha do tempo',l:'Timeline'}
+};
+function grupoDoView(v){ for(var i=0;i<GRUPOS.length;i++){ if(GRUPOS[i].views.indexOf(v)>=0) return GRUPOS[i].g; } return null; }
+
+function renderSubnav(){
+  var bar=document.getElementById('subnav'); if(!bar) return;
+  var g=grupoDoView(S.view);
+  var grp=null; for(var i=0;i<GRUPOS.length;i++){ if(GRUPOS[i].g===g) grp=GRUPOS[i]; }
+  if(!grp || grp.views.length<2 || S.view==='projeto'){ bar.style.display='none'; bar.innerHTML=''; return; }
+  bar.style.display='block';
+  bar.innerHTML='<div class="tabs">'+grp.views.map(function(v){
+    return '<button class="tab '+(v===S.view?'active':'')+'" onclick="switchView(\''+v+'\')">'+(VIEW_INFO[v]?VIEW_INFO[v].l:v)+'</button>';
+  }).join('')+'</div>';
+}
+
 function renderTopbar(){
-  ['dashboard','nf','comp','audit','preco'].forEach(function(v){document.getElementById('nav-'+v).classList.remove('active');});
+  ['dashboard','notas','analise','precos','operacao','timeline'].forEach(function(g){var el=document.getElementById('grp-'+g);if(el)el.classList.remove('active');});
   const tabs=document.getElementById('proj-tabs');
   const btnItem=document.getElementById('btn-add-item');const btnSvc=document.getElementById('btn-add-svc');const btnNF=document.getElementById('btn-add-nf');
   tabs.style.display='none';btnItem.style.display='none';btnSvc.style.display='none';btnNF.style.display='none';
   const title=document.getElementById('topbar-title');const sub=document.getElementById('topbar-sub');
-  if(S.view==='comp'){document.getElementById('nav-comp').classList.add('active');title.childNodes[0].textContent='Comparativo ';sub.textContent='Análise de redução';}
-  else if(S.view==='audit'){document.getElementById('nav-audit').classList.add('active');title.childNodes[0].textContent='Auditoria ';sub.textContent='Integridade de dados';}
-  else if(S.view==='preco'){document.getElementById('nav-preco').classList.add('active');title.childNodes[0].textContent='Análise de Preços ';sub.textContent='Inteligência comercial';}
-  else if(S.view==='sugestoes'){title.childNodes[0].textContent='Sugestões de Compra ';sub.textContent='Baseado no histórico de compras';}
-  else if(S.view==='gastos'){title.childNodes[0].textContent='Gastos por Unidade ';sub.textContent='Por unidade e mês a mês';}
-  else if(S.view==='subestimados'){title.childNodes[0].textContent='Itens Subestimados ';sub.textContent='Previsto abaixo do real';}
-  else if(S.view==='mercado'){title.childNodes[0].textContent='Preço de Mercado ';sub.textContent='Seu preço vs. mercado';}
-  if(S.view==='dashboard'){document.getElementById('nav-dashboard').classList.add('active');title.childNodes[0].textContent='Dashboard ';sub.textContent='Visão geral';}
-  else if(S.view==='nf'){document.getElementById('nav-nf').classList.add('active');title.childNodes[0].textContent='Notas Fiscais ';sub.textContent='Relatório';btnNF.style.display='flex';}
-  else if(S.view==='projeto'){
+  if(VIEW_INFO[S.view]){ title.childNodes[0].textContent=VIEW_INFO[S.view].t+' '; sub.textContent=VIEW_INFO[S.view].s; }
+  if(S.view==='nf') btnNF.style.display='flex';
+  if(S.view==='projeto'){
     const proj=S.projects.find(function(p){return p.id===S.curProj;});
     if(proj){title.childNodes[0].textContent=proj.nome+' ';sub.textContent=proj.cliente||'Projeto';tabs.style.display='flex';
       ['resumo','materiais','servicos'].forEach(function(t){document.getElementById('tab-'+t).classList.toggle('active',S.tab===t);});
       if(S.tab==='materiais')btnItem.style.display='flex';
       if(S.tab==='servicos')btnSvc.style.display='flex';}
   }
+  // destaca o grupo do view atual
+  var g=grupoDoView(S.view);
+  if(g){var el=document.getElementById('grp-'+g);if(el)el.classList.add('active');}
+  renderSubnav();
 }
 
 // ── COMPARATIVO STATE ──
