@@ -464,7 +464,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
       <div class="page" id="page-audit">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
           <div><p class="eyebrow" style="margin-bottom:6px">Integridade de Dados</p><h2 style="font-family:var(--serif);font-size:24px;font-weight:800;letter-spacing:-.01em">🔍 Auditoria</h2></div>
-          <div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm" onclick="runAuditoria()">🔄 Executar Auditoria</button><button class="btn btn-primary btn-sm" onclick="fixAllIssues()">✓ Corrigir Tudo</button></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" onclick="runAuditoria(true)">🔄 Executar Auditoria</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportAuditCSV()">📤 Exportar planilha</button>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('audit-file').click()">📥 Importar correções</button>
+            <button class="btn btn-primary btn-sm" onclick="fixAllIssues()">✓ Corrigir Tudo</button>
+            <input type="file" id="audit-file" accept=".csv,text/csv" style="display:none" onchange="importAuditCSV(event)">
+          </div>
         </div>
 
         <!-- FILTRO DE PESQUISA -->
@@ -2338,7 +2344,7 @@ function filtrarAuditoria(){
   console.log('🔎 Resultado: '+vistos+' cards visíveis');
 }
 
-function runAuditoria(){
+function runAuditoria(fromClick){
   var nfs = S.nfs || [];
   var issues = [];
   var warns = [];
@@ -2396,6 +2402,9 @@ function runAuditoria(){
   document.getElementById('audit-count').textContent = total > 0 ? total : '';
 
   renderAuditResults(issues, warns);
+  if(fromClick){
+    if(typeof toast==='function') toast(total===0 ? '✓ Auditoria executada: nenhum problema!' : '🔍 Auditoria executada: '+total+' item(ns) ('+issues.length+' erro(s), '+warns.length+' aviso(s))');
+  }
 }
 
 function renderAuditResults(issues, warns){
@@ -2582,6 +2591,102 @@ function fixAllIssues(){
   persist();
   toast('✓ '+ids.length+' NF(s) marcadas como revisadas.');
   runAuditoria();
+}
+
+// Lista as NFs sinalizadas (não auditadas com algum problema) + descrição
+function _auditFlagged(){
+  var nfs=S.nfs||[];
+  var avg=nfs.reduce(function(s,n){return s+(Number(n.valor)||0);},0)/(nfs.length||1);
+  var valueMap={}, out=[];
+  nfs.forEach(function(n,idx){
+    if(n.auditado) return;
+    var v=Number(n.valor), probs=[];
+    if(!n.obs||String(n.obs).trim()===''||n.obs==='-') probs.push('sem categoria');
+    if(isNaN(v)||v<0) probs.push('valor invalido');
+    if(v>avg*3) probs.push('valor muito alto');
+    var key=(isNaN(v)?'x':v.toFixed(2))+'|'+n.fornecedor;
+    if(valueMap[key]!=null) probs.push('possivel duplicata (NF '+(nfs[valueMap[key]].numero||'?')+')'); else valueMap[key]=idx;
+    if(probs.length) out.push({nf:n, problemas:probs});
+  });
+  return out;
+}
+function _csvCell(v){ v=(v==null?'':String(v)); return /[;"\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+function _parseCsvLine(line){
+  var r=[],cur='',q=false;
+  for(var i=0;i<line.length;i++){ var c=line[i];
+    if(q){ if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else { if(c==='"') q=true; else if(c===';'){ r.push(cur); cur=''; } else cur+=c; }
+  }
+  r.push(cur); return r;
+}
+function _parseValorBR(s){
+  s=String(s||'').replace(/[R$\s]/g,'');
+  if(s.indexOf(',')>=0) s=s.replace(/\./g,'').replace(',', '.');
+  var n=parseFloat(s); return isNaN(n)?null:n;
+}
+
+function exportAuditCSV(){
+  var lista=_auditFlagged();
+  if(!lista.length){ toast('✓ Nada a exportar — auditoria já está limpa.'); return; }
+  var L=['id;NF;Fornecedor;Categoria;Valor;Problemas (nao editar)'];
+  lista.forEach(function(it){
+    var n=it.nf, v=Number(n.valor);
+    L.push([ _csvCell(n.id), _csvCell(n.numero), _csvCell(n.fornecedor), _csvCell(n.obs||''),
+             _csvCell(isNaN(v)?'':v.toFixed(2).replace('.',',')), _csvCell(it.problemas.join(' | ')) ].join(';'));
+  });
+  var csv='﻿'+L.join('\r\n');
+  var nome='auditoria-correcoes-'+new Date().toISOString().slice(0,10)+'.csv';
+  // Salva na pasta Relatorios (confiável no app); fallback = download do navegador
+  fetch('/save-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:nome,content:csv})})
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.ok){ toast('📤 Planilha salva ('+lista.length+' NFs).'); alert('✅ Planilha salva em:\n\n'+res.path+'\n\nAbra no Excel, corrija as colunas Fornecedor/Categoria/Valor (NÃO mexa no "id"), salve como CSV e use "📥 Importar correções".'); }
+      else throw new Error(res.erro||'falha');
+    })
+    .catch(function(){
+      var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+      var u=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=u; a.download=nome;
+      document.body.appendChild(a); a.click(); URL.revokeObjectURL(u); document.body.removeChild(a);
+      toast('📤 Planilha baixada ('+lista.length+' NFs).');
+    });
+}
+
+function importAuditCSV(ev){
+  var file=ev.target.files && ev.target.files[0];
+  ev.target.value=''; // permite reimportar o mesmo arquivo
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var txt=String(e.target.result||'').replace(/^﻿/,'');
+      var linhas=txt.split(/\r?\n/).filter(function(l){return l.trim()!=='';});
+      if(linhas.length<2){ toast('Planilha vazia ou sem dados.','error'); return; }
+      var head=_parseCsvLine(linhas[0]).map(function(h){return h.trim().toLowerCase();});
+      var ci={ id:head.indexOf('id'), nf:head.indexOf('nf'), forn:head.indexOf('fornecedor'), cat:head.indexOf('categoria'), val:head.indexOf('valor') };
+      if(ci.id<0){ toast('Coluna "id" não encontrada — use a planilha exportada por aqui.','error'); return; }
+      var byId={}; (S.nfs||[]).forEach(function(n){ if(n.id) byId[n.id]=n; });
+      var upd=0, naoEncontrados=0;
+      for(var i=1;i<linhas.length;i++){
+        var c=_parseCsvLine(linhas[i]);
+        var id=(c[ci.id]||'').trim();
+        if(!id) continue;
+        var nf=byId[id];
+        if(!nf){ naoEncontrados++; continue; }
+        if(ci.nf>=0 && c[ci.nf]!=null) nf.numero=c[ci.nf].trim();
+        if(ci.forn>=0 && c[ci.forn]!=null) nf.fornecedor=c[ci.forn].trim();
+        if(ci.cat>=0 && c[ci.cat]!=null) nf.obs=c[ci.cat].trim();
+        if(ci.val>=0){ var v=_parseValorBR(c[ci.val]); if(v!=null) nf.valor=v; }
+        upd++;
+      }
+      persist();
+      runAuditoria();
+      var msg='✓ '+upd+' NF(s) atualizada(s) pela planilha.';
+      if(naoEncontrados) msg+=' '+naoEncontrados+' id(s) não encontrado(s).';
+      toast(msg);
+      alert('Importação concluída:\n\n• '+upd+' NF(s) corrigida(s)\n• '+naoEncontrados+' id(s) sem correspondência'+(naoEncontrados?'\n\n(Não altere a coluna "id" na planilha.)':''));
+    }catch(err){ toast('Erro ao ler planilha: '+err.message,'error'); }
+  };
+  reader.readAsText(file,'UTF-8');
 }
 
 function discardNFAudit(idx){
