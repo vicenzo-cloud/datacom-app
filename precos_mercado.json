@@ -58,7 +58,9 @@
     {"item": "CAMERA IP VIP 1220 B FULL COLOR (Intelbras)", "meu": 127.20, "qtd": 21, "mercado": 130.00, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4553-camera_de_seguranca_ip_bullet_infra_20mt_ip67_poe_1080p_vip_1220_b_full_color_g4", "obs": "No preço de distribuidor (varejo chega a R$340)."},
     {"item": "FECHADURA ELETROIMA FE 20150 (Intelbras)", "meu": 255.60, "qtd": 14, "mercado": 279.00, "fornecedor": "Equipvision", "url": "https://www.equipvision.com.br/fechadura-eletroim-magnetica-intelbras-fe-20150/p/MLB26643961", "obs": ""},
     {"item": "CENTRAL JFL ACTIVE 20", "meu": 228.75, "qtd": 17, "mercado": 240.00, "fornecedor": "BJ Seg", "url": "https://bjseg.com.br/central-de-alarme-monitoravel-jfl-active-20", "obs": "No preço; varia por versão (Bus/Ethernet/GPRS)."},
-    {"item": "CAMERA IP DS-2CD1021G2-LIU (Hikvision)", "meu": 239.00, "qtd": 12, "mercado": 239.00, "fornecedor": "UpperSeg", "url": "https://www.upperseg.com.br/cftv/cameras-de-seguranca/cameras-ip/camera-ip-com-fio/camera-ip-poe-hikvision-ds-2cd1023g2-liuf-full-hd-1080p-infravermelho-30-metros/", "obs": "Referência do modelo similar 1023G2 (~R$226–239)."}
+    {"item": "CAMERA IP DS-2CD1021G2-LIU (Hikvision)", "meu": 239.00, "qtd": 12, "mercado": 239.00, "fornecedor": "UpperSeg", "url": "https://www.upperseg.com.br/cftv/cameras-de-seguranca/cameras-ip/camera-ip-com-fio/camera-ip-poe-hikvision-ds-2cd1023g2-liuf-full-hd-1080p-infravermelho-30-metros/", "obs": "Referência do modelo similar 1023G2 (~R$226–239)."},
+    {"item": "CAMERA IP DOME DS-2CD1127G2H-LIU ColorVu (Hikvision)", "meu": 369.11, "qtd": 45, "mercado": 393.45, "fornecedor": "Dicomp", "url": "https://loja.dicomp.com.br/camera-ip-dome-hikvision-ds-2cd1127g2h-liu-2mp-28mm-poe-30-metros-colorvu/31445/p", "obs": ""},
+    {"item": "CAMERA IP DOME DS-2CD3166G2-IS 6MP AcuSense (Hikvision)", "meu": 1230.00, "qtd": 1, "mercado": 1799.00, "fornecedor": "Aztech Hardware", "url": "https://www.aztech.com.br/camera-ip-dome-6mp-28mm-poe-40-metros-acusense-ds-2cd3166g2-is-hikvision", "obs": ""}
   ],
   "sob_cotacao": [
     "SERVIDOR INVU 7016 FT (gravação/IA)",
@@ -69,7 +71,7 @@
     "Dashcam Hikvision AE-DI5052-G40 Pro",
     "NOBREAK NEXUS 10KVA / SNB 2000 / Online 3KVA",
     "CANCELA IMECOTRON CA-600",
-    "Câmeras Hikvision ColorVu sem preço público BRL (DS-2CD1T47G2-LIU, DS-2CD2347G2H-LISU, DS-2CD1127G2H-LIU, DS-2CD2047G2-LU, DS-2CD1047G2H-LIU, DS-2CD3166G2-IS 6MP)",
+    "Câmeras Hikvision ColorVu sem preço público BRL — só aparecem em € no exterior (DS-2CD1T47G2-LIU, DS-2CD2347G2H-LISU, DS-2CD2047G2-LU, DS-2CD1047G2H-LIU). Referência em € (~R$600–800) sugere que você está no preço ou abaixo.",
     "Controle facial Hikvision DS-K1T342MFWX e módulo ASI6213S",
     "Switch gerenciável 48P PoE S2352G / CPE WOM 5A (kit)"
   ]
