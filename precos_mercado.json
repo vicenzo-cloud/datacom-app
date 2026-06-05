@@ -1,6 +1,6 @@
 {
   "atualizado_em": "2026-06-04",
-  "fonte": "Pesquisa em distribuidores e varejistas brasileiros (KaBuM, JS Distribuidor CFTV, Best Network, Net Computadores, Winter Informática, Canal das Câmeras, Mercado Livre e lojas oficiais).",
+  "fonte": "Pesquisa em distribuidores e varejistas brasileiros (KaBuM, JS Distribuidor CFTV, Best Network, Net Computadores, Winter Informática, Canal das Câmeras, Full CFTV, ShopLivre, lojas oficiais Intelbras/JFL e Mercado Livre).",
   "itens": [
     {"item": "NVR HIKVISION DS-7616NI-Q1", "meu": 1768.00, "qtd": 15, "mercado": 1079.45, "fornecedor": "KaBuM", "url": "https://www.kabum.com.br/produto/318140/gravador-digital-nvr-hikvision-16-canais-ultra-hd-4k-8mp-ds-7616ni-q1", "obs": ""},
     {"item": "SENSOR 8000 PET (IVP 8000 Pet)", "meu": 141.78, "qtd": 529, "mercado": 112.00, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3239-sensor_de_movimento_infra_vermelho_sem_fio_12mts_90_20_kg_915_mhz_a_928_mhz_intelbras_ivp_8000_pet", "obs": "Confirmar se o modelo é exatamente o IVP 8000 Pet sem fio."},
@@ -8,12 +8,32 @@
     {"item": "DVR HD 4 CANAIS MHDX 1204 C/HD 1TB", "meu": 997.01, "qtd": 21, "mercado": 917.00, "fornecedor": "Net Computadores (+ HD 1TB)", "url": "https://netcomputadores.com.br/p/4580833-intelbras-gravador-dvr-4/98741", "obs": "DVR ~R$587 + HD Purple 1TB ~R$330."},
     {"item": "CAMERA IP DS-2CD2043G2-I (2.8MM)", "meu": 830.00, "qtd": 187, "mercado": 802.00, "fornecedor": "Câmeras Hik (Mercado Livre)", "url": "https://www.camerashik.com.br/MLB-2671169875-cmera-bullet-hikvision-ip-4mp-28m-ds-2cd2043g2-i-acusense-_JM", "obs": "Seu maior gasto — está no preço de mercado."},
     {"item": "CAMERA HIKVISION IP LITE DS-2CD1021G0-I 2.8MM", "meu": 189.52, "qtd": 109, "mercado": 259.90, "fornecedor": "Winter Informática", "url": "https://loja.winterinformatica.com.br/produto/camera-ip-ds-2cd1021g0-i-2-8mm-hikvision/", "obs": ""},
-    {"item": "CENTRAL ACTIVE 100 BUS", "meu": 335.08, "qtd": 57, "mercado": 410.99, "fornecedor": "Canal das Câmeras", "url": "https://www.canaldascameras.com/central-alarme-active-100-bus-jfl-99-zonas-16-particoes/p/MLB22672005", "obs": ""},
+    {"item": "CENTRAL ACTIVE 100 BUS (JFL)", "meu": 335.08, "qtd": 57, "mercado": 410.99, "fornecedor": "Canal das Câmeras", "url": "https://www.canaldascameras.com/central-alarme-active-100-bus-jfl-99-zonas-16-particoes/p/MLB22672005", "obs": ""},
     {"item": "TECLADO XAT 8000", "meu": 288.23, "qtd": 67, "mercado": 430.55, "fornecedor": "Best Network", "url": "https://bestnetwork.com.br/produtos/detalhes/4543515/teclado-sem-fio-para-centrais-de-alarme-xat-8000-intelbras-pc/", "obs": ""},
     {"item": "SIRENE XSS 8000", "meu": 234.73, "qtd": 73, "mercado": 245.70, "fornecedor": "Segurança Shop", "url": "https://www.segurancashop.com.br/sirene-sem-fio-xss-8000-intelbras-2025-01-20-14-24-13", "obs": ""},
     {"item": "NOBREAK ATTIV 600VA", "meu": 341.44, "qtd": 38, "mercado": 484.50, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3969-nobreak_interativo_bivolt_entrada_saida_120v_attiv_600_va_bi", "obs": ""},
-    {"item": "CAMERA 1120 B (VHD 1120 B)", "meu": 80.45, "qtd": 328, "mercado": 130.00, "fornecedor": "Mercado Livre", "url": "https://lista.mercadolivre.com.br/camera-intelbras-vhd-1120", "obs": ""},
+    {"item": "CAMERA VHD 1120 B (Intelbras)", "meu": 80.45, "qtd": 328, "mercado": 130.00, "fornecedor": "Mercado Livre", "url": "https://lista.mercadolivre.com.br/camera-intelbras-vhd-1120", "obs": ""},
     {"item": "CAMERA IP SPEED DOME VIP 5232 SD IA", "meu": 5832.34, "qtd": 3, "mercado": 6897.00, "fornecedor": "Lojas Intelbras / varejo", "url": "https://www.mercadolivre.com.br/cmera-ip-intelbras-vip-5232-sd-speed-dome-full-hd-2mp-ia-cor-branco/p/MLB21649577", "obs": ""},
-    {"item": "DVR 3116 (MHDX 3116-C)", "meu": 1041.73, "qtd": 9, "mercado": 1897.25, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4385-dvr_gravador_de_video_16_canais_h_265_intelbras_mhdx_3116_c_ate_5_0_megapixels", "obs": "Mercado já com HD; verifique se o seu inclui HD."}
+    {"item": "DVR MHDX 3116-C (16 canais)", "meu": 1041.73, "qtd": 9, "mercado": 1897.25, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4385-dvr_gravador_de_video_16_canais_h_265_intelbras_mhdx_3116_c_ate_5_0_megapixels", "obs": "Mercado já com HD; verifique se o seu inclui HD."},
+    {"item": "CAMERA MIBO IM5 (c/ Micro SD 32GB)", "meu": 359.93, "qtd": 115, "mercado": 526.21, "fornecedor": "Loja Intelbras / Mercado Livre", "url": "https://loja.intelbras.com.br/camera-wi-fi-im5s-c/p", "obs": ""},
+    {"item": "SENSOR DS 520 BUS (JFL)", "meu": 88.98, "qtd": 261, "mercado": 110.81, "fornecedor": "ShopLivre", "url": "https://www.shoplivre.com.br/jfl-sensor-infra-ds-520-bus-duplo-pet-30kg-1071/", "obs": ""},
+    {"item": "TECLADO TEC 300 (JFL)", "meu": 139.46, "qtd": 113, "mercado": 170.00, "fornecedor": "IGE Cast Seg", "url": "https://www.igecastseg.com.br/centrais-de-alarmeacessorios/teclado-lcd-tec-300-jfl", "obs": "Mercado varia bastante (R$120–343)."},
+    {"item": "SENSOR SL 320 DUO (JFL)", "meu": 108.11, "qtd": 145, "mercado": 151.91, "fornecedor": "UpperSeg / Tudo Forte", "url": "https://www.upperseg.com.br/alarme/sensores/magnetico/sensor-magnetico-de-abertura-sl-320-duo-jfl-sem-fio-misto-868mhz/", "obs": ""},
+    {"item": "CAMERA VHD 1230 B (Intelbras)", "meu": 119.53, "qtd": 89, "mercado": 160.00, "fornecedor": "Mercado Livre", "url": "https://lista.mercadolivre.com.br/intelbras-vhd-1230", "obs": ""},
+    {"item": "SENSOR IVP 3000 MW EX (Intelbras)", "meu": 459.31, "qtd": 28, "mercado": 590.00, "fornecedor": "Amazon", "url": "https://www.amazon.com.br/Sensor-infravermelho-3000-passivo-externo/dp/B076PMLPTY", "obs": ""},
+    {"item": "MODULO GPRS XAG 8000 (AMT 8000)", "meu": 289.10, "qtd": 38, "mercado": 338.19, "fornecedor": "Varejo (Intelbras)", "url": "https://www.intelbras.com/pt-br/modulo-gprs-xag-8000", "obs": ""},
+    {"item": "DVR INTELBRAS MHDX 3108 (8 canais)", "meu": 629.78, "qtd": 14, "mercado": 1041.35, "fornecedor": "Varejo", "url": "https://www.intelbras.com/pt-br/gravador-de-video-multi-hd-com-8-canais-mhdx-3108-c", "obs": "Preço de mercado pode incluir HD; o seu provavelmente é sem HD."},
+    {"item": "CAMERA VHD 1120 D (Intelbras)", "meu": 81.80, "qtd": 123, "mercado": 198.00, "fornecedor": "Prime Cabos", "url": "https://www.tudoforte.com.br/camera-hd-720p-vhd-1120-d-g5-intelbras-20m-de-infravermelho-dome", "obs": ""},
+    {"item": "SENSOR XAS 8000 (Intelbras)", "meu": 111.42, "qtd": 87, "mercado": 179.00, "fornecedor": "Compre CFTV", "url": "https://comprecftv.mercadoshops.com.br/sensor-magnetico-de-abertura-sem-fio-xas-8000-intelbras/p/MLB28227294", "obs": ""},
+    {"item": "NOBREAK ATTIV 700VA", "meu": 402.51, "qtd": 22, "mercado": 497.00, "fornecedor": "Loja Intelbras", "url": "https://loja.intelbras.com.br/nobreak-attiv-700va-bi/p", "obs": ""},
+    {"item": "DVR INTELBRAS MHDX 1208 (8 canais)", "meu": 534.08, "qtd": 13, "mercado": 510.21, "fornecedor": "Varejo (preço Pix)", "url": "https://www.intelbras.com/pt-br/gravador-de-video-inteligente-com-8-canais-mhdx-1208", "obs": "Praticamente no preço de mercado."},
+    {"item": "NVR HIKVISION DS-7616NXI-K1", "meu": 1176.97, "qtd": 7, "mercado": 1286.10, "fornecedor": "Full CFTV", "url": "https://www.fullcftv.com.br/hikvision-ds-7616nxi-k1/p/MLB28014160", "obs": ""},
+    {"item": "CENTRAL JFL ACTIVE FULL 32", "meu": 423.84, "qtd": 36, "mercado": 509.30, "fornecedor": "IGE Cast Seg", "url": "https://www.igecastseg.com.br/centrais-de-alarmeacessorios/central-jfl/central-monitoravel-active-full-32", "obs": ""},
+    {"item": "CAMERA IP SPEED DOME VIP 5225 SD IR IA", "meu": 4645.87, "qtd": 2, "mercado": 5822.00, "fornecedor": "Mercado Livre", "url": "https://lista.mercadolivre.com.br/vip-5225-sd-ir", "obs": ""},
+    {"item": "TECLADO JFL TEC 510 DUO", "meu": 190.13, "qtd": 37, "mercado": 183.50, "fornecedor": "Total Eletrônicos", "url": "https://www.totaleletronicos.com.br/teclado-oled-tec-510-duo-sem-fio-para-centrais-jfl", "obs": "No preço de mercado."},
+    {"item": "CENTRAL AMT 2018 E (não-SMART)", "meu": 494.98, "qtd": 17, "mercado": 553.42, "fornecedor": "Segurança Shop", "url": "https://www.segurancashop.com.br/central-de-alarme-amt-2018-e-intelbras", "obs": ""}
+  ],
+  "sob_cotacao": [
+    "SERVIDOR INVU 7016 FT", "Telas/Estações de comunicação Hikvision (DSKH...)", "CAMERA LPR 94120 IA FT", "CAMERA VIP 9450 B", "NOBREAK NEXUS 10KVA", "CANCELA IMECOTRON CA-600", "Dashcam Hikvision AE-DI5052-G40 Pro"
   ]
 }

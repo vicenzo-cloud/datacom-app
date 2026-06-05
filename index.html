@@ -560,7 +560,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
       <div class="page" id="page-mercado">
         <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">💰 Preço de Mercado</h2>
         <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Compara o seu preço unitário (mediana das suas notas) com o preço pesquisado em sites confiáveis — pra você saber onde está pagando caro e onde já está bem.</p>
-        <div style="margin-bottom:16px"><input type="text" id="mercado-busca" class="dash-filtro-sel" style="width:100%;max-width:360px;padding:8px 12px" placeholder="🔍 Filtrar item..." oninput="renderMercado()"></div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+          <input type="text" id="mercado-busca" class="dash-filtro-sel" style="flex:1;min-width:220px;max-width:360px;padding:8px 12px" placeholder="🔍 Filtrar item..." oninput="renderMercado()">
+          <button class="btn btn-secondary btn-sm" onclick="atualizarPrecosMercado()" title="Recarrega o snapshot de preços do disco">🔄 Atualizar</button>
+        </div>
         <div id="mercado-content"></div>
       </div>
 
@@ -3791,8 +3794,25 @@ function renderMercado(){
   });
   html+='</tbody></table></div>';
   if(!vis.length) html+='<div style="text-align:center;color:var(--muted);padding:30px">Nenhum item bate com o filtro.</div>';
-  html+='<div style="font-size:11px;color:var(--muted2);margin-top:16px;line-height:1.6">⚠️ Os preços são uma referência pesquisada na data acima. Sempre peça cotação formal antes de decidir — o anúncio pode ser de um kit/SKU ligeiramente diferente do seu. Para atualizar este painel, me peça uma nova busca.</div>';
+  // itens sob cotação (sem preço público)
+  if((d.sob_cotacao||[]).length){
+    html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-top:18px">'
+      +'<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🔒 Sem preço público (equipamentos sob cotação)</div>'
+      +'<div style="font-size:12px;color:var(--muted2);line-height:1.7">'+d.sob_cotacao.map(function(x){return '• '+x;}).join('<br>')+'</div>'
+      +'<div style="font-size:11px;color:var(--muted2);margin-top:8px">Esses itens corporativos/especializados não têm preço aberto na internet — peça cotação direta ao distribuidor.</div></div>';
+  }
+  html+='<div style="font-size:11px;color:var(--muted2);margin-top:16px;line-height:1.6">⚠️ Os preços são uma referência pesquisada na data acima. Sempre peça cotação formal antes de decidir — o anúncio pode ser de um kit/SKU ligeiramente diferente do seu.<br>🔄 O app é local e não navega na internet sozinho: para uma <strong>nova pesquisa de preços</strong>, peça ao assistente "atualiza os preços de mercado" — ele refaz a busca e regrava o arquivo; depois clique em <strong>Atualizar</strong> para recarregar.</div>';
   alvo.innerHTML=html;
+}
+
+function atualizarPrecosMercado(){
+  window._precosMercado=null; // limpa cache → força refetch do disco
+  var alvo=document.getElementById('mercado-content');
+  if(alvo) alvo.innerHTML='<div style="color:var(--muted);padding:20px">Recarregando snapshot…</div>';
+  fetch('precos_mercado.json?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
+    window._precosMercado=d; renderMercado();
+    if(typeof toast==='function') toast('Snapshot recarregado ('+(d.atualizado_em||'—')+')');
+  }).catch(function(){ if(typeof toast==='function') toast('Falha ao recarregar precos_mercado.json','error'); });
 }
 
 function renderSubestimados(){
