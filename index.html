@@ -299,6 +299,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
     <div class="nav-item" id="nav-sugestoes" onclick="switchView('sugestoes')"><span class="icon">🛒</span><span class="lbl">Sugestões</span></div>
     <div class="nav-item" id="nav-gastos" onclick="switchView('gastos')"><span class="icon">💰</span><span class="lbl">Gastos/Unidade</span></div>
     <div class="nav-item" id="nav-subestimados" onclick="switchView('subestimados')"><span class="icon">📉</span><span class="lbl">Subestimados</span></div>
+    <div class="nav-item" id="nav-mercado" onclick="switchView('mercado')"><span class="icon">💰</span><span class="lbl">Preço de Mercado</span></div>
     <p class="sidebar-section">Projetos</p>
     <div id="proj-list"></div>
     <button class="btn-new-proj" onclick="openModal('modal-proj')">+ Novo projeto</button>
@@ -553,6 +554,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
         <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">📉 Itens Subestimados</h2>
         <p style="color:var(--muted);font-size:12px;margin-bottom:20px">Itens cujo preço previsto costuma ficar abaixo do real — orce mais alto no futuro</p>
         <div id="subestimados-content"></div>
+      </div>
+
+      <!-- PRECO DE MERCADO -->
+      <div class="page" id="page-mercado">
+        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">💰 Preço de Mercado</h2>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Compara o seu preço unitário (mediana das suas notas) com o preço pesquisado em sites confiáveis — pra você saber onde está pagando caro e onde já está bem.</p>
+        <div style="margin-bottom:16px"><input type="text" id="mercado-busca" class="dash-filtro-sel" style="width:100%;max-width:360px;padding:8px 12px" placeholder="🔍 Filtrar item..." oninput="renderMercado()"></div>
+        <div id="mercado-content"></div>
       </div>
 
     </div>
@@ -893,6 +902,7 @@ function renderTopbar(){
   else if(S.view==='sugestoes'){title.childNodes[0].textContent='Sugestões de Compra ';sub.textContent='Baseado no histórico de compras';}
   else if(S.view==='gastos'){title.childNodes[0].textContent='Gastos por Unidade ';sub.textContent='Por unidade e mês a mês';}
   else if(S.view==='subestimados'){title.childNodes[0].textContent='Itens Subestimados ';sub.textContent='Previsto abaixo do real';}
+  else if(S.view==='mercado'){title.childNodes[0].textContent='Preço de Mercado ';sub.textContent='Seu preço vs. mercado';}
   if(S.view==='dashboard'){document.getElementById('nav-dashboard').classList.add('active');title.childNodes[0].textContent='Dashboard ';sub.textContent='Visão geral';}
   else if(S.view==='nf'){document.getElementById('nav-nf').classList.add('active');title.childNodes[0].textContent='Notas Fiscais ';sub.textContent='Relatório';btnNF.style.display='flex';}
   else if(S.view==='projeto'){
@@ -1214,6 +1224,7 @@ function renderPages(){
   document.getElementById('page-sugestoes').classList.toggle('active',S.view==='sugestoes');
   document.getElementById('page-gastos').classList.toggle('active',S.view==='gastos');
   document.getElementById('page-subestimados').classList.toggle('active',S.view==='subestimados');
+  document.getElementById('page-mercado').classList.toggle('active',S.view==='mercado');
   if(S.view==='dashboard')renderDashboard();
   if(S.view==='projeto')renderProjeto();
   if(S.view==='nf')renderNFPage();
@@ -1226,6 +1237,7 @@ function renderPages(){
   if(S.view==='sugestoes')renderSugestoes();
   if(S.view==='gastos')renderGastos();
   if(S.view==='subestimados')renderSubestimados();
+  if(S.view==='mercado')renderMercado();
 }
 
 // ── DASHBOARD ──
@@ -3711,6 +3723,78 @@ function compararMeses(){
 }
 
 // ── ITENS SUBESTIMADOS (previsto < real) ──
+// ── PRECO DE MERCADO ──
+function renderMercado(){
+  var alvo=document.getElementById('mercado-content');
+  if(!alvo)return;
+  if(!window._precosMercado){
+    alvo.innerHTML='<div style="color:var(--muted);padding:20px">Carregando preços de mercado…</div>';
+    fetch('precos_mercado.json?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
+      window._precosMercado=d; renderMercado();
+    }).catch(function(){ alvo.innerHTML='<div style="color:var(--red);padding:20px">Não foi possível carregar precos_mercado.json.</div>'; });
+    return;
+  }
+  var d=window._precosMercado;
+  var TOL=0.05; // 5% de tolerância pra considerar "no preço"
+  var rows=(d.itens||[]).map(function(it){
+    var meu=Number(it.meu)||0, merc=Number(it.mercado)||0, qtd=Number(it.qtd)||0;
+    var dif=meu-merc, pct=merc?(dif/merc*100):0;
+    var acima = meu > merc*(1+TOL);
+    var abaixo = meu < merc*(1-TOL);
+    var economia = acima ? dif*qtd : 0;
+    return {it:it, meu:meu, merc:merc, qtd:qtd, dif:dif, pct:pct, acima:acima, abaixo:abaixo, economia:economia};
+  });
+  // filtro de busca
+  var q=(document.getElementById('mercado-busca')||{}).value||'';
+  q=q.trim().toLowerCase();
+  var vis = q ? rows.filter(function(r){return (r.it.item||'').toLowerCase().indexOf(q)>=0 || (r.it.fornecedor||'').toLowerCase().indexOf(q)>=0;}) : rows;
+  // ordena: maior economia potencial primeiro, depois maior % acima
+  vis.sort(function(a,b){ if(b.economia!==a.economia) return b.economia-a.economia; return b.pct-a.pct; });
+
+  var nAcima=rows.filter(function(r){return r.acima;}).length;
+  var nAbaixo=rows.filter(function(r){return r.abaixo;}).length;
+  var economiaTot=rows.reduce(function(s,r){return s+r.economia;},0);
+
+  var html='';
+  // cabeçalho/snapshot
+  html+='<div style="font-size:11px;color:var(--muted);margin-bottom:14px;font-family:var(--mono)">📅 Snapshot de '+(d.atualizado_em||'—')+' · '+rows.length+' itens pesquisados · use como referência pra negociar (preços de internet variam por dia, quantidade e condição).</div>';
+  // cards
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px">';
+  html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Itens pesquisados</div><div style="font-family:var(--serif);font-size:22px;font-weight:800;color:var(--text)">'+rows.length+'</div></div>';
+  html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px;border-left:3px solid var(--red)"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Acima do mercado</div><div style="font-family:var(--serif);font-size:22px;font-weight:800;color:var(--red)">'+nAcima+'</div><div style="font-size:10px;color:var(--muted);margin-top:4px">pagando mais caro</div></div>';
+  html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px;border-left:3px solid var(--amber)"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Economia potencial</div><div style="font-family:var(--serif);font-size:22px;font-weight:800;color:var(--amber)">'+brl(economiaTot)+'</div><div style="font-size:10px;color:var(--muted);margin-top:4px">se igualar ao mercado</div></div>';
+  html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px;border-left:3px solid var(--accent)"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Melhor que o mercado</div><div style="font-family:var(--serif);font-size:22px;font-weight:800;color:var(--accent)">'+nAbaixo+'</div><div style="font-size:10px;color:var(--muted);margin-top:4px">já comprando bem</div></div>';
+  html+='</div>';
+
+  // tabela
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:880px"><thead><tr>'
+    +'<th>Item</th><th style="text-align:right">Seu preço</th><th style="text-align:right">Mercado</th><th style="text-align:right">Diferença</th><th style="text-align:right">Qtd</th><th style="text-align:right">Economia potencial</th><th>Melhor fornecedor</th><th>Situação</th></tr></thead><tbody>';
+  vis.forEach(function(r){
+    var corDif = r.acima?'var(--red)':(r.abaixo?'var(--accent)':'var(--muted)');
+    var sinal = r.dif>0?'+':'';
+    var pill;
+    if(r.acima) pill='<span class="badge badge-red">🔴 acima '+sinal+r.pct.toFixed(0)+'%</span>';
+    else if(r.abaixo) pill='<span class="badge badge-green">🟢 '+r.pct.toFixed(0)+'% (bom)</span>';
+    else pill='<span class="badge" style="background:var(--bg3);color:var(--muted)">⚪ no preço</span>';
+    var forn = r.it.url ? '<a href="'+r.it.url+'" target="_blank" style="color:var(--accent);text-decoration:none">'+(r.it.fornecedor||'—')+' ↗</a>' : (r.it.fornecedor||'—');
+    var obs = r.it.obs ? '<div style="font-size:10px;color:var(--muted2);margin-top:2px">'+r.it.obs+'</div>' : '';
+    html+='<tr>'
+      +'<td style="color:var(--text)">'+(r.it.item||'—')+obs+'</td>'
+      +'<td style="text-align:right;font-family:var(--mono)">'+brl(r.meu)+'</td>'
+      +'<td style="text-align:right;font-family:var(--mono);color:var(--muted)">'+brl(r.merc)+'</td>'
+      +'<td style="text-align:right;font-family:var(--mono);color:'+corDif+'">'+sinal+brl(r.dif).replace('R$ ','')+'</td>'
+      +'<td style="text-align:right;font-family:var(--mono);color:var(--muted)">'+r.qtd.toFixed(0)+'</td>'
+      +'<td style="text-align:right;font-family:var(--mono);font-weight:700;color:'+(r.economia>0?'var(--amber)':'var(--muted2)')+'">'+(r.economia>0?brl(r.economia):'—')+'</td>'
+      +'<td style="font-size:12px">'+forn+'</td>'
+      +'<td>'+pill+'</td>'
+      +'</tr>';
+  });
+  html+='</tbody></table></div>';
+  if(!vis.length) html+='<div style="text-align:center;color:var(--muted);padding:30px">Nenhum item bate com o filtro.</div>';
+  html+='<div style="font-size:11px;color:var(--muted2);margin-top:16px;line-height:1.6">⚠️ Os preços são uma referência pesquisada na data acima. Sempre peça cotação formal antes de decidir — o anúncio pode ser de um kit/SKU ligeiramente diferente do seu. Para atualizar este painel, me peça uma nova busca.</div>';
+  alvo.innerHTML=html;
+}
+
 function renderSubestimados(){
   var alvo = document.getElementById('subestimados-content');
   // Detecta quantidade no nome (x20 / ×20 / (x20)) ou usa qtd do serviço

@@ -1,0 +1,19 @@
+{
+  "atualizado_em": "2026-06-04",
+  "fonte": "Pesquisa em distribuidores e varejistas brasileiros (KaBuM, JS Distribuidor CFTV, Best Network, Net Computadores, Winter Informática, Canal das Câmeras, Mercado Livre e lojas oficiais).",
+  "itens": [
+    {"item": "NVR HIKVISION DS-7616NI-Q1", "meu": 1768.00, "qtd": 15, "mercado": 1079.45, "fornecedor": "KaBuM", "url": "https://www.kabum.com.br/produto/318140/gravador-digital-nvr-hikvision-16-canais-ultra-hd-4k-8mp-ds-7616ni-q1", "obs": ""},
+    {"item": "SENSOR 8000 PET (IVP 8000 Pet)", "meu": 141.78, "qtd": 529, "mercado": 112.00, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3239-sensor_de_movimento_infra_vermelho_sem_fio_12mts_90_20_kg_915_mhz_a_928_mhz_intelbras_ivp_8000_pet", "obs": "Confirmar se o modelo é exatamente o IVP 8000 Pet sem fio."},
+    {"item": "CENTRAL AMT 2018 E SMART", "meu": 474.36, "qtd": 44, "mercado": 420.71, "fornecedor": "Intelcenter", "url": "https://www.intelcenter.com.br/alarme/central-de-alarme/central-de-alarme-amt-2018-e-smart-intelbras", "obs": ""},
+    {"item": "DVR HD 4 CANAIS MHDX 1204 C/HD 1TB", "meu": 997.01, "qtd": 21, "mercado": 917.00, "fornecedor": "Net Computadores (+ HD 1TB)", "url": "https://netcomputadores.com.br/p/4580833-intelbras-gravador-dvr-4/98741", "obs": "DVR ~R$587 + HD Purple 1TB ~R$330."},
+    {"item": "CAMERA IP DS-2CD2043G2-I (2.8MM)", "meu": 830.00, "qtd": 187, "mercado": 802.00, "fornecedor": "Câmeras Hik (Mercado Livre)", "url": "https://www.camerashik.com.br/MLB-2671169875-cmera-bullet-hikvision-ip-4mp-28m-ds-2cd2043g2-i-acusense-_JM", "obs": "Seu maior gasto — está no preço de mercado."},
+    {"item": "CAMERA HIKVISION IP LITE DS-2CD1021G0-I 2.8MM", "meu": 189.52, "qtd": 109, "mercado": 259.90, "fornecedor": "Winter Informática", "url": "https://loja.winterinformatica.com.br/produto/camera-ip-ds-2cd1021g0-i-2-8mm-hikvision/", "obs": ""},
+    {"item": "CENTRAL ACTIVE 100 BUS", "meu": 335.08, "qtd": 57, "mercado": 410.99, "fornecedor": "Canal das Câmeras", "url": "https://www.canaldascameras.com/central-alarme-active-100-bus-jfl-99-zonas-16-particoes/p/MLB22672005", "obs": ""},
+    {"item": "TECLADO XAT 8000", "meu": 288.23, "qtd": 67, "mercado": 430.55, "fornecedor": "Best Network", "url": "https://bestnetwork.com.br/produtos/detalhes/4543515/teclado-sem-fio-para-centrais-de-alarme-xat-8000-intelbras-pc/", "obs": ""},
+    {"item": "SIRENE XSS 8000", "meu": 234.73, "qtd": 73, "mercado": 245.70, "fornecedor": "Segurança Shop", "url": "https://www.segurancashop.com.br/sirene-sem-fio-xss-8000-intelbras-2025-01-20-14-24-13", "obs": ""},
+    {"item": "NOBREAK ATTIV 600VA", "meu": 341.44, "qtd": 38, "mercado": 484.50, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3969-nobreak_interativo_bivolt_entrada_saida_120v_attiv_600_va_bi", "obs": ""},
+    {"item": "CAMERA 1120 B (VHD 1120 B)", "meu": 80.45, "qtd": 328, "mercado": 130.00, "fornecedor": "Mercado Livre", "url": "https://lista.mercadolivre.com.br/camera-intelbras-vhd-1120", "obs": ""},
+    {"item": "CAMERA IP SPEED DOME VIP 5232 SD IA", "meu": 5832.34, "qtd": 3, "mercado": 6897.00, "fornecedor": "Lojas Intelbras / varejo", "url": "https://www.mercadolivre.com.br/cmera-ip-intelbras-vip-5232-sd-speed-dome-full-hd-2mp-ia-cor-branco/p/MLB21649577", "obs": ""},
+    {"item": "DVR 3116 (MHDX 3116-C)", "meu": 1041.73, "qtd": 9, "mercado": 1897.25, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4385-dvr_gravador_de_video_16_canais_h_265_intelbras_mhdx_3116_c_ate_5_0_megapixels", "obs": "Mercado já com HD; verifique se o seu inclui HD."}
+  ]
+}
