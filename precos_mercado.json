@@ -100,5 +100,22 @@
     "Câmeras Hikvision ColorVu sem preço público BRL — só aparecem em € no exterior (DS-2CD1T47G2-LIU, DS-2CD2347G2H-LISU, DS-2CD2047G2-LU, DS-2CD1047G2H-LIU). Referência em € (~R$600–800) sugere que você está no preço ou abaixo.",
     "Controle facial Hikvision DS-K1T342MFWX e módulo ASI6213S",
     "Switch gerenciável 48P PoE S2352G / CPE WOM 5A (kit)"
+  ],
+  "fornecedores_novos": [
+    {"nome": "JS Distribuidor CFTV", "local": "São Paulo - SP", "tel": "(11) 3337-3050", "whatsapp": "(11) 94721-0029", "email": "distribuidorcftv@uol.com.br", "site": "distribuidorcftv.com.br", "obs": "Distribuidor de CFTV/segurança eletrônica."},
+    {"nome": "Dicomp Distribuidora", "local": "Maringá - PR", "tel": "", "whatsapp": "(44) 4009-2826", "email": "", "site": "dicomp.com.br", "obs": "Distribuidor nacional (CFTV, redes, telefonia)."},
+    {"nome": "GrupoTek (TekDistribuidor)", "local": "Anápolis - GO", "tel": "(62) 3324-0908", "whatsapp": "(62) 3771-0334", "email": "contato@tekdistribuidor.com.br", "site": "tekdistribuidor.com.br", "obs": "Tecnologia, segurança e redes."},
+    {"nome": "IGTech Grupo", "local": "Londrina - PR", "tel": "(43) 3304-0353", "whatsapp": "(43) 99166-4810", "email": "igtech.londrina@gmail.com", "site": "igtechgrupo.com.br", "obs": "Câmeras, alarmes, redes e automação."},
+    {"nome": "UpperSeg", "local": "Londrina - PR", "tel": "(43) 3024-5144", "whatsapp": "(43) 3024-5144", "email": "", "site": "upperseg.com.br", "obs": "Distribuidora de segurança eletrônica."},
+    {"nome": "Intelcenter (Loja Intelbras)", "local": "Curitiba - PR", "tel": "(41) 3088-2233", "whatsapp": "(41) 3088-2233", "email": "contato@intelcenter.com.br", "site": "intelcenter.com.br", "obs": "Revenda oficial Intelbras."},
+    {"nome": "Aztech Hardware", "local": "Brasil (online)", "tel": "(16) 3262-2225", "whatsapp": "(16) 99333-5601", "email": "contato@aztech.com.br", "site": "aztech.com.br", "obs": "Informática e networking."},
+    {"nome": "Net Computadores", "local": "São Pedro - SP", "tel": "(19) 3481-2667", "whatsapp": "", "email": "compras@netcomputadores.com.br", "site": "netcomputadores.com.br", "obs": "Hardware corporativo / TI."},
+    {"nome": "Tudo Forte", "local": "Fortaleza - CE / SP", "tel": "(85) 3052-1135", "whatsapp": "(11) 3522-8255", "email": "", "site": "tudoforte.com.br", "obs": "Loja de segurança eletrônica."},
+    {"nome": "Best Network", "local": "São Paulo - SP (Sta. Ifigênia)", "tel": "", "whatsapp": "", "email": "marketing@bestnetwork.com.br", "site": "bestnetwork.com.br", "obs": "Telefone/WhatsApp no site (loja física em SP)."},
+    {"nome": "Segurança e Telecom", "local": "Blumenau - SC", "tel": "", "whatsapp": "", "email": "vendas@segurancaetelecom.com.br", "site": "segurancaetelecom.com.br", "obs": "Parceiro credenciado Intelbras."},
+    {"nome": "Winter Informática", "local": "Brasil (online)", "tel": "", "whatsapp": "", "email": "comercial@winterinformatica.com.br", "site": "winterinformatica.com.br", "obs": "Telefone via formulário/site."},
+    {"nome": "Full CFTV", "local": "SP", "tel": "(11) 3116-7088", "whatsapp": "", "email": "", "site": "fullcftv.com.br", "obs": "Confirmar contato no site."},
+    {"nome": "Canal das Câmeras", "local": "São Paulo - SP", "tel": "", "whatsapp": "", "email": "vendas@canaldascameras.com.br", "site": "lojacanaldascameras.com.br", "obs": "Loja de equipamentos de segurança."},
+    {"nome": "Grupo iSeg", "local": "Brasil (online)", "tel": "", "whatsapp": "", "email": "", "site": "grupoiseg.com.br", "obs": "Confirmar contato no site."}
   ]
 }

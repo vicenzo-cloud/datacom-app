@@ -559,12 +559,24 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
       <!-- PRECO DE MERCADO -->
       <div class="page" id="page-mercado">
         <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">💰 Preço de Mercado</h2>
-        <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Compara o seu preço unitário (mediana das suas notas) com o preço pesquisado em sites confiáveis — pra você saber onde está pagando caro e onde já está bem.</p>
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
-          <input type="text" id="mercado-busca" class="dash-filtro-sel" style="flex:1;min-width:220px;max-width:360px;padding:8px 12px" placeholder="🔍 Filtrar item..." oninput="renderMercado()">
-          <button class="btn btn-secondary btn-sm" onclick="atualizarPrecosMercado()" title="Recarrega o snapshot de preços do disco">🔄 Atualizar</button>
+        <div class="tabs" style="margin-bottom:18px">
+          <button class="tab active" id="mtab-precos" onclick="switchMercadoTab('precos')">📊 Comparativo de preços</button>
+          <button class="tab" id="mtab-forn" onclick="switchMercadoTab('forn')">🏢 Fornecedores novos</button>
         </div>
-        <div id="mercado-content"></div>
+        <!-- Sub-aba: comparativo -->
+        <div id="msub-precos">
+          <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Compara o seu preço unitário (mediana das suas notas) com o preço pesquisado em sites confiáveis — pra você saber onde está pagando caro e onde já está bem.</p>
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+            <input type="text" id="mercado-busca" class="dash-filtro-sel" style="flex:1;min-width:220px;max-width:360px;padding:8px 12px" placeholder="🔍 Filtrar item..." oninput="renderMercado()">
+            <button class="btn btn-secondary btn-sm" onclick="atualizarPrecosMercado()" title="Recarrega o snapshot de preços do disco">🔄 Atualizar</button>
+          </div>
+          <div id="mercado-content"></div>
+        </div>
+        <!-- Sub-aba: fornecedores -->
+        <div id="msub-forn" style="display:none">
+          <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Distribuidores e lojas que apareceram na pesquisa de mercado e que você <strong>ainda não comprou</strong> (cruzado com suas 232 fornecedores das notas). Use pra cotar os itens onde está pagando acima.</p>
+          <div id="mercado-forn-content"></div>
+        </div>
       </div>
 
     </div>
@@ -3813,6 +3825,46 @@ function atualizarPrecosMercado(){
     window._precosMercado=d; renderMercado();
     if(typeof toast==='function') toast('Snapshot recarregado ('+(d.atualizado_em||'—')+')');
   }).catch(function(){ if(typeof toast==='function') toast('Falha ao recarregar precos_mercado.json','error'); });
+}
+
+function switchMercadoTab(which){
+  var p=which==='precos';
+  document.getElementById('msub-precos').style.display = p?'block':'none';
+  document.getElementById('msub-forn').style.display = p?'none':'block';
+  document.getElementById('mtab-precos').classList.toggle('active',p);
+  document.getElementById('mtab-forn').classList.toggle('active',!p);
+  if(p){ renderMercado(); } else { renderMercadoFornecedores(); }
+}
+
+function _soDigitos(s){ return (s||'').replace(/\D/g,''); }
+
+function renderMercadoFornecedores(){
+  var alvo=document.getElementById('mercado-forn-content');
+  if(!alvo)return;
+  if(!window._precosMercado){
+    fetch('precos_mercado.json?t='+Date.now()).then(function(r){return r.json();}).then(function(d){ window._precosMercado=d; renderMercadoFornecedores(); });
+    alvo.innerHTML='<div style="color:var(--muted);padding:20px">Carregando…</div>'; return;
+  }
+  var lista=window._precosMercado.fornecedores_novos||[];
+  if(!lista.length){ alvo.innerHTML='<div style="color:var(--muted);padding:20px">Nenhum fornecedor cadastrado.</div>'; return; }
+  var html='<div style="font-size:11px;color:var(--muted);margin-bottom:14px;font-family:var(--mono)">🏢 '+lista.length+' fornecedores novos · todos diferentes dos que você já usa</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">';
+  lista.forEach(function(f){
+    var wa = f.whatsapp ? '<a href="https://wa.me/55'+_soDigitos(f.whatsapp)+'" target="_blank" style="color:var(--accent);text-decoration:none">💬 '+f.whatsapp+'</a>' : '';
+    var tel = f.tel ? '<a href="tel:+55'+_soDigitos(f.tel)+'" style="color:var(--text);text-decoration:none">📞 '+f.tel+'</a>' : '';
+    var email = f.email ? '<a href="mailto:'+f.email+'" style="color:var(--blue);text-decoration:none">✉️ '+f.email+'</a>' : '';
+    var site = f.site ? '<a href="https://'+f.site+'" target="_blank" style="color:var(--accent);text-decoration:none">🌐 '+f.site+'</a>' : '';
+    var linhas=[tel,wa,email,site].filter(function(x){return x;}).map(function(x){return '<div style="margin-top:5px">'+x+'</div>';}).join('');
+    html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px">'
+      +'<div style="font-weight:700;color:var(--text);font-size:14px">'+f.nome+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">📍 '+(f.local||'—')+'</div>'
+      +(f.obs?'<div style="font-size:11px;color:var(--muted2);margin-top:6px">'+f.obs+'</div>':'')
+      +'<div style="font-size:12px;font-family:var(--mono);margin-top:8px">'+linhas+'</div>'
+      +'</div>';
+  });
+  html+='</div>';
+  html+='<div style="font-size:11px;color:var(--muted2);margin-top:16px;line-height:1.6">⚠️ Contatos coletados na internet em '+(window._precosMercado.atualizado_em||'—')+' — confirme telefone/WhatsApp no site antes de fechar pedido. Os campos vazios não tinham número público confiável (use o site).</div>';
+  alvo.innerHTML=html;
 }
 
 function renderSubestimados(){
