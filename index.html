@@ -292,7 +292,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
     <div class="nav-item" id="grp-notas" onclick="switchView('nf')"><span class="icon">◉</span><span class="lbl">Notas Fiscais</span><span class="cnt" id="nf-count">0</span></div>
     <div class="nav-item" id="grp-analise" onclick="switchView('comp')"><span class="icon">⊞</span><span class="lbl">Análise</span></div>
     <div class="nav-item" id="grp-precos" onclick="switchView('preco')"><span class="icon">📊</span><span class="lbl">Preços &amp; Compras</span></div>
-    <div class="nav-item" id="grp-operacao" onclick="switchView('alertas')"><span class="icon">🔔</span><span class="lbl">Operação</span></div>
+    <div class="nav-item" id="grp-operacao" onclick="switchView('sugestoes')"><span class="icon">🛒</span><span class="lbl">Operação</span></div>
     <div class="nav-item" id="grp-timeline" onclick="switchView('timeline')"><span class="icon">⟳</span><span class="lbl">Timeline</span></div>
     <!-- badge auditoria preservado (oculto) p/ compatibilidade -->
     <span id="audit-count" style="display:none"></span>
@@ -911,10 +911,10 @@ function renderSidebar(){
 // Grupos de navegação (compacta 12 abas em 6). Nada é removido — só reorganizado.
 var GRUPOS=[
   {g:'dashboard', views:['dashboard']},
-  {g:'notas',     views:['nf','audit']},
+  {g:'notas',     views:['nf','audit','alertas']},
   {g:'analise',   views:['comp','subestimados']},
   {g:'precos',    views:['preco','mercado','compras-dash']},
-  {g:'operacao',  views:['alertas','sugestoes','gastos']},
+  {g:'operacao',  views:['sugestoes','gastos']},
   {g:'timeline',  views:['timeline']}
 ];
 var VIEW_INFO={
