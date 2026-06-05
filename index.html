@@ -2560,6 +2560,30 @@ function saveNFAudit(idx){
   }, 50);
 }
 
+function fixAllIssues(){
+  var nfs = S.nfs || [];
+  // Recalcula quais NFs estão sinalizadas (mesmas regras do runAuditoria)
+  var avg = nfs.reduce(function(s,n){return s+(Number(n.valor)||0);},0) / (nfs.length||1);
+  var valueMap = {};
+  var flagged = {};
+  nfs.forEach(function(n, idx){
+    if(n.auditado) return;
+    var v = Number(n.valor);
+    if(!n.obs || String(n.obs).trim()==='' || n.obs==='-') flagged[idx]=true;          // sem categoria
+    if(isNaN(v) || v < 0) flagged[idx]=true;                                            // valor inválido
+    if(v > avg*3) flagged[idx]=true;                                                    // valor muito alto
+    var key = (isNaN(v)?'x':v.toFixed(2)) + '|' + n.fornecedor;
+    if(valueMap[key]!=null) flagged[idx]=true; else valueMap[key]=idx;                  // duplicata
+  });
+  var ids = Object.keys(flagged);
+  if(!ids.length){ toast('✓ Nada a corrigir — auditoria já está limpa.'); return; }
+  if(!confirm('Marcar as '+ids.length+' NF(s) sinalizadas como revisadas/auditadas?\n\nElas saem da lista de auditoria (os dados das notas não são alterados). Você pode revisar item a item antes, se preferir.')) return;
+  ids.forEach(function(i){ if(S.nfs[i]) S.nfs[i].auditado = true; });
+  persist();
+  toast('✓ '+ids.length+' NF(s) marcadas como revisadas.');
+  runAuditoria();
+}
+
 function discardNFAudit(idx){
   console.log('✅ discardNFAudit idx='+idx, 'marcando como auditado');
   var nf = S.nfs[idx];
