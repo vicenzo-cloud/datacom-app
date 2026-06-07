@@ -313,8 +313,8 @@ body.ro .ro-hide{display:none !important}
           <button class="tab" id="tab-materiais" onclick="switchTab('materiais')">Materiais</button>
           <button class="tab" id="tab-servicos" onclick="switchTab('servicos')">Serviços</button>
         </div>
-        <button class="btn btn-primary" id="btn-add-item" style="display:none" onclick="openModal('modal-item')">+ Material</button>
-        <button class="btn btn-secondary" id="btn-add-svc" style="display:none" onclick="openModal('modal-svc')">+ Serviço</button>
+        <button class="btn btn-primary" id="btn-add-item" style="display:none" onclick="novoItem()">+ Material</button>
+        <button class="btn btn-secondary" id="btn-add-svc" style="display:none" onclick="novoSvc()">+ Serviço</button>
         <button class="btn btn-primary" id="btn-add-nf" style="display:none" onclick="openModal('modal-nf')">+ Nota Fiscal</button>
       </div>
     </div>
@@ -676,21 +676,21 @@ body.ro .ro-hide{display:none !important}
 
 <!-- MODAL MATERIAL -->
 <div class="modal-overlay" id="modal-item" onclick="closeOut(event,'modal-item')">
-  <div class="modal"><div class="modal-hd"><div class="modal-title">Novo Material</div><button class="modal-x" onclick="closeModal('modal-item')">✕</button></div>
+  <div class="modal"><div class="modal-hd"><div class="modal-title" id="modal-item-title">Novo Material</div><button class="modal-x" onclick="closeModal('modal-item')">✕</button></div>
   <div class="fg"><label>Descrição *</label><input id="i-nome" placeholder="Ex: Cabo CAT6 1500m"></div>
   <div class="fg-row"><div class="fg"><label>Custo previsto (R$) *</label><input type="number" id="i-prev" step="0.01" placeholder="0,00"></div><div class="fg"><label>Custo real (R$)</label><input type="number" id="i-real" step="0.01" placeholder="0,00"></div></div>
   <div class="fg-row"><div class="fg"><label>Categoria</label><select id="i-cat"><option>Licenças</option><option>Cabeamento</option><option>Conectores</option><option>Hardware</option><option>Outros</option></select></div><div class="fg"><label>Tipo</label><select id="i-extra"><option value="0">No orçamento</option><option value="1">Adicional</option></select></div></div>
-  <div class="form-actions"><button class="btn btn-ghost" onclick="closeModal('modal-item')">Cancelar</button><button class="btn btn-primary" onclick="saveItem()">Adicionar</button></div></div>
+  <div class="form-actions"><button class="btn btn-ghost" onclick="closeModal('modal-item')">Cancelar</button><button class="btn btn-primary" id="btn-save-item" onclick="saveItem()">Adicionar</button></div></div>
 </div>
 
 <!-- MODAL SERVIÇO -->
 <div class="modal-overlay" id="modal-svc" onclick="closeOut(event,'modal-svc')">
-  <div class="modal"><div class="modal-hd"><div class="modal-title">Novo Serviço</div><button class="modal-x" onclick="closeModal('modal-svc')">✕</button></div>
+  <div class="modal"><div class="modal-hd"><div class="modal-title" id="modal-svc-title">Novo Serviço</div><button class="modal-x" onclick="closeModal('modal-svc')">✕</button></div>
   <div class="fg"><label>Descrição *</label><input id="s-nome" placeholder="Ex: Mão de obra e configuração"></div>
   <div class="fg-row"><div class="fg"><label>Quantidade</label><input type="number" id="s-qtd" value="1" step="1"></div><div class="fg"><label>Fornecedor</label><input id="s-forn" placeholder="Ex: Vigicorp"></div></div>
   <div class="fg-row"><div class="fg"><label>Custo previsto unit. (R$) *</label><input type="number" id="s-prev" step="0.01" placeholder="0,00"></div><div class="fg"><label>Custo real unit. (R$)</label><input type="number" id="s-real" step="0.01" placeholder="0,00"></div></div>
   <div class="fg-row"><div class="fg"><label>Categoria</label><select id="s-cat"><option>Serviço</option><option>Infraestrutura</option><option>Instalação</option><option>Mão de Obra</option></select></div><div class="fg"><label>Tipo</label><select id="s-extra"><option value="0">No orçamento</option><option value="1">Adicional</option></select></div></div>
-  <div class="form-actions"><button class="btn btn-ghost" onclick="closeModal('modal-svc')">Cancelar</button><button class="btn btn-primary" onclick="saveSvc()">Adicionar</button></div></div>
+  <div class="form-actions"><button class="btn btn-ghost" onclick="closeModal('modal-svc')">Cancelar</button><button class="btn btn-primary" id="btn-save-svc" onclick="saveSvc()">Adicionar</button></div></div>
 </div>
 
 <!-- MODAL PRECO DISCREPANCIA -->
@@ -857,13 +857,48 @@ function deleteProject(id){
 function openProject(id){S.curProj=id;S.view='projeto';S.tab='resumo';persist();renderAll();}
 
 // ── ITEM CRUD ──
+var _editItemId=null;
+function novoItem(){
+  if(!exigeEditor())return;
+  _editItemId=null;
+  document.getElementById('modal-item-title').textContent='Novo Material';
+  document.getElementById('btn-save-item').textContent='Adicionar';
+  ['i-nome','i-prev','i-real'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('i-cat').selectedIndex=0; document.getElementById('i-extra').value='0';
+  openModal('modal-item');
+}
+function editItem(pid,iid){
+  if(!exigeEditor())return;
+  var proj=S.projects.find(function(p){return p.id===pid;}); if(!proj)return;
+  var it=(proj.items||[]).find(function(i){return i.id===iid;}); if(!it)return;
+  S.curProj=pid; _editItemId=iid;
+  document.getElementById('i-nome').value=it.nome||'';
+  document.getElementById('i-prev').value=(it.prev!=null?it.prev:'');
+  document.getElementById('i-real').value=(it.real!=null?it.real:'');
+  document.getElementById('i-cat').value=it.cat||document.getElementById('i-cat').options[0].value;
+  document.getElementById('i-extra').value=it.extra?'1':'0';
+  document.getElementById('modal-item-title').textContent='Editar Material';
+  document.getElementById('btn-save-item').textContent='Salvar alterações';
+  openModal('modal-item');
+}
 function saveItem(){
   if(!exigeEditor())return;
   const nome=document.getElementById('i-nome').value.trim();
   const prev=parseFloat(document.getElementById('i-prev').value)||0;
   if(!nome||!prev){toast('Obrigatório','error');return;}
   const proj=S.projects.find(function(p){return p.id===S.curProj;});if(!proj)return;
-  proj.items.push({id:uid(),nome,prev,real:parseFloat(document.getElementById('i-real').value)||0,cat:document.getElementById('i-cat').value,extra:document.getElementById('i-extra').value==='1'});
+  const real=parseFloat(document.getElementById('i-real').value)||0;
+  const cat=document.getElementById('i-cat').value, extra=document.getElementById('i-extra').value==='1';
+  if(_editItemId){
+    var it=(proj.items||[]).find(function(i){return i.id===_editItemId;});
+    if(it){ var antes='prev '+brl(it.prev)+'→'+brl(prev)+', real '+brl(it.real)+'→'+brl(real);
+      it.nome=nome; it.prev=prev; it.real=real; it.cat=cat; it.extra=extra;
+      logAtividade('Material editado', proj.nome+' · '+nome+' ('+antes+')'); }
+    _editItemId=null;
+    persist();closeModal('modal-item');renderAll();toast('Material atualizado!');
+    return;
+  }
+  proj.items.push({id:uid(),nome,prev,real,cat,extra});
   persist();closeModal('modal-item');
   logAtividade('Material adicionado', proj.nome+' · '+nome+' (previsto '+brl(prev)+')');
   ['i-nome','i-prev','i-real'].forEach(function(id){document.getElementById(id).value='';});
@@ -879,6 +914,33 @@ function deleteItem(pid,iid){
 }
 
 // ── SERVICE CRUD ──
+var _editSvcId=null;
+function novoSvc(){
+  if(!exigeEditor())return;
+  _editSvcId=null;
+  document.getElementById('modal-svc-title').textContent='Novo Serviço';
+  document.getElementById('btn-save-svc').textContent='Adicionar';
+  ['s-nome','s-forn','s-prev','s-real'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('s-qtd').value='1'; document.getElementById('s-cat').selectedIndex=0; document.getElementById('s-extra').value='0';
+  openModal('modal-svc');
+}
+function editSvc(pid,sid){
+  if(!exigeEditor())return;
+  var proj=S.projects.find(function(p){return p.id===pid;}); if(!proj)return;
+  var s=(proj.services||[]).find(function(x){return x.id===sid;}); if(!s)return;
+  S.curProj=pid; _editSvcId=sid;
+  var qtd=Number(s.qtd)||1;
+  document.getElementById('s-nome').value=s.nome||'';
+  document.getElementById('s-qtd').value=qtd;
+  document.getElementById('s-forn').value=s.fornecedor||'';
+  document.getElementById('s-prev').value=(qtd?((Number(s.prev)||0)/qtd):0); // mostra valor unitário
+  document.getElementById('s-real').value=(qtd?((Number(s.real)||0)/qtd):0);
+  document.getElementById('s-cat').value=s.cat||document.getElementById('s-cat').options[0].value;
+  document.getElementById('s-extra').value=s.extra?'1':'0';
+  document.getElementById('modal-svc-title').textContent='Editar Serviço';
+  document.getElementById('btn-save-svc').textContent='Salvar alterações';
+  openModal('modal-svc');
+}
 function saveSvc(){
   if(!exigeEditor())return;
   const nome=document.getElementById('s-nome').value.trim();
@@ -887,7 +949,17 @@ function saveSvc(){
   const proj=S.projects.find(function(p){return p.id===S.curProj;});if(!proj)return;
   const qtd=parseFloat(document.getElementById('s-qtd').value)||1;
   const realU=parseFloat(document.getElementById('s-real').value)||prevU;
-  proj.services.push({id:uid(),nome,qtd,fornecedor:document.getElementById('s-forn').value.trim(),prev:prevU*qtd,real:realU*qtd,cat:document.getElementById('s-cat').value,extra:document.getElementById('s-extra').value==='1'});
+  const forn=document.getElementById('s-forn').value.trim(), cat=document.getElementById('s-cat').value, extra=document.getElementById('s-extra').value==='1';
+  if(_editSvcId){
+    var s=(proj.services||[]).find(function(x){return x.id===_editSvcId;});
+    if(s){ var antes='prev '+brl(s.prev)+'→'+brl(prevU*qtd)+', real '+brl(s.real)+'→'+brl(realU*qtd);
+      s.nome=nome; s.qtd=qtd; s.fornecedor=forn; s.prev=prevU*qtd; s.real=realU*qtd; s.cat=cat; s.extra=extra;
+      logAtividade('Serviço editado', proj.nome+' · '+nome+' ('+antes+')'); }
+    _editSvcId=null;
+    persist();closeModal('modal-svc');renderAll();toast('Serviço atualizado!');
+    return;
+  }
+  proj.services.push({id:uid(),nome,qtd,fornecedor:forn,prev:prevU*qtd,real:realU*qtd,cat,extra});
   persist();closeModal('modal-svc');
   logAtividade('Serviço adicionado', proj.nome+' · '+nome+' (x'+qtd+')');
   ['s-nome','s-forn','s-prev','s-real'].forEach(function(id){document.getElementById(id).value='';});
@@ -1702,14 +1774,14 @@ function renderMateriais(proj){
       +'<td>'+(i.extra?'<span style="color:var(--muted2)">—</span>':brl(i.prev))+'</td><td>'+brl(i.real)+'</td>'
       +'<td style="color:'+(d>0?'var(--red)':d<0?'var(--accent)':'var(--muted)')+'">'+(d===0?'—':(d>0?'+':'')+brl(d))+'</td>'
       +'<td>'+badge+'</td>'
-      +'<td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteItem(\''+proj.id+'\',\''+i.id+'\')">✕</button></td></tr>';
+      +'<td style="white-space:nowrap"><button class="btn btn-secondary btn-sm ro-hide" title="Editar" onclick="event.stopPropagation();editItem(\''+proj.id+'\',\''+i.id+'\')">✏</button> <button class="btn btn-danger btn-sm ro-hide" title="Excluir" onclick="event.stopPropagation();deleteItem(\''+proj.id+'\',\''+i.id+'\')">✕</button></td></tr>';
   }
   const totalRow='<tr class="total-row"><td colspan="2" style="color:var(--text)">Total</td><td>'+brl(prev)+'</td><td style="color:'+(real>prev?'var(--red)':'var(--accent)')+'">'+brl(real)+'</td><td style="color:'+(real>prev?'var(--red)':'var(--accent)')+'">'+(real>prev?'+':'')+brl(real-prev)+'</td><td><span class="badge '+(real>prev?'badge-red':'badge-green')+'">'+(real>prev?'+':'')+brl(real-prev)+'</span></td><td></td></tr>';
   const allBody=!items.length?'<div class="empty"><div class="empty-icon">◉</div><div class="empty-title">Nenhum material</div></div>':tHead(['Item','Categoria','Previsto','Real','Variação','%',''])+items.map(rowMat).join('')+totalRow+'</tbody></table>';
   const carosBody=!caros.length?'<div class="empty"><div class="empty-icon">✓</div><div class="empty-title">Nenhum acima do previsto</div></div>':tHead(['Item','Categoria','Previsto','Real','Estouro','%'])+caros.map(function(i){const d=i.real-i.prev,p=((d/i.prev)*100).toFixed(1);return '<tr><td style="color:var(--text)">'+i.nome+'</td><td>'+i.cat+'</td><td>'+brl(i.prev)+'</td><td style="color:var(--red)">'+brl(i.real)+'</td><td style="color:var(--red)">+'+brl(d)+'</td><td><span class="badge badge-red">+'+p+'%</span></td></tr>';}).join('')+'</tbody></table>';
   const ecoBody=!eco.length?'<div class="empty"><div class="empty-icon">◈</div><div class="empty-title">Nenhum abaixo do previsto</div></div>':tHead(['Item','Categoria','Previsto','Real','Economia','%'])+eco.map(function(i){const e=i.prev-i.real,p=((e/i.prev)*100).toFixed(1);return '<tr><td>'+i.nome+'</td><td>'+i.cat+'</td><td>'+brl(i.prev)+'</td><td style="color:var(--accent)">'+brl(i.real)+'</td><td style="color:var(--accent)">− '+brl(e)+'</td><td><span class="badge badge-green">−'+p+'%</span></td></tr>';}).join('')+'<tr class="total-row"><td colspan="2">Total</td><td>'+brl(ecoPrev)+'</td><td style="color:var(--accent)">'+brl(ecoReal)+'</td><td style="color:var(--accent)">− '+brl(ecoSave)+'</td><td><span class="badge badge-green">−'+ecoPct+'%</span></td></tr></tbody></table><div class="note-box green"><span>✓</span><span>Economia de <strong>'+brl(ecoSave)+'</strong>.</span></div>';
 
-  const addBtn='<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openModal(\'modal-item\')" style="margin-left:8px">+ Material</button>';
+  const addBtn='<button class="btn btn-secondary btn-sm ro-hide" onclick="event.stopPropagation();novoItem()" style="margin-left:8px">+ Material</button>';
   document.getElementById('mat-content').innerHTML=bannerHtml
     +buildSec('mat-all','Todos os materiais','<span class="t-badge">'+items.length+' itens</span>',brl(real),allBody,true,addBtn)
     +buildSec('mat-caros','Acima do previsto','<span class="t-badge" style="background:var(--red-dim);color:var(--red)">'+caros.length+' itens</span>',brl(caros.reduce(function(s,i){return s+i.real;},0)),carosBody,false)
@@ -1741,14 +1813,14 @@ function renderServicos(proj){
       +'<td>'+(s.extra?'<span style="color:var(--muted2)">—</span>':brl(s.prev))+'</td><td>'+brl(s.real)+'</td>'
       +'<td style="color:'+(d>0?'var(--red)':d<0?'var(--accent)':'var(--muted)')+'">'+(d===0?'—':(d>0?'+':'')+brl(d))+'</td>'
       +'<td>'+badge+'</td>'
-      +'<td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteSvc(\''+proj.id+'\',\''+s.id+'\')">✕</button></td></tr>';
+      +'<td style="white-space:nowrap"><button class="btn btn-secondary btn-sm ro-hide" title="Editar" onclick="event.stopPropagation();editSvc(\''+proj.id+'\',\''+s.id+'\')">✏</button> <button class="btn btn-danger btn-sm ro-hide" title="Excluir" onclick="event.stopPropagation();deleteSvc(\''+proj.id+'\',\''+s.id+'\')">✕</button></td></tr>';
   }
   const totalRow='<tr class="total-row"><td colspan="4" style="color:var(--text)">Total</td><td>'+brl(prev)+'</td><td style="color:'+(real>prev?'var(--red)':'var(--accent)')+'">'+brl(real)+'</td><td style="color:'+(real>prev?'var(--red)':'var(--accent)')+'">'+(real>prev?'+':'')+brl(real-prev)+'</td><td><span class="badge '+(real>prev?'badge-red':'badge-green')+'">'+(real>prev?'+':'')+brl(real-prev)+'</span></td><td></td></tr>';
   const allBody=!svcs.length?'<div class="empty"><div class="empty-icon">◉</div><div class="empty-title">Nenhum serviço</div></div>':tHead(['Descrição','Qtd','Fornecedor','Categoria','Previsto','Real','Variação','%',''])+svcs.map(rowSvc).join('')+totalRow+'</tbody></table>';
   const carosBody=!caros.length?'<div class="empty"><div class="empty-icon">✓</div><div class="empty-title">Nenhum acima do previsto</div></div>':tHead(['Descrição','Previsto','Real','Estouro','%'])+caros.map(function(i){const d=i.real-i.prev,p=((d/i.prev)*100).toFixed(1);return '<tr><td style="color:var(--text)">'+i.nome+'</td><td>'+brl(i.prev)+'</td><td style="color:var(--red)">'+brl(i.real)+'</td><td style="color:var(--red)">+'+brl(d)+'</td><td><span class="badge badge-red">+'+p+'%</span></td></tr>';}).join('')+'</tbody></table>';
   const ecoBody=!eco.length?'<div class="empty"><div class="empty-icon">◈</div><div class="empty-title">Nenhum abaixo do previsto</div></div>':tHead(['Descrição','Previsto','Real','Economia','%'])+eco.map(function(i){const e=i.prev-i.real,p=((e/i.prev)*100).toFixed(1);return '<tr><td>'+i.nome+'</td><td>'+brl(i.prev)+'</td><td style="color:var(--accent)">'+brl(i.real)+'</td><td style="color:var(--accent)">− '+brl(e)+'</td><td><span class="badge badge-green">−'+p+'%</span></td></tr>';}).join('')+'<tr class="total-row"><td>Total</td><td>'+brl(ecoPrev)+'</td><td style="color:var(--accent)">'+brl(ecoReal)+'</td><td style="color:var(--accent)">− '+brl(ecoSave)+'</td><td><span class="badge badge-green">−'+ecoPct+'%</span></td></tr></tbody></table><div class="note-box green"><span>✓</span><span>Economia de <strong>'+brl(ecoSave)+'</strong>.</span></div>';
 
-  const addBtn='<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openModal(\'modal-svc\')" style="margin-left:8px">+ Serviço</button>';
+  const addBtn='<button class="btn btn-secondary btn-sm ro-hide" onclick="event.stopPropagation();novoSvc()" style="margin-left:8px">+ Serviço</button>';
   document.getElementById('svc-content').innerHTML=bannerHtml
     +buildSec('svc-all','Todos os serviços','<span class="t-badge">'+svcs.length+' serviços</span>',brl(real),allBody,true,addBtn)
     +buildSec('svc-caros','Acima do previsto','<span class="t-badge" style="background:var(--red-dim);color:var(--red)">'+caros.length+' itens</span>',brl(caros.reduce(function(s,i){return s+i.real;},0)),carosBody,false)
@@ -2483,7 +2555,6 @@ function filtrarAuditoria(){
   var cards = document.querySelectorAll('#audit-content .card[data-search]');
   var vistos = 0;
 
-  console.log('🔎 Filtrando: "'+termo+'", encontradas '+cards.length+' cards');
 
   cards.forEach(function(card){
     var dataSearch = card.getAttribute('data-search') || '';
@@ -2498,7 +2569,6 @@ function filtrarAuditoria(){
     toast('Encontradas '+vistos+' NF(s)', 'success');
   }
 
-  console.log('🔎 Resultado: '+vistos+' cards visíveis');
 }
 
 function runAuditoria(fromClick){
@@ -2510,7 +2580,6 @@ function runAuditoria(fromClick){
   var filtroEl = document.getElementById('audit-filtro');
   if(filtroEl) filtroEl.value = '';
 
-  console.log('🔍 runAuditoria iniciada, S.nfs.length='+nfs.length);
 
   // 1. NFs sem categoria (skip NFs auditadas)
   nfs.forEach(function(n, idx){
@@ -2550,7 +2619,6 @@ function runAuditoria(fromClick){
   });
 
   var total = issues.length + warns.length;
-  console.log('📊 runAuditoria resultado: issues='+issues.length+', warns='+warns.length+', total='+total);
 
   document.getElementById('audit-total').textContent = nfs.length;
   document.getElementById('audit-issues').textContent = issues.length;
@@ -2596,7 +2664,6 @@ function renderNFCard(item, tipo){
   var nf = item.nf;
   var idx = item.idx;
 
-  console.log('🎨 renderNFCard - idx='+idx, 'nf.numero='+nf.numero, 'S.nfs[idx].numero='+S.nfs[idx].numero, 'match='+(S.nfs[idx].numero===nf.numero));
 
   var borderColor = tipo === 'erro' ? 'var(--red)' : 'var(--amber)';
   var problemas = [];
@@ -2649,7 +2716,6 @@ function renderNFCard(item, tipo){
 
 function saveNFAudit(idx){
   if(!exigeEditor())return;
-  console.log('💾 saveNFAudit idx='+idx, 'S.nfs.length='+S.nfs.length);
 
   var nf = S.nfs[idx];
   if(!nf){
@@ -2658,7 +2724,6 @@ function saveNFAudit(idx){
     return;
   }
 
-  console.log('📝 Antes de salvar:', JSON.stringify(nf));
 
   // Lê valores dos inputs
   var numVal = document.getElementById('nf-num-'+idx);
@@ -2677,7 +2742,6 @@ function saveNFAudit(idx){
   nf.obs = obsVal.value;
   nf.valor = parseFloat(valVal.value) || 0;
 
-  console.log('📝 Depois de salvar:', JSON.stringify(nf));
 
   persist();
 
@@ -2688,7 +2752,6 @@ function saveNFAudit(idx){
 
   // Aguarda um pouco e depois analisa o que ainda está errado
   setTimeout(function(){
-    console.log('🔍 Analisando problemas após salvar...');
 
     // Recalcula todos os problemas desta NF
     var problemas = [];
@@ -2718,10 +2781,8 @@ function saveNFAudit(idx){
 
     if(problemas.length > 0){
       toast('⚠️ Ainda tem: '+problemas.join(' | '), 'error');
-      console.log('❌ NF ainda tem problemas:', problemas);
     } else {
       toast('✅ RESOLVIDO! Saindo da auditoria...', 'success');
-      console.log('✅ NF sem problemas, saindo!');
     }
 
     runAuditoria();
@@ -2853,7 +2914,6 @@ function importAuditCSV(ev){
 }
 
 function discardNFAudit(idx){
-  console.log('✅ discardNFAudit idx='+idx, 'marcando como auditado');
   var nf = S.nfs[idx];
   nf.auditado = true; // Marca como "verificado e OK"
   persist();
@@ -2904,7 +2964,6 @@ var _lsTime = (S && S._savedAt) ? S._savedAt : 0;
     S.nfs.unshift(nfTeste);
     persist();
     localStorage.setItem('dc_teste_nf_criada', 'true'); // Marca como criada
-    console.log('🧪 NF de teste criada em primeiro lugar! Delete ela para testar.');
   }
 })();
 
