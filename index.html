@@ -1957,6 +1957,8 @@ function renderServicos(proj){
 // ── NF PAGE ──
 function renderNFPage(){populateNFFilters();renderNFTable();}
 
+var nfPagina=1, _lastNfCount=-1; const NF_PAGE=50;
+function nfPag(delta){ nfPagina+=delta; renderNFTable(); var el=document.getElementById('nf-table'); if(el&&el.scrollIntoView)el.scrollIntoView({block:'start'}); }
 function renderNFTable(){
   const nfs=filteredNFs();const vals=nfs.map(function(n){return n.valor;});
   document.getElementById('nf-tot-cnt').textContent=nfs.length;
@@ -1965,8 +1967,14 @@ function renderNFTable(){
   document.getElementById('nf-max').textContent=vals.length?brl(Math.max.apply(null,vals)):'—';
   const wrap=document.getElementById('nf-table');
   if(!nfs.length){wrap.innerHTML='<div class="empty"><div class="empty-icon">◉</div><div class="empty-title">Nenhuma NF</div><div class="empty-sub">Adicione ou importe NFs</div></div>';return;}
+  // paginação (reseta p/ página 1 quando o filtro muda a quantidade)
+  if(nfs.length!==_lastNfCount){ nfPagina=1; _lastNfCount=nfs.length; }
+  const totalPag=Math.max(1,Math.ceil(nfs.length/NF_PAGE));
+  if(nfPagina>totalPag)nfPagina=totalPag; if(nfPagina<1)nfPagina=1;
+  const ini=(nfPagina-1)*NF_PAGE;
+  const pageNfs=nfs.slice(ini, ini+NF_PAGE);
   let rows='';
-  nfs.forEach(function(n){
+  pageNfs.forEach(function(n){
     const isOpen=expandedNFs.has(n.id);
     const hasDet=n.det&&n.det.trim();
     rows+='<tr onclick="toggleNFRow(\''+n.id+'\')" style="cursor:pointer;'+(isOpen?'background:rgba(77,159,255,0.06)':'')+'"><td style="color:var(--text);font-size:11px"><span style="color:var(--blue);margin-right:6px;font-size:10px">'+(isOpen?'▼':'▶')+'</span>'+n.numero+'</td><td style="font-size:10px">'+n.fornecedor+'</td><td>'+(n.data||'—')+'</td><td style="font-size:10px;color:var(--muted)">'+(n.centro||'—')+'</td><td style="font-size:10px;color:var(--muted)">'+(n.obs||'—')+'</td><td>'+brl(n.valor)+'</td><td onclick="event.stopPropagation()"><button class="btn btn-danger btn-sm" onclick="deleteNF(\''+n.id+'\')">✕</button></td></tr>';
@@ -1981,8 +1989,16 @@ function renderNFTable(){
         +'</div></td></tr>';
     }
   });
+  var pagCtrl = totalPag>1
+    ? '<div style="display:flex;align-items:center;justify-content:center;gap:14px;padding:14px;font-size:12px;color:var(--muted);font-family:var(--mono)">'
+      +'<button class="btn btn-secondary btn-sm" '+(nfPagina<=1?'disabled style="opacity:.4"':'')+' onclick="nfPag(-1)">‹ Anterior</button>'
+      +'<span>Página '+nfPagina+' de '+totalPag+' · '+(ini+1)+'–'+Math.min(ini+NF_PAGE,nfs.length)+' de '+nfs.length+'</span>'
+      +'<button class="btn btn-secondary btn-sm" '+(nfPagina>=totalPag?'disabled style="opacity:.4"':'')+' onclick="nfPag(1)">Próxima ›</button>'
+      +'</div>'
+    : '';
   wrap.innerHTML='<table class="tbl"><thead><tr><th>Número NF</th><th>Fornecedor</th><th>Data</th><th>Centro de Custo</th><th>Categoria</th><th>Valor</th><th></th></tr></thead><tbody>'
-    +rows+'<tr class="total-row"><td colspan="4" style="color:var(--text)">Total ('+nfs.length+' NFs)</td><td colspan="2">'+brl(nfs.reduce(function(s,n){return s+n.valor;},0))+'</td><td></td></tr></tbody></table>';
+    +rows+'<tr class="total-row"><td colspan="4" style="color:var(--text)">Total ('+nfs.length+' NFs)</td><td colspan="2">'+brl(nfs.reduce(function(s,n){return s+n.valor;},0))+'</td><td></td></tr></tbody></table>'
+    +pagCtrl;
 }
 
 // ── NF GRÁFICOS ──
@@ -2678,24 +2694,8 @@ function abrirModalPrecoDiscrepancia(nomeItem){
 
 // ── AUDITORIA (NOTAS FISCAIS) ──
 function filtrarAuditoria(){
-  var termo = (document.getElementById('audit-filtro').value || '').toLowerCase();
-  var cards = document.querySelectorAll('#audit-content .card[data-search]');
-  var vistos = 0;
-
-
-  cards.forEach(function(card){
-    var dataSearch = card.getAttribute('data-search') || '';
-    var match = termo === '' || dataSearch.includes(termo);
-    card.style.display = match ? 'block' : 'none';
-    if(match) vistos++;
-  });
-
-  if(termo !== '' && vistos === 0){
-    toast('Nenhuma NF encontrada para "'+termo+'"', 'warning');
-  } else if(termo !== ''){
-    toast('Encontradas '+vistos+' NF(s)', 'success');
-  }
-
+  auditPagina=1;
+  _renderAuditPage();
 }
 
 function runAuditoria(fromClick){
@@ -2759,32 +2759,39 @@ function runAuditoria(fromClick){
   }
 }
 
+var _auditItems=[], auditPagina=1; const AUDIT_PAGE=50;
 function renderAuditResults(issues, warns){
-  var html = '';
-
-  if(issues.length === 0 && warns.length === 0){
-    html = '<div class="card"><div style="padding:40px;text-align:center;color:var(--muted)"><div style="font-size:32px;margin-bottom:10px">✓</div><div>Nenhum problema em Notas Fiscais!</div></div></div>';
-  } else {
-    // Erros
-    if(issues.length > 0){
-      html += '<div style="margin-bottom:20px"><h3 style="font-size:13px;color:var(--red);margin-bottom:10px;text-transform:uppercase;letter-spacing:.1em">🚨 '+issues.length+' ERRO(S)</h3>';
-      issues.forEach(function(item){
-        html += renderNFCard(item, 'erro');
-      });
-      html += '</div>';
-    }
-
-    // Avisos
-    if(warns.length > 0){
-      html += '<div style="margin-bottom:20px"><h3 style="font-size:13px;color:var(--amber);margin-bottom:10px;text-transform:uppercase;letter-spacing:.1em">⚠ '+warns.length+' AVISO(S)</h3>';
-      warns.forEach(function(item){
-        html += renderNFCard(item, 'aviso');
-      });
-      html += '</div>';
-    }
+  _auditItems = issues.map(function(it){return {item:it,tipo:'erro'};})
+    .concat(warns.map(function(it){return {item:it,tipo:'aviso'};}));
+  auditPagina=1;
+  _renderAuditPage();
+}
+function _auditSearchText(it){
+  var n=it.nf||{}; return ((n.numero||'')+' '+(n.fornecedor||'')+' '+(n.obs||'')+' '+(n.valor||'')).toLowerCase();
+}
+function auditPag(delta){ auditPagina+=delta; _renderAuditPage(); var el=document.getElementById('audit-content'); if(el&&el.scrollIntoView)el.scrollIntoView({block:'start'}); }
+function _renderAuditPage(){
+  var alvo=document.getElementById('audit-content'); if(!alvo) return;
+  if(!_auditItems.length){
+    alvo.innerHTML='<div class="card"><div style="padding:40px;text-align:center;color:var(--muted)"><div style="font-size:32px;margin-bottom:10px">✓</div><div>Nenhum problema em Notas Fiscais!</div></div></div>';
+    return;
   }
-
-  document.getElementById('audit-content').innerHTML = html;
+  var termo=((document.getElementById('audit-filtro')||{}).value||'').toLowerCase().trim();
+  var vis = termo ? _auditItems.filter(function(e){return _auditSearchText(e.item).indexOf(termo)>=0;}) : _auditItems;
+  if(!vis.length){ alvo.innerHTML='<div style="text-align:center;color:var(--muted);padding:30px">Nenhuma NF encontrada para "'+termo+'".</div>'; return; }
+  var totalPag=Math.max(1,Math.ceil(vis.length/AUDIT_PAGE));
+  if(auditPagina>totalPag)auditPagina=totalPag; if(auditPagina<1)auditPagina=1;
+  var ini=(auditPagina-1)*AUDIT_PAGE;
+  var pageItems=vis.slice(ini, ini+AUDIT_PAGE);
+  var html='<div style="font-size:12px;color:var(--muted);margin-bottom:12px">'+vis.length+' item(ns)'+(termo?' (filtrados)':'')+' · mostrando '+(ini+1)+'–'+Math.min(ini+AUDIT_PAGE,vis.length)+'</div>';
+  pageItems.forEach(function(e){ html += renderNFCard(e.item, e.tipo); });
+  if(totalPag>1){
+    html+='<div style="display:flex;align-items:center;justify-content:center;gap:14px;padding:14px;font-size:12px;color:var(--muted);font-family:var(--mono)">'
+      +'<button class="btn btn-secondary btn-sm" '+(auditPagina<=1?'disabled style="opacity:.4"':'')+' onclick="auditPag(-1)">‹ Anterior</button>'
+      +'<span>Página '+auditPagina+' de '+totalPag+'</span>'
+      +'<button class="btn btn-secondary btn-sm" '+(auditPagina>=totalPag?'disabled style="opacity:.4"':'')+' onclick="auditPag(1)">Próxima ›</button></div>';
+  }
+  alvo.innerHTML = html;
 }
 
 function renderNFCard(item, tipo){
