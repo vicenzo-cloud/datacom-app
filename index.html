@@ -601,6 +601,7 @@ body.ro .ro-hide{display:none !important}
           <input type="text" id="hist-busca" class="dash-filtro-sel" style="flex:1;min-width:200px;max-width:340px;padding:8px 12px" placeholder="🔎 Filtrar por ação, detalhe ou data..." oninput="renderHistoricoTabela()">
           <select id="hist-user" class="dash-filtro-sel" onchange="renderHistoricoTabela()"><option value="">👤 Todos os usuários</option></select>
           <button class="btn btn-secondary btn-sm" onclick="renderHistorico()">🔄 Atualizar</button>
+          <button class="btn btn-secondary btn-sm ro-hide" onclick="abrirBackup()">💾 Backup</button>
         </div>
         <div id="historico-content"></div>
       </div>
@@ -630,6 +631,25 @@ body.ro .ro-hide{display:none !important}
       <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-usuarios')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="salvarUsuariosCfg()">💾 Salvar usuários</button>
     </div>
+  </div>
+  </div>
+</div>
+
+<!-- MODAL BACKUP -->
+<div class="modal-overlay" id="modal-backup" onclick="closeOut(event,'modal-backup')">
+  <div class="modal" style="max-width:620px"><div class="modal-hd"><div class="modal-title">💾 Backup & Restauração</div><button class="modal-x" onclick="closeModal('modal-backup')">✕</button></div>
+  <div style="padding:20px">
+    <div style="background:var(--bg3);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:12px;color:#aab3ae;line-height:1.6">
+      O app já faz <strong style="color:#e2e8e4">backup diário automático</strong>. Aqui você pode exportar um backup agora, importar um arquivo, ou restaurar um dia anterior.<br>
+      <strong style="color:var(--amber)">Restaurar/importar substitui todos os dados atuais</strong> (o estado atual vira dados.backup.json antes).
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+      <button class="btn btn-secondary btn-sm" onclick="fazerBackupExport()">📤 Exportar backup agora</button>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('backup-file').click()">📥 Importar backup (arquivo)</button>
+      <input type="file" id="backup-file" accept=".json,application/json" style="display:none" onchange="importarBackup(event)">
+    </div>
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px">Backups diários automáticos</div>
+    <div id="backup-lista"></div>
   </div>
   </div>
 </div>
@@ -841,6 +861,59 @@ function salvarUsuariosCfg(){
     .then(function(r){return r.json();})
     .then(function(d){ if(d&&d.ok){ toast('✓ '+lista.length+' usuário(s) salvos.'); closeModal('modal-usuarios'); } else { toast((d&&d.erro)||'Erro ao salvar','error'); } })
     .catch(function(){ toast('Erro ao salvar usuários','error'); });
+}
+
+// ── Backup & Restauração ──
+function abrirBackup(){
+  if(!exigeEditor())return;
+  fetch('/backups?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
+    var arr=(d&&d.backups)||[];
+    var box=document.getElementById('backup-lista');
+    box.innerHTML = arr.length ? arr.map(function(b){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">'
+        +'<div style="font-size:12px;color:var(--text)"><strong>'+_escH(b.nome.replace("dados_","").replace(".json",""))+'</strong>'
+        +' <span style="color:var(--muted2);font-size:11px">('+Math.round(b.tamanho/1024)+' KB · '+_fmtTs(b.data)+')</span></div>'
+        +'<button class="btn btn-secondary btn-sm" onclick="restaurarBackup(\''+b.nome+'\')">↩ Restaurar</button></div>';
+    }).join('') : '<div style="color:var(--muted);font-size:12px;padding:8px">Nenhum backup diário ainda (gerado a cada salvamento).</div>';
+    openModal('modal-backup');
+  }).catch(function(){ toast('Não consegui listar backups (rode pelo launcher, não pelo preview).','error'); });
+}
+function fazerBackupExport(){
+  fetch('/dados.json?t='+Date.now()).then(function(r){return r.text();}).then(function(txt){
+    var nome='backup-dados-'+new Date().toISOString().slice(0,10)+'.json';
+    fetch('/save-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:nome,content:txt})})
+      .then(function(r){return r.json();}).then(function(res){
+        if(res.ok){ toast('Backup exportado'); alert('✅ Backup salvo em:\n\n'+res.path); }
+        else throw new Error('falha');
+      }).catch(function(){
+        var b=new Blob([txt],{type:'application/json'}); var u=URL.createObjectURL(b); var a=document.createElement('a'); a.href=u; a.download=nome; document.body.appendChild(a); a.click(); URL.revokeObjectURL(u); document.body.removeChild(a); toast('Backup baixado');
+      });
+  }).catch(function(){ toast('Erro ao exportar backup','error'); });
+}
+function importarBackup(ev){
+  if(!exigeEditor()){ ev.target.value=''; return; }
+  var file=ev.target.files&&ev.target.files[0]; ev.target.value=''; if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var obj=JSON.parse(e.target.result);
+      if(!obj || !Array.isArray(obj.projects)){ toast('Arquivo não parece um backup válido.','error'); return; }
+      if(!confirm('Importar este backup vai SUBSTITUIR todos os dados atuais.\n\nBackup tem '+obj.projects.length+' projeto(s) e '+((obj.nfs||[]).length)+' NF(s). Continuar?')) return;
+      S=obj; persist();
+      logAtividade('Backup importado (arquivo)', obj.projects.length+' projetos, '+((obj.nfs||[]).length)+' NFs');
+      toast('Backup importado!'); setTimeout(function(){ location.reload(); },800);
+    }catch(err){ toast('Erro ao ler arquivo: '+err.message,'error'); }
+  };
+  reader.readAsText(file,'UTF-8');
+}
+function restaurarBackup(fn){
+  if(!exigeEditor())return;
+  if(!confirm('Restaurar o backup "'+fn+'"?\n\nIsso substitui os dados atuais (o estado atual vira dados.backup.json).')) return;
+  fetch('/restore-backup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:fn})})
+    .then(function(r){return r.json();}).then(function(d){
+      if(d&&d.ok){ toast('Backup restaurado!'); setTimeout(function(){ location.reload(); },700); }
+      else toast((d&&d.erro)||'Erro ao restaurar','error');
+    }).catch(function(){ toast('Erro ao restaurar','error'); });
 }
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}

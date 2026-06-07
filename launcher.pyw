@@ -362,6 +362,36 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_response(500); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
                 self.wfile.write(_json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8'))
             return
+        if self.path == '/restore-backup':
+            import json as _json, shutil as _sh
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length).decode('utf-8')
+            if not self._pode_editar():
+                self.send_response(403); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': False, 'erro': 'Sem permissão.'}).encode('utf-8')); return
+            try:
+                fn = os.path.basename((_json.loads(body).get('filename') or ''))
+                src = Path(__file__).parent / 'Backups' / fn
+                if not (fn.startswith('dados_') and fn.endswith('.json') and src.exists()):
+                    self.send_response(400); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                    self.wfile.write(_json.dumps({'ok': False, 'erro': 'Backup inválido.'}).encode('utf-8')); return
+                obj = _json.loads(src.read_text(encoding='utf-8'))
+                dst = Path(__file__).parent / 'dados.json'
+                atual_rev = 0
+                if dst.exists():
+                    try: atual_rev = int(_json.loads(dst.read_text(encoding='utf-8')).get('_rev', 0) or 0)
+                    except Exception: atual_rev = 0
+                    _sh.copy2(dst, Path(__file__).parent / 'dados.backup.json')
+                obj['_rev'] = atual_rev + 1
+                dst.write_text(_json.dumps(obj, ensure_ascii=False), encoding='utf-8')
+                _s = self._sessao() or {}
+                registrar_log('Backup restaurado', fn, _s.get('nome','equipe'), self.client_address[0])
+                self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': True, 'rev': obj['_rev']}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8'))
+            return
         if self.path == '/usuarios':
             import json as _json
             length = int(self.headers.get('Content-Length', 0))
@@ -424,6 +454,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # devolve a lista SEM a senha (hash) — só nome/papel + se tem senha
             seguro = [{'nome': u.get('nome'), 'papel': (u.get('papel') or 'editor'), 'tem_senha': bool(u.get('senha'))} for u in carregar_usuarios()]
             resp = _json.dumps({'ok': True, 'usuarios': seguro}, ensure_ascii=False).encode('utf-8')
+            self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers(); self.wfile.write(resp)
+            return
+        if self.path == '/backups' or self.path.startswith('/backups?'):
+            import json as _json, datetime as _dtb
+            if not self._pode_editar():
+                self.send_response(403); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': False, 'erro': 'Sem permissão.'}).encode('utf-8')); return
+            pasta = Path(__file__).parent / 'Backups'
+            arr = []
+            if pasta.exists():
+                for f in sorted(pasta.glob('dados_*.json'), reverse=True):
+                    try:
+                        st = f.stat()
+                        arr.append({'nome': f.name, 'tamanho': st.st_size, 'data': _dtb.datetime.fromtimestamp(st.st_mtime).isoformat(timespec='seconds')})
+                    except Exception: pass
+            resp = _json.dumps({'ok': True, 'backups': arr}, ensure_ascii=False).encode('utf-8')
             self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers(); self.wfile.write(resp)
             return
         if self.path == '/' or self.path == '':
