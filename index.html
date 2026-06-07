@@ -598,7 +598,8 @@ body.ro .ro-hide{display:none !important}
         <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">🗂 Histórico de Atividades</h2>
         <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Tudo que foi feito ou alterado no app, gravado num banco de dados (SQLite). Use a busca pra filtrar.</p>
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
-          <input type="text" id="hist-busca" class="dash-filtro-sel" style="flex:1;min-width:220px;max-width:380px;padding:8px 12px" placeholder="🔎 Filtrar por ação, detalhe ou data..." oninput="renderHistoricoTabela()">
+          <input type="text" id="hist-busca" class="dash-filtro-sel" style="flex:1;min-width:200px;max-width:340px;padding:8px 12px" placeholder="🔎 Filtrar por ação, detalhe ou data..." oninput="renderHistoricoTabela()">
+          <select id="hist-user" class="dash-filtro-sel" onchange="renderHistoricoTabela()"><option value="">👤 Todos os usuários</option></select>
           <button class="btn btn-secondary btn-sm" onclick="renderHistorico()">🔄 Atualizar</button>
         </div>
         <div id="historico-content"></div>
@@ -4044,8 +4045,22 @@ function renderHistorico(){
 function renderHistoricoTabela(){
   var alvo=document.getElementById('historico-content'); if(!alvo) return;
   var log=window._histLog||[];
+  // popula o filtro de usuários (distintos), preservando a seleção
+  var selU=document.getElementById('hist-user');
+  if(selU){
+    var usuarios={}; log.forEach(function(e){ var u=(e.usuario||'').trim(); if(u)usuarios[u]=(usuarios[u]||0)+1; });
+    var nomes=Object.keys(usuarios).sort();
+    var atual=selU.value;
+    selU.innerHTML='<option value="">👤 Todos os usuários</option>'+nomes.map(function(u){return '<option value="'+_escH(u)+'">'+_escH(u)+' ('+usuarios[u]+')</option>';}).join('');
+    selU.value=atual;
+  }
   var q=(((document.getElementById('hist-busca')||{}).value)||'').trim().toLowerCase();
-  var vis=q?log.filter(function(e){return ((e.acao||'')+' '+(e.detalhe||'')+' '+(e.ts||'')+' '+(e.usuario||'')).toLowerCase().indexOf(q)>=0;}):log;
+  var fu=((selU||{}).value)||'';
+  var vis=log.filter(function(e){
+    if(fu && (e.usuario||'')!==fu) return false;
+    if(q && ((e.acao||'')+' '+(e.detalhe||'')+' '+(e.ts||'')+' '+(e.usuario||'')).toLowerCase().indexOf(q)<0) return false;
+    return true;
+  });
   var hoje=new Date().toISOString().slice(0,10);
   var nHoje=log.filter(function(e){return String(e.ts||'').slice(0,10)===hoje;}).length;
   var html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px">';
@@ -4137,6 +4152,23 @@ function _renderAnalista(precos, log, analisePrec){
       +'<div style="font-size:12px;color:var(--muted2);margin-top:4px">'+x.d+'</div>'+btn+'</div>';
   });
   html+='</div>';
+  // ── Atividade por pessoa ──
+  var porPessoa={};
+  (log||[]).forEach(function(e){ var u=(e.usuario||'—').trim()||'—'; porPessoa[u]=(porPessoa[u]||0)+1; });
+  var pessoas=Object.keys(porPessoa).map(function(u){return {u:u,n:porPessoa[u]};}).sort(function(a,b){return b.n-a.n;});
+  if(pessoas.length){
+    var maxN=pessoas[0].n||1;
+    html+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-top:18px">'
+      +'<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">👥 Atividade por pessoa</div>';
+    pessoas.forEach(function(p){
+      var pct=Math.round(p.n/maxN*100);
+      html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+        +'<div style="width:130px;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_escH(p.u)+'</div>'
+        +'<div style="flex:1;background:var(--bg3);border-radius:6px;height:14px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:var(--accent)"></div></div>'
+        +'<div style="width:46px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--muted)">'+p.n+'</div></div>';
+    });
+    html+='<div style="font-size:11px;color:var(--muted2);margin-top:8px">Total de '+(log||[]).length+' ações registradas · clique em "Histórico" para ver detalhes e filtrar por pessoa.</div></div>';
+  }
   alvo.innerHTML=html;
 }
 
