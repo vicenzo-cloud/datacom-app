@@ -720,10 +720,25 @@ function trackUsage(type,key){if(!usageData[type])usageData[type]={};usageData[t
 let S={projects:[],nfs:[],curProj:null,view:'dashboard',tab:'resumo'};
 let charts={};
 var _saveFileTimer=null;
+window._rev = null; // revisão dos dados (controle de edição simultânea)
+window._conflitoAberto = false;
 function salvarEmArquivo(){
   clearTimeout(_saveFileTimer);
   _saveFileTimer=setTimeout(function(){
-    fetch('/save-data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(S)}).catch(function(){});
+    fetch('/save-data',{method:'POST',headers:{'Content-Type':'application/json','X-Rev':(window._rev==null?'':String(window._rev))},body:JSON.stringify(S)})
+      .then(function(r){ return r.json().then(function(d){ return {status:r.status, d:d}; }); })
+      .then(function(res){
+        if(res.status===409 && res.d && res.d.conflito){
+          if(window._conflitoAberto) return;
+          window._conflitoAberto=true;
+          var ok=confirm('⚠️ Outro usuário alterou os dados enquanto você editava.\n\nOK = recarregar agora (recomendado — vê as alterações dele)\nCancelar = continuar e sobrescrever com as suas.');
+          window._conflitoAberto=false;
+          if(ok){ location.reload(); }
+          else { window._rev = res.d.rev; salvarEmArquivo(); } // força salvar com a revisão atual
+        } else if(res.d && res.d.ok){
+          window._rev = res.d.rev;
+        }
+      }).catch(function(){});
   },800);
 }
 function persist(){
@@ -792,10 +807,11 @@ function carregarUsuarioAtual(){
   }).catch(function(){ /* preview estático: mantém default editor */ aplicarPermissoes(); });
 }
 function _linhaUsuarioHTML(u){
-  u=u||{nome:'',senha:'',papel:'leitor'};
+  u=u||{nome:'',papel:'leitor',tem_senha:false};
+  var ph = u.tem_senha ? 'Senha (vazio = manter)' : 'Senha';
   return '<div class="urow" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">'
     +'<input class="u-nome dash-filtro-sel" placeholder="Nome" value="'+(u.nome||'').replace(/"/g,'&quot;')+'" style="flex:1">'
-    +'<input class="u-senha dash-filtro-sel" placeholder="Senha" value="'+(u.senha||'').replace(/"/g,'&quot;')+'" style="flex:1">'
+    +'<input class="u-senha dash-filtro-sel" type="password" placeholder="'+ph+'" value="" style="flex:1">'
     +'<select class="u-papel dash-filtro-sel"><option value="editor"'+(u.papel==='editor'?' selected':'')+'>Editor</option><option value="leitor"'+(u.papel!=='editor'?' selected':'')+'>Leitor</option></select>'
     +'<button class="btn btn-danger btn-sm" onclick="this.closest(\'.urow\').remove()">✕</button></div>';
 }
@@ -819,7 +835,7 @@ function salvarUsuariosCfg(){
     var nome=r.querySelector('.u-nome').value.trim();
     var senha=r.querySelector('.u-senha').value;
     var papel=r.querySelector('.u-papel').value;
-    if(nome&&senha) lista.push({nome:nome,senha:senha,papel:papel});
+    if(nome) lista.push({nome:nome,senha:senha,papel:papel}); // senha vazia = manter a atual
   });
   fetch('/usuarios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuarios:lista})})
     .then(function(r){return r.json();})
@@ -4567,6 +4583,7 @@ carregarUsuarioAtual();
       if(arquivo && arquivo.projects && arquivo.projects.length){
         // O servidor é a fonte da verdade: usa sempre o estado central
         S = arquivo;
+        window._rev = (arquivo._rev!=null ? arquivo._rev : 0); // revisão p/ controle de concorrência
         localStorage.setItem('dc_v5', JSON.stringify(S));
         renderAll();
       } else {

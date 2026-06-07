@@ -62,13 +62,30 @@ def salvar_usuarios(lista):
     cfg['usuarios'] = lista[:5]  # no máximo 5
     if 'senha' not in cfg: cfg['senha'] = SENHA
     CONFIG_PATH.write_text(_cfgjson.dumps(cfg, ensure_ascii=False, indent=2), encoding='utf-8')
+import hashlib as _hl, binascii as _ba
+def hash_senha(senha):
+    salt = os.urandom(16)
+    dk = _hl.pbkdf2_hmac('sha256', (senha or '').encode('utf-8'), salt, 120000)
+    return 'pbkdf2$120000$' + _ba.hexlify(salt).decode() + '$' + _ba.hexlify(dk).decode()
+def verificar_senha(senha, armazenada):
+    try:
+        if not armazenada: return False
+        if str(armazenada).startswith('pbkdf2$'):
+            _, it, salt_hex, hash_hex = armazenada.split('$')
+            dk = _hl.pbkdf2_hmac('sha256', (senha or '').encode('utf-8'), _ba.unhexlify(salt_hex), int(it))
+            return _ba.hexlify(dk).decode() == hash_hex
+        return senha == armazenada  # compat: senha antiga em texto puro
+    except Exception:
+        return False
 def autenticar_usuario(nome, senha):
     nome = (nome or '').strip()
+    if senha == '':
+        return None
     for u in carregar_usuarios():
-        if (u.get('nome','').strip().lower() == nome.lower()) and (u.get('senha','') == senha) and senha != '':
+        if (u.get('nome','').strip().lower() == nome.lower()) and verificar_senha(senha, u.get('senha','')):
             return {'nome': u.get('nome'), 'papel': (u.get('papel') or 'editor')}
     # Compatibilidade: senha geral única (sem nome) → acesso de leitor pela rede
-    if senha == SENHA and senha != '':
+    if senha == SENHA:
         return {'nome': nome or 'Equipe', 'papel': 'leitor'}
     return None
 
@@ -247,8 +264,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(length).decode('utf-8')
             try:
-                _json.loads(body)  # valida que e JSON valido
+                obj = _json.loads(body)  # valida que e JSON valido
                 caminho = Path(__file__).parent / 'dados.json'
+                # ── Controle de revisão (evita 2 editores se sobrescreverem) ──
+                atual_rev = 0
+                if caminho.exists():
+                    try: atual_rev = int(_json.loads(caminho.read_text(encoding='utf-8')).get('_rev', 0) or 0)
+                    except Exception: atual_rev = 0
+                cli_rev = self.headers.get('X-Rev', '')
+                if cli_rev not in ('', None):
+                    try: cli_rev_i = int(cli_rev)
+                    except Exception: cli_rev_i = None
+                    if cli_rev_i is not None and cli_rev_i != atual_rev:
+                        resp = _json.dumps({'ok': False, 'conflito': True, 'rev': atual_rev}).encode('utf-8')
+                        self.send_response(409)
+                        self.send_header('Content-type', 'application/json; charset=utf-8')
+                        self.end_headers(); self.wfile.write(resp); return
+                novo_rev = atual_rev + 1
+                obj['_rev'] = novo_rev
+                body = _json.dumps(obj, ensure_ascii=False)
                 # Backup do arquivo anterior antes de sobrescrever
                 if caminho.exists():
                     import shutil
@@ -271,7 +305,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         antigo.unlink()
                 except Exception:
                     pass
-                resp = _json.dumps({'ok': True}).encode('utf-8')
+                resp = _json.dumps({'ok': True, 'rev': novo_rev}).encode('utf-8')
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json; charset=utf-8')
                 self.end_headers()
@@ -338,14 +372,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = _json.loads(body)
                 lista = data.get('usuarios', [])
-                # sanitiza
+                # senha em branco = manter a atual (hash já salvo)
+                existentes = {}
+                for x in carregar_usuarios():
+                    existentes[(x.get('nome','') or '').strip().lower()] = x.get('senha','')
                 limpa = []
                 for u in lista[:5]:
                     nome = (u.get('nome') or '').strip()
                     senha = (u.get('senha') or '')
                     papel = 'editor' if (u.get('papel')=='editor') else 'leitor'
-                    if nome and senha:
-                        limpa.append({'nome': nome, 'senha': senha, 'papel': papel})
+                    if not nome: continue
+                    senha_arm = hash_senha(senha) if senha else existentes.get(nome.lower(), '')
+                    if senha_arm:
+                        limpa.append({'nome': nome, 'senha': senha_arm, 'papel': papel})
                 salvar_usuarios(limpa)
                 registrar_log('Usuários atualizados', str(len(limpa))+' usuário(s) cadastrado(s)', 'Gattiboni (dono)', self.client_address[0])
                 self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
@@ -382,8 +421,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if not self._eh_host():
                 self.send_response(403); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
                 self.wfile.write(_json.dumps({'ok': False, 'erro': 'Só o computador host gerencia usuários.'}).encode('utf-8')); return
-            # devolve a lista (com senha, pois é só pro host gerenciar localmente)
-            resp = _json.dumps({'ok': True, 'usuarios': carregar_usuarios()}, ensure_ascii=False).encode('utf-8')
+            # devolve a lista SEM a senha (hash) — só nome/papel + se tem senha
+            seguro = [{'nome': u.get('nome'), 'papel': (u.get('papel') or 'editor'), 'tem_senha': bool(u.get('senha'))} for u in carregar_usuarios()]
+            resp = _json.dumps({'ok': True, 'usuarios': seguro}, ensure_ascii=False).encode('utf-8')
             self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers(); self.wfile.write(resp)
             return
         if self.path == '/' or self.path == '':
