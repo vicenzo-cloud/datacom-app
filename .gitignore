@@ -24,6 +24,9 @@ ACESSO_REDE.txt
 # Banco de atividades (runtime, local)
 atividade.db
 
+# Sessões ativas (runtime, local)
+sessoes.json
+
 # Python
 __pycache__/
 *.pyc

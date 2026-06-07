@@ -89,8 +89,22 @@ def autenticar_usuario(nome, senha):
         return {'nome': nome or 'Equipe', 'papel': 'leitor'}
     return None
 
-# token -> {'nome':..., 'papel':...}
-SESSOES = {}
+# token -> {'nome':..., 'papel':...}  (persistido p/ sobreviver a reinício do app)
+SESSOES_PATH = Path(__file__).parent / 'sessoes.json'
+def carregar_sessoes():
+    try:
+        if SESSOES_PATH.exists():
+            d = _cfgjson.loads(SESSOES_PATH.read_text(encoding='utf-8'))
+            return d if isinstance(d, dict) else {}
+    except Exception:
+        pass
+    return {}
+def salvar_sessoes():
+    try:
+        SESSOES_PATH.write_text(_cfgjson.dumps(SESSOES, ensure_ascii=False), encoding='utf-8')
+    except Exception:
+        pass
+SESSOES = carregar_sessoes()
 HOST_USER = {'nome': 'Gattiboni (dono)', 'papel': 'editor'}
 
 # ── Banco de dados de atividades (SQLite, embutido no Python) ──
@@ -196,7 +210,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 usuario = ''; senha = ''
             user = autenticar_usuario(usuario, senha)
             if user:
-                tok = secrets.token_hex(16); SESSOES[tok] = user
+                tok = secrets.token_hex(16); SESSOES[tok] = user; salvar_sessoes()
                 registrar_log('Acesso pela rede (login OK)', user['nome']+' · papel: '+user['papel'], user['nome'], self.client_address[0])
                 resp = _json.dumps({'ok': True, 'nome': user['nome'], 'papel': user['papel']}).encode('utf-8')
                 self.send_response(200)
@@ -426,6 +440,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(404)
         self.end_headers()
     def do_GET(self):
+        # Arquivos do PWA são públicos (senão o celular recebe a tela de login no lugar deles)
+        if self.path.split('?')[0] in ('/manifest.json', '/icon.svg', '/sw.js'):
+            return http.server.SimpleHTTPRequestHandler.do_GET(self)
         if not self._autenticado():
             body = LOGIN_HTML.encode('utf-8')
             self.send_response(200)
