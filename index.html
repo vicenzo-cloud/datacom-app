@@ -4236,9 +4236,10 @@ function renderAnalista(){
     : fetch('precos_mercado.json?t='+Date.now()).then(function(r){return r.json();}).then(function(d){window._precosMercado=d;return d;}).catch(function(){return null;});
   var pLog = fetch('/historico?t='+Date.now()).then(function(r){return r.json();}).then(function(d){return (d&&d.log)||[];}).catch(function(){return [];});
   var pAnal = fetch('analise_precos.json?t='+Date.now()).then(function(r){return r.json();}).catch(function(){return null;});
-  Promise.all([pPrecos,pLog,pAnal]).then(function(a){ _renderAnalista(a[0],a[1],a[2]); });
+  var pGasto = fetch('gasto_por_unidade.json?t='+Date.now()).then(function(r){return r.json();}).catch(function(){return null;});
+  Promise.all([pPrecos,pLog,pAnal,pGasto]).then(function(a){ _renderAnalista(a[0],a[1],a[2],a[3]); });
 }
-function _renderAnalista(precos, log, analisePrec){
+function _renderAnalista(precos, log, analisePrec, gasto){
   var alvo=document.getElementById('analista-content'); if(!alvo) return;
   var f=[];
   // 1. Itens acima do previsto sem justificativa
@@ -4275,6 +4276,32 @@ function _renderAnalista(precos, log, analisePrec){
     var subindo=0, pior=null;
     Object.keys(analisePrec).forEach(function(k){ var vp=Number((analisePrec[k]||{}).variacao_pct)||0; if(vp>20){ subindo++; if(!pior||vp>pior.vp) pior={nome:k,vp:vp}; } });
     f.push({n:subindo>0?'medio':'ok',ic:'📊',t:'Itens com preço subindo (>20%)',v:subindo,d:subindo>0?('Maior alta: '+(pior.nome||'').slice(0,28)+' (+'+pior.vp.toFixed(0)+'%).'):'Preços estáveis 👍',view:'preco'});
+  }
+  // 7. Fornecedores novos pra cotar
+  if(precos && precos.fornecedores_novos){
+    var nFor=precos.fornecedores_novos.length;
+    f.push({n:nFor>0?'medio':'ok',ic:'🏢',t:'Fornecedores novos pra cotar',v:nFor,d:nFor>0?'Distribuidores que você ainda não comprou — cote os itens onde paga acima.':'—',view:'mercado'});
+  }
+  // 8. Itens com grande variação entre fornecedores (melhor × pior)
+  if(analisePrec){
+    var opp=[];
+    Object.keys(analisePrec).forEach(function(k){
+      var fs=(analisePrec[k]||{}).fornecedores||{};
+      var precosF=Object.keys(fs).map(function(n){return Number(fs[n].preco_medio)||0;}).filter(function(x){return x>0;});
+      if(precosF.length<2) return;
+      var mn=Math.min.apply(null,precosF), mx=Math.max.apply(null,precosF);
+      if(mn>0 && (mx-mn)/mn>=0.30) opp.push({item:k,mn:mn,mx:mx,pct:(mx-mn)/mn*100});
+    });
+    opp.sort(function(a,b){return b.pct-a.pct;});
+    var ex = opp.length ? (opp[0].item.slice(0,24)+': '+brl(opp[0].mx)+' → '+brl(opp[0].mn)) : '';
+    f.push({n:opp.length>0?'medio':'ok',ic:'🔀',t:'Itens com grande variação entre fornecedores',v:opp.length,d:opp.length>0?('Comprar do mais barato economiza muito. Ex: '+ex):'Sem grandes variações 👍',view:'preco'});
+  }
+  // 9. Previsão de gasto do próximo mês (média dos últimos meses)
+  if(gasto && gasto.totais_mes && gasto.meses && gasto.meses.length){
+    var ult=gasto.meses.slice(-3);
+    var soma=ult.reduce(function(s,m){return s+(Number(gasto.totais_mes[m])||0);},0);
+    var prev=ult.length?soma/ult.length:0;
+    f.push({n:'ok',ic:'🔮',t:'Previsão de gasto (próx. mês)',v:brl(prev),d:'Média dos últimos '+ult.length+' meses ('+ult.join(' · ')+').',view:'gastos'});
   }
   // 5. Atividade
   var hoje=new Date().toISOString().slice(0,10);
