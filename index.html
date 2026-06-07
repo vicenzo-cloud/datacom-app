@@ -833,7 +833,7 @@ function saveNF(){
   renderAll();toast('NF salva!');
 }
 function deleteNF(id){var _n=(S.nfs.find(function(n){return n.id===id;})||{});logAtividade('NF excluída','nº '+(_n.numero||'?')+' · '+(_n.fornecedor||''));S.nfs=S.nfs.filter(function(n){return n.id!==id;});persist();renderAll();toast('NF excluída');}
-function saveNFDet(id,val){const nf=S.nfs.find(function(n){return n.id===id;});if(nf){nf.det=val;persist();}toast('Observação salva!');}
+function saveNFDet(id,val){const nf=S.nfs.find(function(n){return n.id===id;});if(nf){nf.det=val;persist();logAtividade('Observação de NF editada','nº '+(nf.numero||'?')+': '+(val||'').slice(0,60));}toast('Observação salva!');}
 
 let expandedNFs=new Set();
 function toggleNFRow(id){if(expandedNFs.has(id))expandedNFs.delete(id);else expandedNFs.add(id);renderNFTable();}
@@ -852,7 +852,7 @@ function importNF(input){
         const val=parseFloat(String(r['Valor']||r['valor']||'0').replace(',','.'));
         if(forn&&val){S.nfs.push({id:uid(),numero:String(r['NF']||r['nf']||'—'),fornecedor:forn,valor:val,data:String(r['Data']||r['data']||''),projId:'',obs:String(r['Categoria']||r['obs']||''),centro:String(r['Centro']||r['centro']||''),det:''});n++;}
       });
-      persist();renderAll();toast(n+' NFs importadas!');
+      persist();logAtividade('Notas fiscais importadas (planilha)', n+' NF(s) adicionada(s)');renderAll();toast(n+' NFs importadas!');
     }catch(e2){toast('Erro ao importar','error');}
   };
   reader.readAsArrayBuffer(file);input.value='';
@@ -1199,7 +1199,7 @@ function _acharItem(projId, itemId){
 function salvarJustificativaNV(projId, itemId){
   var inp = document.getElementById('just-'+itemId);
   var it = _acharItem(projId, itemId);
-  if(it && inp){ it.justificativa = inp.value; persist(); toast('Justificativa salva'); }
+  if(it && inp){ it.justificativa = inp.value; persist(); logAtividade('Justificativa salva', (it.nome||itemId)+' — '+(inp.value||'').slice(0,70)); toast('Justificativa salva'); }
 }
 function setJustificadoNV(projId, itemId, val){
   var it = _acharItem(projId, itemId);
@@ -3983,9 +3983,10 @@ function renderAnalista(){
   var pPrecos = window._precosMercado ? Promise.resolve(window._precosMercado)
     : fetch('precos_mercado.json?t='+Date.now()).then(function(r){return r.json();}).then(function(d){window._precosMercado=d;return d;}).catch(function(){return null;});
   var pLog = fetch('/historico?t='+Date.now()).then(function(r){return r.json();}).then(function(d){return (d&&d.log)||[];}).catch(function(){return [];});
-  Promise.all([pPrecos,pLog]).then(function(a){ _renderAnalista(a[0],a[1]); });
+  var pAnal = fetch('analise_precos.json?t='+Date.now()).then(function(r){return r.json();}).catch(function(){return null;});
+  Promise.all([pPrecos,pLog,pAnal]).then(function(a){ _renderAnalista(a[0],a[1],a[2]); });
 }
-function _renderAnalista(precos, log){
+function _renderAnalista(precos, log, analisePrec){
   var alvo=document.getElementById('analista-content'); if(!alvo) return;
   var f=[];
   // 1. Itens acima do previsto sem justificativa
@@ -4013,6 +4014,16 @@ function _renderAnalista(precos, log){
     precos.itens.forEach(function(x){ var meu=Number(x.meu)||0, mer=Number(x.mercado)||0, q=Number(x.qtd)||0; if(meu>mer*(1+TOL)){ ac++; eco+=(meu-mer)*q; } });
     f.push({n:ac>0?'medio':'ok',ic:'💰',t:'Itens acima do preço de mercado',v:ac,d:ac>0?('Economia potencial de '+brl(eco)+' renegociando.'):'Tudo no/abaixo do mercado 👍',view:'mercado'});
   }
+  // 5. Projetos sem meta de orçamento
+  var metas={}; try{ metas=JSON.parse(localStorage.getItem('dc_metas')||'{}'); }catch(e){}
+  var semMeta=(S.projects||[]).filter(function(p){ return !(Number(metas[p.id])>0); }).length;
+  f.push({n:semMeta>0?'medio':'ok',ic:'🎯',t:'Projetos sem meta de orçamento',v:semMeta,d:semMeta>0?'Defina metas em "Metas de Orçamento" pra acompanhar.':'Todos com meta 👍',fn:'abrirModalMeta()'});
+  // 6. Itens com preço subindo (análise das notas)
+  if(analisePrec){
+    var subindo=0, pior=null;
+    Object.keys(analisePrec).forEach(function(k){ var vp=Number((analisePrec[k]||{}).variacao_pct)||0; if(vp>20){ subindo++; if(!pior||vp>pior.vp) pior={nome:k,vp:vp}; } });
+    f.push({n:subindo>0?'medio':'ok',ic:'📊',t:'Itens com preço subindo (>20%)',v:subindo,d:subindo>0?('Maior alta: '+(pior.nome||'').slice(0,28)+' (+'+pior.vp.toFixed(0)+'%).'):'Preços estáveis 👍',view:'preco'});
+  }
   // 5. Atividade
   var hoje=new Date().toISOString().slice(0,10);
   var nHoje=(log||[]).filter(function(e){return String(e.ts||'').slice(0,10)===hoje;}).length;
@@ -4028,7 +4039,9 @@ function _renderAnalista(precos, log){
     +'<div style="font-size:12px;color:var(--muted2);margin-top:4px">Diagnóstico gerado localmente a partir dos seus dados e do histórico.</div></div>';
   html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">';
   f.forEach(function(x){
-    var btn = x.n!=='ok' ? '<button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="switchView(\''+x.view+'\')">Ir para →</button>' : '';
+    var btn = x.n!=='ok' ? (x.fn
+        ? '<button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="'+x.fn+'">Abrir →</button>'
+        : '<button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="switchView(\''+x.view+'\')">Ir para →</button>') : '';
     html+='<div style="background:var(--bg2);border:1px solid var(--border);border-left:3px solid '+cor[x.n]+';border-radius:12px;padding:16px 18px">'
       +'<div style="font-size:12px;color:var(--muted)">'+x.ic+' '+x.t+'</div>'
       +'<div style="font-family:var(--serif);font-size:26px;font-weight:800;color:'+cor[x.n]+';margin-top:6px">'+x.v+'</div>'
@@ -4355,6 +4368,8 @@ function salvarMeta(){
     if(val) metas[p.id] = Number(val.value)||0;
   });
   localStorage.setItem('dc_metas',JSON.stringify(metas));
+  var nMetas=Object.keys(metas).filter(function(k){return metas[k]>0;}).length;
+  logAtividade('Metas de orçamento salvas', nMetas+' projeto(s) com meta definida');
   toast('Metas salvas com sucesso!');
   closeModal('modal-metas');
 }

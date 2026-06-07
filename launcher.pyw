@@ -136,12 +136,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 senha = ''
             if senha == SENHA:
                 tok = secrets.token_hex(16); SESSOES.add(tok)
+                registrar_log('Acesso pela rede (login OK)', 'novo acesso autenticado', 'rede', self.client_address[0])
                 resp = _json.dumps({'ok': True}).encode('utf-8')
                 self.send_response(200)
                 self.send_header('Set-Cookie', 'dc_session=' + tok + '; Path=/; Max-Age=86400; SameSite=Lax')
                 self.send_header('Content-type', 'application/json; charset=utf-8')
                 self.end_headers(); self.wfile.write(resp)
             else:
+                registrar_log('Tentativa de login falhou', 'senha incorreta', 'rede', self.client_address[0])
                 resp = _json.dumps({'ok': False}).encode('utf-8')
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json; charset=utf-8')
