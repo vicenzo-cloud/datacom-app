@@ -45,6 +45,47 @@ def carregar_senha():
 SENHA = carregar_senha()
 SESSOES = set()
 
+# ── Banco de dados de atividades (SQLite, embutido no Python) ──
+import sqlite3, datetime as _dt, threading as _th
+DB_PATH = Path(__file__).parent / 'atividade.db'
+_db_lock = _th.Lock()
+def init_db():
+    try:
+        with _db_lock:
+            con = sqlite3.connect(str(DB_PATH))
+            con.execute('''CREATE TABLE IF NOT EXISTS log(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts TEXT NOT NULL,
+                usuario TEXT,
+                acao TEXT,
+                detalhe TEXT,
+                ip TEXT
+            )''')
+            con.commit(); con.close()
+    except Exception as e:
+        print('init_db erro:', e)
+def registrar_log(acao, detalhe, usuario, ip):
+    try:
+        with _db_lock:
+            con = sqlite3.connect(str(DB_PATH))
+            con.execute('INSERT INTO log(ts,usuario,acao,detalhe,ip) VALUES(?,?,?,?,?)',
+                        (_dt.datetime.now().isoformat(timespec='seconds'), usuario or 'equipe', acao or '', detalhe or '', ip or ''))
+            con.commit(); con.close()
+        return True
+    except Exception as e:
+        print('registrar_log erro:', e); return False
+def consultar_log(limite=500):
+    try:
+        with _db_lock:
+            con = sqlite3.connect(str(DB_PATH))
+            cur = con.execute('SELECT ts,usuario,acao,detalhe,ip FROM log ORDER BY id DESC LIMIT ?', (int(limite),))
+            rows = [{'ts':r[0],'usuario':r[1],'acao':r[2],'detalhe':r[3],'ip':r[4]} for r in cur.fetchall()]
+            con.close()
+        return rows
+    except Exception as e:
+        print('consultar_log erro:', e); return []
+init_db()
+
 def ip_local():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -216,6 +257,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(resp)
             return
+        if self.path == '/log':
+            import json as _json
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length).decode('utf-8')
+            try:
+                data = _json.loads(body)
+                ok = registrar_log(data.get('acao',''), data.get('detalhe',''), data.get('usuario','equipe'), self.client_address[0])
+                resp = _json.dumps({'ok': ok}).encode('utf-8')
+                self.send_response(200 if ok else 500)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(resp)
+            except Exception as e:
+                self.send_response(500); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8'))
+            return
         self.send_response(404)
         self.end_headers()
     def do_GET(self):
@@ -224,6 +281,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'text/html; charset=utf-8')
             self.end_headers(); self.wfile.write(body)
+            return
+        if self.path == '/historico' or self.path.startswith('/historico?'):
+            import json as _json
+            rows = consultar_log(800)
+            resp = _json.dumps({'ok': True, 'log': rows}, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json; charset=utf-8')
+            self.end_headers(); self.wfile.write(resp)
             return
         if self.path == '/' or self.path == '':
             self.path = '/index.html'

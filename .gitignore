@@ -21,6 +21,9 @@ entrada_resumida.xls
 config.json
 ACESSO_REDE.txt
 
+# Banco de atividades (runtime, local)
+atividade.db
+
 # Python
 __pycache__/
 *.pyc

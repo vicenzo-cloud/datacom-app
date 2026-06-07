@@ -292,7 +292,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
     <div class="nav-item" id="grp-notas" onclick="switchView('nf')"><span class="icon">◉</span><span class="lbl">Notas Fiscais</span><span class="cnt" id="nf-count">0</span></div>
     <div class="nav-item" id="grp-analise" onclick="switchView('comp')"><span class="icon">⊞</span><span class="lbl">Análise</span></div>
     <div class="nav-item" id="grp-precos" onclick="switchView('preco')"><span class="icon">📊</span><span class="lbl">Preços &amp; Compras</span></div>
-    <div class="nav-item" id="grp-operacao" onclick="switchView('sugestoes')"><span class="icon">🛒</span><span class="lbl">Operação</span></div>
+    <div class="nav-item" id="grp-operacao" onclick="switchView('analista')"><span class="icon">🧠</span><span class="lbl">Operação</span></div>
     <div class="nav-item" id="grp-timeline" onclick="switchView('timeline')"><span class="icon">⟳</span><span class="lbl">Timeline</span></div>
     <!-- badge auditoria preservado (oculto) p/ compatibilidade -->
     <span id="audit-count" style="display:none"></span>
@@ -582,6 +582,25 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
         </div>
       </div>
 
+      <!-- ANALISTA (regras, local) -->
+      <div class="page" id="page-analista">
+        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">🧠 Analista</h2>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Diagnóstico automático dos seus dados + atividades — 100% local, sem internet. Atualiza sempre que você abre a aba.</p>
+        <div style="margin-bottom:16px"><button class="btn btn-secondary btn-sm" onclick="renderAnalista()">🔄 Reanalisar</button></div>
+        <div id="analista-content"></div>
+      </div>
+
+      <!-- HISTORICO (banco SQLite) -->
+      <div class="page" id="page-historico">
+        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">🗂 Histórico de Atividades</h2>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Tudo que foi feito ou alterado no app, gravado num banco de dados (SQLite). Use a busca pra filtrar.</p>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+          <input type="text" id="hist-busca" class="dash-filtro-sel" style="flex:1;min-width:220px;max-width:380px;padding:8px 12px" placeholder="🔎 Filtrar por ação, detalhe ou data..." oninput="renderHistoricoTabela()">
+          <button class="btn btn-secondary btn-sm" onclick="renderHistorico()">🔄 Atualizar</button>
+        </div>
+        <div id="historico-content"></div>
+      </div>
+
     </div>
   </main>
 </div>
@@ -726,6 +745,10 @@ function switchIntelTab(t){
 const brl=function(v){return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});};
 const uid=function(){return Math.random().toString(36).slice(2,9);};
 function toast(msg,type){type=type||'success';const el=document.getElementById('toast');el.textContent=msg;el.className='toast '+type+' show';setTimeout(function(){el.classList.remove('show');},2800);}
+// Registra a ação no banco de atividades (SQLite via backend). Fire-and-forget.
+function logAtividade(acao, detalhe){
+  try{ fetch('/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:String(acao||''), detalhe:String(detalhe||''), usuario:'equipe'})}).catch(function(){}); }catch(e){}
+}
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeOut(e,id){if(e.target.id===id)closeModal(id);}
@@ -740,11 +763,14 @@ function saveProject(){
   if(!nome){toast('Nome obrigatório','error');return;}
   S.projects.push({id:uid(),nome,desc:document.getElementById('p-desc').value.trim(),cliente:document.getElementById('p-cliente').value.trim(),data:document.getElementById('p-data').value,criadoEm:new Date().toISOString(),items:[],services:[]});
   persist();closeModal('modal-proj');
+  logAtividade('Projeto criado', nome);
   ['p-nome','p-desc','p-cliente','p-data'].forEach(function(id){document.getElementById(id).value='';});
   renderAll();toast('Projeto criado!');
 }
 function deleteProject(id){
   if(!confirm('Excluir projeto?'))return;
+  var _pn=(S.projects.find(function(p){return p.id===id;})||{}).nome||id;
+  logAtividade('Projeto excluído', _pn);
   S.projects=S.projects.filter(function(p){return p.id!==id;});
   if(S.curProj===id){S.curProj=null;S.view='dashboard';}
   persist();renderAll();toast('Projeto excluído');
@@ -759,11 +785,14 @@ function saveItem(){
   const proj=S.projects.find(function(p){return p.id===S.curProj;});if(!proj)return;
   proj.items.push({id:uid(),nome,prev,real:parseFloat(document.getElementById('i-real').value)||0,cat:document.getElementById('i-cat').value,extra:document.getElementById('i-extra').value==='1'});
   persist();closeModal('modal-item');
+  logAtividade('Material adicionado', proj.nome+' · '+nome+' (previsto '+brl(prev)+')');
   ['i-nome','i-prev','i-real'].forEach(function(id){document.getElementById(id).value='';});
   renderAll();toast('Material adicionado!');
 }
 function deleteItem(pid,iid){
   const proj=S.projects.find(function(p){return p.id===pid;});if(!proj)return;
+  var _in=(proj.items.find(function(i){return i.id===iid;})||{}).nome||iid;
+  logAtividade('Material removido', proj.nome+' · '+_in);
   proj.items=proj.items.filter(function(i){return i.id!==iid;});
   persist();renderAll();toast('Item removido');
 }
@@ -778,12 +807,15 @@ function saveSvc(){
   const realU=parseFloat(document.getElementById('s-real').value)||prevU;
   proj.services.push({id:uid(),nome,qtd,fornecedor:document.getElementById('s-forn').value.trim(),prev:prevU*qtd,real:realU*qtd,cat:document.getElementById('s-cat').value,extra:document.getElementById('s-extra').value==='1'});
   persist();closeModal('modal-svc');
+  logAtividade('Serviço adicionado', proj.nome+' · '+nome+' (x'+qtd+')');
   ['s-nome','s-forn','s-prev','s-real'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('s-qtd').value='1';
   renderAll();toast('Serviço adicionado!');
 }
 function deleteSvc(pid,sid){
   const proj=S.projects.find(function(p){return p.id===pid;});if(!proj)return;
+  var _sn=(proj.services.find(function(s){return s.id===sid;})||{}).nome||sid;
+  logAtividade('Serviço removido', proj.nome+' · '+_sn);
   proj.services=proj.services.filter(function(s){return s.id!==sid;});
   persist();renderAll();toast('Serviço removido');
 }
@@ -796,10 +828,11 @@ function saveNF(){
   if(!num||!forn||!val){toast('Obrigatório','error');return;}
   S.nfs.push({id:uid(),numero:num,fornecedor:forn,valor:val,data:document.getElementById('nf-data').value,projId:'',obs:document.getElementById('nf-obs').value.trim(),centro:'',det:''});
   persist();closeModal('modal-nf');
+  logAtividade('NF criada', 'nº '+num+' · '+forn+' · '+brl(val));
   ['nf-num','nf-forn','nf-val','nf-obs'].forEach(function(id){document.getElementById(id).value='';});
   renderAll();toast('NF salva!');
 }
-function deleteNF(id){S.nfs=S.nfs.filter(function(n){return n.id!==id;});persist();renderAll();toast('NF excluída');}
+function deleteNF(id){var _n=(S.nfs.find(function(n){return n.id===id;})||{});logAtividade('NF excluída','nº '+(_n.numero||'?')+' · '+(_n.fornecedor||''));S.nfs=S.nfs.filter(function(n){return n.id!==id;});persist();renderAll();toast('NF excluída');}
 function saveNFDet(id,val){const nf=S.nfs.find(function(n){return n.id===id;});if(nf){nf.det=val;persist();}toast('Observação salva!');}
 
 let expandedNFs=new Set();
@@ -914,7 +947,7 @@ var GRUPOS=[
   {g:'notas',     views:['nf','audit','alertas']},
   {g:'analise',   views:['comp','subestimados']},
   {g:'precos',    views:['preco','mercado','compras-dash']},
-  {g:'operacao',  views:['sugestoes','gastos']},
+  {g:'operacao',  views:['analista','sugestoes','gastos','historico']},
   {g:'timeline',  views:['timeline']}
 ];
 var VIEW_INFO={
@@ -929,6 +962,8 @@ var VIEW_INFO={
   alertas:{t:'Alertas',s:'Monitoramento',l:'Alertas'},
   sugestoes:{t:'Sugestões de Compra',s:'Baseado no histórico de compras',l:'Sugestões'},
   gastos:{t:'Gastos por Unidade',s:'Por unidade e mês a mês',l:'Gastos/Unidade'},
+  analista:{t:'Analista',s:'Diagnóstico automático (regras, local)',l:'Analista'},
+  historico:{t:'Histórico',s:'Registro de atividades',l:'Histórico'},
   timeline:{t:'Timeline',s:'Linha do tempo',l:'Timeline'}
 };
 function grupoDoView(v){ for(var i=0;i<GRUPOS.length;i++){ if(GRUPOS[i].views.indexOf(v)>=0) return GRUPOS[i].g; } return null; }
@@ -1174,6 +1209,7 @@ function setJustificadoNV(projId, itemId, val){
   if(inp) it.justificativa = inp.value;
   it.justificado = val;
   persist();
+  logAtividade(val?'Item justificado (sai da %)':'Item marcado: não justificado (conta na %)', (it.nome||itemId)+(it.justificativa?(' — '+it.justificativa):''));
   renderNaoValidados();
   if(S.view==='comp') renderComparativo();
 }
@@ -1276,6 +1312,8 @@ function renderPages(){
   document.getElementById('page-gastos').classList.toggle('active',S.view==='gastos');
   document.getElementById('page-subestimados').classList.toggle('active',S.view==='subestimados');
   document.getElementById('page-mercado').classList.toggle('active',S.view==='mercado');
+  document.getElementById('page-analista').classList.toggle('active',S.view==='analista');
+  document.getElementById('page-historico').classList.toggle('active',S.view==='historico');
   if(S.view==='dashboard')renderDashboard();
   if(S.view==='projeto')renderProjeto();
   if(S.view==='nf')renderNFPage();
@@ -1289,6 +1327,8 @@ function renderPages(){
   if(S.view==='gastos')renderGastos();
   if(S.view==='subestimados')renderSubestimados();
   if(S.view==='mercado')renderMercado();
+  if(S.view==='analista')renderAnalista();
+  if(S.view==='historico')renderHistorico();
 }
 
 // ── DASHBOARD ──
@@ -2555,6 +2595,7 @@ function saveNFAudit(idx){
 
   // Mostra o que foi salvo
   var msg = 'NF: '+nf.numero+' | Forn: '+nf.fornecedor+' | Cat: '+nf.obs+' | Val: R$'+nf.valor.toFixed(2);
+  logAtividade('NF corrigida (auditoria)', msg);
   toast('✓ Salvo: '+msg);
 
   // Aguarda um pouco e depois analisa o que ainda está errado
@@ -2619,6 +2660,7 @@ function fixAllIssues(){
   if(!confirm('Marcar as '+ids.length+' NF(s) sinalizadas como revisadas/auditadas?\n\nElas saem da lista de auditoria (os dados das notas não são alterados). Você pode revisar item a item antes, se preferir.')) return;
   ids.forEach(function(i){ if(S.nfs[i]) S.nfs[i].auditado = true; });
   persist();
+  logAtividade('Auditoria: Corrigir Tudo', ids.length+' NF(s) marcadas como revisadas');
   toast('✓ '+ids.length+' NF(s) marcadas como revisadas.');
   runAuditoria();
 }
@@ -2709,6 +2751,7 @@ function importAuditCSV(ev){
         upd++;
       }
       persist();
+      logAtividade('Auditoria: importou correções (planilha)', upd+' NF(s) atualizada(s)'+(naoEncontrados?(', '+naoEncontrados+' id(s) sem correspondência'):''));
       runAuditoria();
       var msg='✓ '+upd+' NF(s) atualizada(s) pela planilha.';
       if(naoEncontrados) msg+=' '+naoEncontrados+' id(s) não encontrado(s).';
@@ -3449,6 +3492,7 @@ function importarRelatorios(){
         if(res.ok){
           st.style.color='var(--accent)';
           st.textContent='✅ Dados atualizados!\n\n'+(res.log||'');
+          logAtividade('Importou relatórios fiscais (.xls)', 'reprocessamento concluído');
           toast('Dados de compras atualizados!');
           // Recarrega as análises que dependem dos arquivos
           _dadosPorUnidade=null; _dadosGasto=null; _dadosCat=null; precoGlobalItems=[];
@@ -3897,6 +3941,103 @@ function compararMeses(){
 }
 
 // ── ITENS SUBESTIMADOS (previsto < real) ──
+// ── HISTORICO (banco SQLite via backend) ──
+function _escH(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function _fmtTs(ts){ if(!ts)return '—'; var m=String(ts).match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); return m?(m[3]+'/'+m[2]+'/'+m[1].slice(2)+' '+m[4]+':'+m[5]):ts; }
+function _cardA(lbl,val,cor){ return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">'+lbl+'</div><div style="font-family:var(--serif);font-size:20px;font-weight:800;color:'+(cor||'var(--text)')+'">'+val+'</div></div>'; }
+function renderHistorico(){
+  var alvo=document.getElementById('historico-content'); if(!alvo) return;
+  alvo.innerHTML='<div style="color:var(--muted);padding:20px">Carregando histórico…</div>';
+  fetch('/historico?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
+    window._histLog=(d&&d.log)||[]; renderHistoricoTabela();
+  }).catch(function(){ alvo.innerHTML='<div style="color:var(--red);padding:20px">Não consegui carregar o histórico. O app precisa estar rodando pelo launcher (não pelo preview estático).</div>'; });
+}
+function renderHistoricoTabela(){
+  var alvo=document.getElementById('historico-content'); if(!alvo) return;
+  var log=window._histLog||[];
+  var q=(((document.getElementById('hist-busca')||{}).value)||'').trim().toLowerCase();
+  var vis=q?log.filter(function(e){return ((e.acao||'')+' '+(e.detalhe||'')+' '+(e.ts||'')+' '+(e.usuario||'')).toLowerCase().indexOf(q)>=0;}):log;
+  var hoje=new Date().toISOString().slice(0,10);
+  var nHoje=log.filter(function(e){return String(e.ts||'').slice(0,10)===hoje;}).length;
+  var html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px">';
+  html+=_cardA('Registros', log.length);
+  html+=_cardA('Hoje', nHoje, 'var(--accent)');
+  html+=_cardA('Última ação', log[0]?_fmtTs(log[0].ts):'—');
+  html+='</div>';
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:680px"><thead><tr><th>Quando</th><th>Ação</th><th>Detalhe</th><th>Usuário</th></tr></thead><tbody>';
+  vis.forEach(function(e){
+    html+='<tr><td style="white-space:nowrap;font-family:var(--mono);font-size:11px;color:var(--muted)">'+_fmtTs(e.ts)+'</td>'
+      +'<td style="font-size:12px;color:var(--text);font-weight:600">'+_escH(e.acao)+'</td>'
+      +'<td style="font-size:12px;color:var(--muted2)">'+_escH(e.detalhe)+'</td>'
+      +'<td style="font-size:11px;color:var(--muted)">'+_escH(e.usuario||'')+'</td></tr>';
+  });
+  html+='</tbody></table></div>';
+  if(!vis.length) html+='<div style="text-align:center;color:var(--muted);padding:30px">'+(log.length?'Nada bate com o filtro.':'Ainda não há atividades registradas. Faça uma ação (criar, editar, justificar, corrigir) e ela aparece aqui.')+'</div>';
+  alvo.innerHTML=html;
+}
+
+// ── ANALISTA (diagnóstico por regras, local) ──
+function renderAnalista(){
+  var alvo=document.getElementById('analista-content'); if(!alvo) return;
+  alvo.innerHTML='<div style="color:var(--muted);padding:20px">Analisando…</div>';
+  var pPrecos = window._precosMercado ? Promise.resolve(window._precosMercado)
+    : fetch('precos_mercado.json?t='+Date.now()).then(function(r){return r.json();}).then(function(d){window._precosMercado=d;return d;}).catch(function(){return null;});
+  var pLog = fetch('/historico?t='+Date.now()).then(function(r){return r.json();}).then(function(d){return (d&&d.log)||[];}).catch(function(){return [];});
+  Promise.all([pPrecos,pLog]).then(function(a){ _renderAnalista(a[0],a[1]); });
+}
+function _renderAnalista(precos, log){
+  var alvo=document.getElementById('analista-content'); if(!alvo) return;
+  var f=[];
+  // 1. Itens acima do previsto sem justificativa
+  var njC=0,njT=0;
+  (S.projects||[]).forEach(function(p){ (p.items||[]).concat(p.services||[]).forEach(function(i){
+    var prev=Number(i.prev)||0, real=Number(i.real)||0;
+    if(real>prev && i.justificado!==true){ njC++; njT+=(real-prev); }
+  });});
+  f.push({n:njC>0?'alto':'ok',ic:'⚠️',t:'Itens acima do previsto sem justificativa',v:njC,d:njC>0?('Somam '+brl(njT)+' a mais. Justifique ou revise.'):'Tudo justificado 👍',view:'comp'});
+  // 2. NFs sem categoria
+  var semCat=(S.nfs||[]).filter(function(n){return !n.auditado && (!n.obs||String(n.obs).trim()===''||n.obs==='-');}).length;
+  f.push({n:semCat>0?'medio':'ok',ic:'📌',t:'Notas fiscais sem categoria',v:semCat,d:semCat>0?'Categorize na Auditoria (ou pela planilha).':'Todas categorizadas 👍',view:'audit'});
+  // 3. Projetos acima do orçamento
+  var est=[];
+  (S.projects||[]).forEach(function(p){ var prev=0,real=0;
+    (p.items||[]).forEach(function(i){if(!i.extra)prev+=Number(i.prev)||0; real+=Number(i.real)||0;});
+    (p.services||[]).forEach(function(i){if(!i.extra)prev+=Number(i.prev)||0; real+=Number(i.real)||0;});
+    if(prev>0 && real>prev*1.001) est.push({nome:p.nome,dif:real-prev});
+  });
+  est.sort(function(a,b){return b.dif-a.dif;});
+  f.push({n:est.length>0?'alto':'ok',ic:'📈',t:'Projetos acima do orçamento',v:est.length,d:est.length>0?('Maior: '+est[0].nome+' (+'+brl(est[0].dif)+')'):'Nenhum projeto estourou 👍',view:'comp'});
+  // 4. Preço de mercado: itens acima
+  if(precos && precos.itens){
+    var TOL=0.05, ac=0, eco=0;
+    precos.itens.forEach(function(x){ var meu=Number(x.meu)||0, mer=Number(x.mercado)||0, q=Number(x.qtd)||0; if(meu>mer*(1+TOL)){ ac++; eco+=(meu-mer)*q; } });
+    f.push({n:ac>0?'medio':'ok',ic:'💰',t:'Itens acima do preço de mercado',v:ac,d:ac>0?('Economia potencial de '+brl(eco)+' renegociando.'):'Tudo no/abaixo do mercado 👍',view:'mercado'});
+  }
+  // 5. Atividade
+  var hoje=new Date().toISOString().slice(0,10);
+  var nHoje=(log||[]).filter(function(e){return String(e.ts||'').slice(0,10)===hoje;}).length;
+  f.push({n:'ok',ic:'🗂',t:'Atividades registradas',v:(log||[]).length,d:nHoje+' hoje · última: '+(log&&log[0]?_fmtTs(log[0].ts):'—'),view:'historico'});
+
+  var nAlto=f.filter(function(x){return x.n==='alto';}).length;
+  var nMedio=f.filter(function(x){return x.n==='medio';}).length;
+  var cor={alto:'var(--red)',medio:'var(--amber)',ok:'var(--accent)'};
+  var html='';
+  html+='<div style="background:linear-gradient(135deg,rgba(0,212,138,.08),rgba(0,212,138,.01));border:1px solid var(--border);border-left:4px solid '+(nAlto?'var(--red)':(nMedio?'var(--amber)':'var(--accent)'))+';border-radius:14px;padding:18px 22px;margin-bottom:18px">'
+    +'<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Resumo do analista</div>'
+    +'<div style="font-size:15px;color:var(--text);font-weight:600">'+(nAlto?('🔴 '+nAlto+' ponto(s) que pedem atenção'):(nMedio?('🟠 '+nMedio+' ponto(s) pra revisar'):'🟢 Tudo sob controle!'))+'</div>'
+    +'<div style="font-size:12px;color:var(--muted2);margin-top:4px">Diagnóstico gerado localmente a partir dos seus dados e do histórico.</div></div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">';
+  f.forEach(function(x){
+    var btn = x.n!=='ok' ? '<button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="switchView(\''+x.view+'\')">Ir para →</button>' : '';
+    html+='<div style="background:var(--bg2);border:1px solid var(--border);border-left:3px solid '+cor[x.n]+';border-radius:12px;padding:16px 18px">'
+      +'<div style="font-size:12px;color:var(--muted)">'+x.ic+' '+x.t+'</div>'
+      +'<div style="font-family:var(--serif);font-size:26px;font-weight:800;color:'+cor[x.n]+';margin-top:6px">'+x.v+'</div>'
+      +'<div style="font-size:12px;color:var(--muted2);margin-top:4px">'+x.d+'</div>'+btn+'</div>';
+  });
+  html+='</div>';
+  alvo.innerHTML=html;
+}
+
 // ── PRECO DE MERCADO ──
 function renderMercado(){
   var alvo=document.getElementById('mercado-content');
