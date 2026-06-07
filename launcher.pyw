@@ -43,7 +43,38 @@ def carregar_senha():
     CONFIG_PATH.write_text(_cfgjson.dumps({'senha': 'vigillare'}, ensure_ascii=False), encoding='utf-8')
     return 'vigillare'
 SENHA = carregar_senha()
-SESSOES = set()
+
+# ── Usuários individuais (nome + senha + papel) ──
+# papel: 'editor' (adiciona/remove) ou 'leitor' (só visualiza). O host (este PC) é sempre dono/editor.
+def carregar_config():
+    try:
+        if CONFIG_PATH.exists():
+            return _cfgjson.loads(CONFIG_PATH.read_text(encoding='utf-8'))
+    except Exception:
+        pass
+    return {}
+def carregar_usuarios():
+    cfg = carregar_config()
+    us = cfg.get('usuarios')
+    return us if isinstance(us, list) else []
+def salvar_usuarios(lista):
+    cfg = carregar_config()
+    cfg['usuarios'] = lista[:5]  # no máximo 5
+    if 'senha' not in cfg: cfg['senha'] = SENHA
+    CONFIG_PATH.write_text(_cfgjson.dumps(cfg, ensure_ascii=False, indent=2), encoding='utf-8')
+def autenticar_usuario(nome, senha):
+    nome = (nome or '').strip()
+    for u in carregar_usuarios():
+        if (u.get('nome','').strip().lower() == nome.lower()) and (u.get('senha','') == senha) and senha != '':
+            return {'nome': u.get('nome'), 'papel': (u.get('papel') or 'editor')}
+    # Compatibilidade: senha geral única (sem nome) → acesso de leitor pela rede
+    if senha == SENHA and senha != '':
+        return {'nome': nome or 'Equipe', 'papel': 'leitor'}
+    return None
+
+# token -> {'nome':..., 'papel':...}
+SESSOES = {}
+HOST_USER = {'nome': 'Gattiboni (dono)', 'papel': 'editor'}
 
 # ── Banco de dados de atividades (SQLite, embutido no Python) ──
 import sqlite3, datetime as _dt, threading as _th
@@ -109,12 +140,13 @@ LOGIN_HTML = """<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="vie
 input{width:100%;padding:11px;margin:0 0 12px;border-radius:7px;border:1px solid #2a2f2d;background:#0b0e0d;color:#e2e8e4;box-sizing:border-box;font-size:14px}
 button{width:100%;padding:11px;border-radius:7px;border:none;background:#00d48a;color:#0b0e0d;font-weight:bold;cursor:pointer;font-size:14px}
 .err{color:#ff5252;font-size:12px;min-height:18px;margin-top:10px}</style></head>
-<body><div class="box"><h1>Projetos Suprimentos</h1><div class="sub">Acesso restrito · informe a senha da equipe</div>
-<input type="password" id="s" placeholder="Senha" autofocus onkeydown="if(event.key==='Enter')entrar()">
+<body><div class="box"><h1>Projetos Suprimentos</h1><div class="sub">Acesso restrito · informe seu nome e senha</div>
+<input type="text" id="u" placeholder="Nome de usuário" autofocus onkeydown="if(event.key==='Enter')entrar()">
+<input type="password" id="s" placeholder="Senha" onkeydown="if(event.key==='Enter')entrar()">
 <button onclick="entrar()">Entrar</button><div class="err" id="e"></div></div>
-<script>function entrar(){var s=document.getElementById('s').value;
-fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({senha:s})})
-.then(function(r){return r.json();}).then(function(d){if(d.ok){location.href='/';}else{document.getElementById('e').textContent='Senha incorreta';}})
+<script>function entrar(){var u=document.getElementById('u').value;var s=document.getElementById('s').value;
+fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario:u,senha:s})})
+.then(function(r){return r.json();}).then(function(d){if(d.ok){location.href='/';}else{document.getElementById('e').textContent='Nome ou senha incorretos';}})
 .catch(function(){document.getElementById('e').textContent='Erro de conexão';});}</script></body></html>"""
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -125,25 +157,37 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if ip in ('127.0.0.1', '::1', 'localhost'):
             return True  # maquina host sempre liberada
         return cookie_token(self.headers) in SESSOES
+    def _sessao(self):
+        ip = self.client_address[0]
+        if ip in ('127.0.0.1', '::1', 'localhost'):
+            return dict(HOST_USER, host=True)
+        s = SESSOES.get(cookie_token(self.headers))
+        return dict(s, host=False) if s else None
+    def _eh_host(self):
+        return self.client_address[0] in ('127.0.0.1', '::1', 'localhost')
+    def _pode_editar(self):
+        s = self._sessao()
+        return bool(s) and s.get('papel') == 'editor'
     def do_POST(self):
         if self.path == '/login':
             import json as _json
             length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(length).decode('utf-8')
             try:
-                senha = _json.loads(body).get('senha', '')
+                _d = _json.loads(body); usuario = _d.get('usuario',''); senha = _d.get('senha', '')
             except Exception:
-                senha = ''
-            if senha == SENHA:
-                tok = secrets.token_hex(16); SESSOES.add(tok)
-                registrar_log('Acesso pela rede (login OK)', 'novo acesso autenticado', 'rede', self.client_address[0])
-                resp = _json.dumps({'ok': True}).encode('utf-8')
+                usuario = ''; senha = ''
+            user = autenticar_usuario(usuario, senha)
+            if user:
+                tok = secrets.token_hex(16); SESSOES[tok] = user
+                registrar_log('Acesso pela rede (login OK)', user['nome']+' · papel: '+user['papel'], user['nome'], self.client_address[0])
+                resp = _json.dumps({'ok': True, 'nome': user['nome'], 'papel': user['papel']}).encode('utf-8')
                 self.send_response(200)
                 self.send_header('Set-Cookie', 'dc_session=' + tok + '; Path=/; Max-Age=86400; SameSite=Lax')
                 self.send_header('Content-type', 'application/json; charset=utf-8')
                 self.end_headers(); self.wfile.write(resp)
             else:
-                registrar_log('Tentativa de login falhou', 'senha incorreta', 'rede', self.client_address[0])
+                registrar_log('Tentativa de login falhou', 'usuario: '+(usuario or '(vazio)'), usuario or 'rede', self.client_address[0])
                 resp = _json.dumps({'ok': False}).encode('utf-8')
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json; charset=utf-8')
@@ -151,6 +195,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         if not self._autenticado():
             self.send_response(401); self.end_headers(); return
+        # Somente editores podem gravar/alterar dados
+        if self.path in ('/save-data', '/upload-relatorio', '/reprocessar') and not self._pode_editar():
+            import json as _json
+            registrar_log('Ação bloqueada (somente leitura)', self.path, (self._sessao() or {}).get('nome','?'), self.client_address[0])
+            self.send_response(403); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+            self.wfile.write(_json.dumps({'ok': False, 'erro': 'Sem permissão: seu usuário é somente leitura.'}).encode('utf-8'))
+            return
         if self.path == '/upload-relatorio':
             # Recebe um relatorio .xls enviado pela app e salva no disco
             import json as _json
@@ -265,12 +316,40 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             body = self.rfile.read(length).decode('utf-8')
             try:
                 data = _json.loads(body)
-                ok = registrar_log(data.get('acao',''), data.get('detalhe',''), data.get('usuario','equipe'), self.client_address[0])
+                _s = self._sessao() or {}
+                _quem = _s.get('nome') or 'equipe'  # backend carimba quem está logado (mais seguro)
+                ok = registrar_log(data.get('acao',''), data.get('detalhe',''), _quem, self.client_address[0])
                 resp = _json.dumps({'ok': ok}).encode('utf-8')
                 self.send_response(200 if ok else 500)
                 self.send_header('Content-type', 'application/json; charset=utf-8')
                 self.end_headers()
                 self.wfile.write(resp)
+            except Exception as e:
+                self.send_response(500); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8'))
+            return
+        if self.path == '/usuarios':
+            import json as _json
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length).decode('utf-8')
+            if not self._eh_host():
+                self.send_response(403); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': False, 'erro': 'Só o computador host gerencia usuários.'}).encode('utf-8')); return
+            try:
+                data = _json.loads(body)
+                lista = data.get('usuarios', [])
+                # sanitiza
+                limpa = []
+                for u in lista[:5]:
+                    nome = (u.get('nome') or '').strip()
+                    senha = (u.get('senha') or '')
+                    papel = 'editor' if (u.get('papel')=='editor') else 'leitor'
+                    if nome and senha:
+                        limpa.append({'nome': nome, 'senha': senha, 'papel': papel})
+                salvar_usuarios(limpa)
+                registrar_log('Usuários atualizados', str(len(limpa))+' usuário(s) cadastrado(s)', 'Gattiboni (dono)', self.client_address[0])
+                self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': True, 'usuarios': limpa}, ensure_ascii=False).encode('utf-8'))
             except Exception as e:
                 self.send_response(500); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
                 self.wfile.write(_json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8'))
@@ -291,6 +370,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'application/json; charset=utf-8')
             self.end_headers(); self.wfile.write(resp)
+            return
+        if self.path == '/whoami' or self.path.startswith('/whoami?'):
+            import json as _json
+            s = self._sessao() or {'nome':'?','papel':'leitor','host':False}
+            resp = _json.dumps({'ok': True, 'nome': s.get('nome'), 'papel': s.get('papel'), 'host': bool(s.get('host'))}, ensure_ascii=False).encode('utf-8')
+            self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers(); self.wfile.write(resp)
+            return
+        if self.path == '/usuarios' or self.path.startswith('/usuarios?'):
+            import json as _json
+            if not self._eh_host():
+                self.send_response(403); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': False, 'erro': 'Só o computador host gerencia usuários.'}).encode('utf-8')); return
+            # devolve a lista (com senha, pois é só pro host gerenciar localmente)
+            resp = _json.dumps({'ok': True, 'usuarios': carregar_usuarios()}, ensure_ascii=False).encode('utf-8')
+            self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers(); self.wfile.write(resp)
             return
         if self.path == '/' or self.path == '':
             self.path = '/index.html'

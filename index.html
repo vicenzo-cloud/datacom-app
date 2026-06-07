@@ -135,6 +135,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
 .btn-sm{padding:4px 10px;font-size:10px}
 .dash-filtro-sel{background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:12px;font-family:var(--mono);cursor:pointer;outline:none}
 .dash-filtro-sel:hover{border-color:var(--accent)}
+body.ro #btn-add-item, body.ro #btn-add-svc, body.ro #btn-add-nf, body.ro .btn-new-proj, body.ro #btn-add-nf{display:none !important}
+body.ro .ro-hide{display:none !important}
 
 /* NOTE BOX */
 .note-box{padding:12px 16px;border-radius:8px;font-size:11px;display:flex;gap:10px;align-items:flex-start;margin-top:14px}
@@ -299,6 +301,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
     <p class="sidebar-section">Projetos</p>
     <div id="proj-list"></div>
     <button class="btn-new-proj" onclick="openModal('modal-proj')">+ Novo projeto</button>
+    <div id="user-info" style="padding:12px 16px;margin-top:8px;border-top:1px solid var(--border);line-height:1.5"></div>
   </aside>
   <main class="main">
     <div class="topbar">
@@ -612,6 +615,24 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
   </div>
 </div>
 
+<!-- MODAL USUARIOS -->
+<div class="modal-overlay" id="modal-usuarios" onclick="closeOut(event,'modal-usuarios')">
+  <div class="modal" style="max-width:640px"><div class="modal-hd"><div class="modal-title">👥 Usuários & Permissões</div><button class="modal-x" onclick="closeModal('modal-usuarios')">✕</button></div>
+  <div style="padding:20px">
+    <div style="background:var(--bg3);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:12px;color:#aab3ae;line-height:1.6">
+      Cadastre até <strong style="color:#e2e8e4">5 usuários</strong> para acesso pela rede. Cada um entra com <strong style="color:#e2e8e4">nome + senha</strong> e aparece identificado no Histórico.<br>
+      <strong style="color:var(--accent)">Editor</strong> = adiciona/remove · <strong style="color:var(--amber)">Leitor</strong> = só visualiza. Este PC (host) é sempre o dono.
+    </div>
+    <div id="usuarios-lista"></div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="addLinhaUsuario()">+ Adicionar usuário</button>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-usuarios')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarUsuariosCfg()">💾 Salvar usuários</button>
+    </div>
+  </div>
+  </div>
+</div>
+
 <!-- MODAL IMPORTAR RELATORIOS -->
 <div class="modal-overlay" id="modal-importar" onclick="closeOut(event,'modal-importar')">
   <div class="modal" style="max-width:600px"><div class="modal-hd"><div class="modal-title">📥 Atualizar dados de compras</div><button class="modal-x" onclick="closeModal('modal-importar')">✕</button></div>
@@ -747,7 +768,62 @@ const uid=function(){return Math.random().toString(36).slice(2,9);};
 function toast(msg,type){type=type||'success';const el=document.getElementById('toast');el.textContent=msg;el.className='toast '+type+' show';setTimeout(function(){el.classList.remove('show');},2800);}
 // Registra a ação no banco de atividades (SQLite via backend). Fire-and-forget.
 function logAtividade(acao, detalhe){
-  try{ fetch('/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:String(acao||''), detalhe:String(detalhe||''), usuario:'equipe'})}).catch(function(){}); }catch(e){}
+  try{ fetch('/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:String(acao||''), detalhe:String(detalhe||'')})}).catch(function(){}); }catch(e){}
+}
+// ── Usuário/permissões ──
+window._user = {nome:'Gattiboni (dono)', papel:'editor', host:true};
+function podeEditar(){ return !window._user || window._user.papel==='editor'; }
+function exigeEditor(){ if(podeEditar()) return true; toast('Somente leitura: seu usuário não pode alterar dados.','error'); return false; }
+function aplicarPermissoes(){
+  var leitor = window._user && window._user.papel!=='editor';
+  document.body.classList.toggle('ro', !!leitor);
+  var info=document.getElementById('user-info');
+  if(info){
+    var u=window._user||{};
+    info.innerHTML='<span style="font-size:11px;color:var(--muted)">👤 '+(u.nome||'—')+'</span>'
+      +'<span style="font-size:9px;display:block;color:'+(leitor?'var(--amber)':'var(--accent)')+'">'+(leitor?'somente leitura':'pode editar')+'</span>'
+      +(u.host?'<a href="#" onclick="abrirUsuarios();return false" style="font-size:10px;color:var(--accent);text-decoration:none">⚙ Gerenciar usuários</a>':'');
+  }
+}
+function carregarUsuarioAtual(){
+  fetch('/whoami?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
+    if(d&&d.ok){ window._user={nome:d.nome,papel:d.papel,host:d.host}; aplicarPermissoes(); }
+  }).catch(function(){ /* preview estático: mantém default editor */ aplicarPermissoes(); });
+}
+function _linhaUsuarioHTML(u){
+  u=u||{nome:'',senha:'',papel:'leitor'};
+  return '<div class="urow" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">'
+    +'<input class="u-nome dash-filtro-sel" placeholder="Nome" value="'+(u.nome||'').replace(/"/g,'&quot;')+'" style="flex:1">'
+    +'<input class="u-senha dash-filtro-sel" placeholder="Senha" value="'+(u.senha||'').replace(/"/g,'&quot;')+'" style="flex:1">'
+    +'<select class="u-papel dash-filtro-sel"><option value="editor"'+(u.papel==='editor'?' selected':'')+'>Editor</option><option value="leitor"'+(u.papel!=='editor'?' selected':'')+'>Leitor</option></select>'
+    +'<button class="btn btn-danger btn-sm" onclick="this.closest(\'.urow\').remove()">✕</button></div>';
+}
+function abrirUsuarios(){
+  fetch('/usuarios?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.ok){ toast((d&&d.erro)||'Só o host gerencia usuários.','error'); return; }
+    var arr=d.usuarios||[];
+    document.getElementById('usuarios-lista').innerHTML = arr.length?arr.map(_linhaUsuarioHTML).join(''):_linhaUsuarioHTML();
+    openModal('modal-usuarios');
+  }).catch(function(){ toast('Não consegui carregar usuários (precisa rodar pelo launcher).','error'); });
+}
+function addLinhaUsuario(){
+  var box=document.getElementById('usuarios-lista');
+  if(box.querySelectorAll('.urow').length>=5){ toast('Máximo de 5 usuários.','error'); return; }
+  box.insertAdjacentHTML('beforeend', _linhaUsuarioHTML());
+}
+function salvarUsuariosCfg(){
+  var rows=[].slice.call(document.querySelectorAll('#usuarios-lista .urow'));
+  var lista=[];
+  rows.forEach(function(r){
+    var nome=r.querySelector('.u-nome').value.trim();
+    var senha=r.querySelector('.u-senha').value;
+    var papel=r.querySelector('.u-papel').value;
+    if(nome&&senha) lista.push({nome:nome,senha:senha,papel:papel});
+  });
+  fetch('/usuarios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuarios:lista})})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(d&&d.ok){ toast('✓ '+lista.length+' usuário(s) salvos.'); closeModal('modal-usuarios'); } else { toast((d&&d.erro)||'Erro ao salvar','error'); } })
+    .catch(function(){ toast('Erro ao salvar usuários','error'); });
 }
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -759,6 +835,7 @@ function chartOpts(){return {responsive:true,maintainAspectRatio:false,plugins:{
 
 // ── PROJECT CRUD ──
 function saveProject(){
+  if(!exigeEditor())return;
   const nome=document.getElementById('p-nome').value.trim();
   if(!nome){toast('Nome obrigatório','error');return;}
   S.projects.push({id:uid(),nome,desc:document.getElementById('p-desc').value.trim(),cliente:document.getElementById('p-cliente').value.trim(),data:document.getElementById('p-data').value,criadoEm:new Date().toISOString(),items:[],services:[]});
@@ -768,6 +845,7 @@ function saveProject(){
   renderAll();toast('Projeto criado!');
 }
 function deleteProject(id){
+  if(!exigeEditor())return;
   if(!confirm('Excluir projeto?'))return;
   var _pn=(S.projects.find(function(p){return p.id===id;})||{}).nome||id;
   logAtividade('Projeto excluído', _pn);
@@ -779,6 +857,7 @@ function openProject(id){S.curProj=id;S.view='projeto';S.tab='resumo';persist();
 
 // ── ITEM CRUD ──
 function saveItem(){
+  if(!exigeEditor())return;
   const nome=document.getElementById('i-nome').value.trim();
   const prev=parseFloat(document.getElementById('i-prev').value)||0;
   if(!nome||!prev){toast('Obrigatório','error');return;}
@@ -790,6 +869,7 @@ function saveItem(){
   renderAll();toast('Material adicionado!');
 }
 function deleteItem(pid,iid){
+  if(!exigeEditor())return;
   const proj=S.projects.find(function(p){return p.id===pid;});if(!proj)return;
   var _in=(proj.items.find(function(i){return i.id===iid;})||{}).nome||iid;
   logAtividade('Material removido', proj.nome+' · '+_in);
@@ -799,6 +879,7 @@ function deleteItem(pid,iid){
 
 // ── SERVICE CRUD ──
 function saveSvc(){
+  if(!exigeEditor())return;
   const nome=document.getElementById('s-nome').value.trim();
   const prevU=parseFloat(document.getElementById('s-prev').value)||0;
   if(!nome||!prevU){toast('Obrigatório','error');return;}
@@ -813,6 +894,7 @@ function saveSvc(){
   renderAll();toast('Serviço adicionado!');
 }
 function deleteSvc(pid,sid){
+  if(!exigeEditor())return;
   const proj=S.projects.find(function(p){return p.id===pid;});if(!proj)return;
   var _sn=(proj.services.find(function(s){return s.id===sid;})||{}).nome||sid;
   logAtividade('Serviço removido', proj.nome+' · '+_sn);
@@ -822,6 +904,7 @@ function deleteSvc(pid,sid){
 
 // ── NF CRUD ──
 function saveNF(){
+  if(!exigeEditor())return;
   const num=document.getElementById('nf-num').value.trim();
   const forn=document.getElementById('nf-forn').value.trim();
   const val=parseFloat(document.getElementById('nf-val').value)||0;
@@ -832,13 +915,14 @@ function saveNF(){
   ['nf-num','nf-forn','nf-val','nf-obs'].forEach(function(id){document.getElementById(id).value='';});
   renderAll();toast('NF salva!');
 }
-function deleteNF(id){var _n=(S.nfs.find(function(n){return n.id===id;})||{});logAtividade('NF excluída','nº '+(_n.numero||'?')+' · '+(_n.fornecedor||''));S.nfs=S.nfs.filter(function(n){return n.id!==id;});persist();renderAll();toast('NF excluída');}
-function saveNFDet(id,val){const nf=S.nfs.find(function(n){return n.id===id;});if(nf){nf.det=val;persist();logAtividade('Observação de NF editada','nº '+(nf.numero||'?')+': '+(val||'').slice(0,60));}toast('Observação salva!');}
+function deleteNF(id){if(!exigeEditor())return;var _n=(S.nfs.find(function(n){return n.id===id;})||{});logAtividade('NF excluída','nº '+(_n.numero||'?')+' · '+(_n.fornecedor||''));S.nfs=S.nfs.filter(function(n){return n.id!==id;});persist();renderAll();toast('NF excluída');}
+function saveNFDet(id,val){if(!exigeEditor())return;const nf=S.nfs.find(function(n){return n.id===id;});if(nf){nf.det=val;persist();logAtividade('Observação de NF editada','nº '+(nf.numero||'?')+': '+(val||'').slice(0,60));}toast('Observação salva!');}
 
 let expandedNFs=new Set();
 function toggleNFRow(id){if(expandedNFs.has(id))expandedNFs.delete(id);else expandedNFs.add(id);renderNFTable();}
 
 function importNF(input){
+  if(!exigeEditor()){ input.value=''; return; }
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=function(e){
@@ -1197,11 +1281,13 @@ function _acharItem(projId, itemId){
   return (p.items||[]).find(function(i){return i.id===itemId;}) || (p.services||[]).find(function(i){return i.id===itemId;}) || null;
 }
 function salvarJustificativaNV(projId, itemId){
+  if(!exigeEditor())return;
   var inp = document.getElementById('just-'+itemId);
   var it = _acharItem(projId, itemId);
   if(it && inp){ it.justificativa = inp.value; persist(); logAtividade('Justificativa salva', (it.nome||itemId)+' — '+(inp.value||'').slice(0,70)); toast('Justificativa salva'); }
 }
 function setJustificadoNV(projId, itemId, val){
+  if(!exigeEditor())return;
   var it = _acharItem(projId, itemId);
   if(!it) return;
   // salva tambem o texto atual do campo antes de marcar
@@ -2561,6 +2647,7 @@ function renderNFCard(item, tipo){
 }
 
 function saveNFAudit(idx){
+  if(!exigeEditor())return;
   console.log('💾 saveNFAudit idx='+idx, 'S.nfs.length='+S.nfs.length);
 
   var nf = S.nfs[idx];
@@ -2641,6 +2728,7 @@ function saveNFAudit(idx){
 }
 
 function fixAllIssues(){
+  if(!exigeEditor())return;
   var nfs = S.nfs || [];
   // Recalcula quais NFs estão sinalizadas (mesmas regras do runAuditoria)
   var avg = nfs.reduce(function(s,n){return s+(Number(n.valor)||0);},0) / (nfs.length||1);
@@ -2724,6 +2812,7 @@ function exportAuditCSV(){
 }
 
 function importAuditCSV(ev){
+  if(!exigeEditor()){ ev.target.value=''; return; }
   var file=ev.target.files && ev.target.files[0];
   ev.target.value=''; // permite reimportar o mesmo arquivo
   if(!file) return;
@@ -4362,6 +4451,7 @@ function abrirModalMeta(){
 }
 
 function salvarMeta(){
+  if(!exigeEditor())return;
   var metas = {};
   S.projects.forEach(function(p){
     var val = document.getElementById('meta-'+p.id);
@@ -4375,6 +4465,7 @@ function salvarMeta(){
 }
 
 renderAll();
+carregarUsuarioAtual();
 
 // ── DADOS CENTRALIZADOS: o arquivo dados.json no servidor é a fonte da verdade ──
 // Todos os usuários (host + rede) carregam o mesmo estado ao abrir/recarregar.
