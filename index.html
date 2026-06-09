@@ -529,7 +529,7 @@ body.ro .ro-hide{display:none !important}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
           <div><p class="eyebrow" style="margin-bottom:6px">Inteligencia Comercial</p><h2 style="font-family:var(--serif);font-size:24px;font-weight:800;letter-spacing:-.01em">📊 Análise de Preços</h2></div>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-secondary btn-sm" onclick="exportarAnalise()">⬇️ Exportar PDF</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportarAnalise()">⬇️ Exportar planilha</button>
             <button class="btn btn-secondary btn-sm" onclick="carregarAnalisePrecos()">🔄 Recarregar</button>
           </div>
         </div>
@@ -2627,7 +2627,32 @@ function desenharGraficosTemporais(){
 }
 
 function exportarAnalise(){
-  toast('Exportação será implementada em breve!', 'warning');
+  var items = precoGlobalItems || [];
+  if(!items.length){ toast('Nada pra exportar — abra a Análise de Preços primeiro.','error'); return; }
+  var cel=function(v){ v=(v==null?'':String(v)); return /[;"\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; };
+  var n2=function(v){ return (Number(v)||0).toFixed(2).replace('.',','); };
+  var L=['Item;Classe ABC;Compras;Qtd total;Preço mín;Preço médio;Preço máx;Variação %;Valor total;Nº fornecedores'];
+  items.forEach(function(i){
+    var nForn = i.fornecedores ? Object.keys(i.fornecedores).length : '';
+    L.push([
+      cel(i.nome), cel(i.classe||''), cel(i.quantidade_compras||0), cel(n2(i.qtd_total)),
+      cel(n2(i.preco_minimo!=null?i.preco_minimo:i.preco_min)), cel(n2(i.preco_medio)), cel(n2(i.preco_maximo!=null?i.preco_maximo:i.preco_max)),
+      cel(n2(i.variacao_pct)), cel(n2(i.valor_total)), cel(nForn)
+    ].join(';'));
+  });
+  var totalGeral = items.reduce(function(s,i){return s+(Number(i.valor_total)||0);},0);
+  L.push('TOTAL ('+items.length+' itens);;;;;;;;'+n2(totalGeral)+';');
+  var csv='﻿'+L.join('\r\n');
+  var nome='analise-precos-'+new Date().toISOString().slice(0,10)+'.csv';
+  fetch('/save-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:nome,content:csv})})
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.ok){ toast('Análise exportada ('+items.length+' itens)'); alert('✅ Planilha salva em:\n\n'+res.path+'\n\n(atalho "Relatorios Suprimentos" na área de trabalho)'); }
+      else throw new Error('falha');
+    })
+    .catch(function(){
+      var b=new Blob([csv],{type:'text/csv;charset=utf-8'}); var u=URL.createObjectURL(b); var a=document.createElement('a'); a.href=u; a.download=nome; document.body.appendChild(a); a.click(); URL.revokeObjectURL(u); document.body.removeChild(a); toast('Análise baixada ('+items.length+' itens)');
+    });
 }
 
 function analisarItemBusca(){
