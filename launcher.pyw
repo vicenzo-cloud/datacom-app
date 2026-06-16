@@ -107,6 +107,64 @@ def salvar_sessoes():
 SESSOES = carregar_sessoes()
 HOST_USER = {'nome': 'Gattiboni (dono)', 'papel': 'editor'}
 
+# ── Multi-filial: cada filial (CNPJ) tem sua pasta com os mesmos arquivos ──
+BASE_DIR = Path(__file__).parent
+FILIAIS_PATH = BASE_DIR / 'filiais.json'
+# arquivos que são separados por filial (o resto é compartilhado)
+PER_FILIAL = ['dados.json', 'analise_precos.json', 'gasto_por_unidade.json',
+              'gasto_por_categoria.json', 'analise_por_unidade.json',
+              'entrada_detalhada.xls', 'entrada_resumida.xls']
+import re as _re
+def _slug(s):
+    s = (s or '').strip().lower()
+    s = _re.sub(r'[^a-z0-9]+', '_', s).strip('_')
+    return s or 'filial'
+def carregar_filiais():
+    try:
+        if FILIAIS_PATH.exists():
+            d = _cfgjson.loads(FILIAIS_PATH.read_text(encoding='utf-8'))
+            if isinstance(d, dict) and d.get('filiais'):
+                return d
+    except Exception:
+        pass
+    return {'filialAtual': 'matriz', 'filiais': [{'id': 'matriz', 'nome': 'Matriz', 'cnpj': ''}]}
+def salvar_filiais(d):
+    try:
+        FILIAIS_PATH.write_text(_cfgjson.dumps(d, ensure_ascii=False, indent=2), encoding='utf-8')
+    except Exception as e:
+        print('salvar_filiais erro:', e)
+def filial_atual_id():
+    d = carregar_filiais()
+    ids = [f.get('id') for f in d.get('filiais', [])]
+    fa = d.get('filialAtual')
+    return fa if fa in ids else (ids[0] if ids else 'matriz')
+def filial_dir(fid=None):
+    fid = fid or filial_atual_id()
+    p = BASE_DIR / 'filiais' / fid
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+def migrar_para_filiais():
+    # Na 1ª vez: move os arquivos atuais (Matriz) para filiais/matriz/
+    if FILIAIS_PATH.exists():
+        return
+    import shutil
+    mat = BASE_DIR / 'filiais' / 'matriz'
+    mat.mkdir(parents=True, exist_ok=True)
+    for nm in PER_FILIAL:
+        src = BASE_DIR / nm
+        if src.exists() and not (mat / nm).exists():
+            try: shutil.move(str(src), str(mat / nm))
+            except Exception as e: print('migrar', nm, e)
+    oldb = BASE_DIR / 'Backups'
+    if oldb.exists() and not (mat / 'Backups').exists():
+        try: shutil.move(str(oldb), str(mat / 'Backups'))
+        except Exception: pass
+    # garante um dados.json (mesmo vazio) pra Matriz
+    if not (mat / 'dados.json').exists():
+        (mat / 'dados.json').write_text(_cfgjson.dumps({'projects': [], 'nfs': [], '_rev': 0}, ensure_ascii=False), encoding='utf-8')
+    salvar_filiais({'filialAtual': 'matriz', 'filiais': [{'id': 'matriz', 'nome': 'Matriz', 'cnpj': ''}]})
+migrar_para_filiais()
+
 # ── Banco de dados de atividades (SQLite, embutido no Python) ──
 import sqlite3, datetime as _dt, threading as _th
 DB_PATH = Path(__file__).parent / 'atividade.db'
@@ -243,7 +301,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 tipo = data.get('tipo')  # 'detalhada' ou 'resumida'
                 conteudo = data.get('content', '')
                 nome = 'entrada_detalhada.xls' if tipo == 'detalhada' else 'entrada_resumida.xls'
-                with open(Path(__file__).parent / nome, 'w', encoding='utf-8') as f:
+                with open(filial_dir() / nome, 'w', encoding='utf-8') as f:
                     f.write(conteudo)
                 resp = _json.dumps({'ok': True, 'arquivo': nome, 'tamanho': len(conteudo)}).encode('utf-8')
                 self.send_response(200)
@@ -259,7 +317,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             import json as _json, subprocess, sys
             try:
                 script = Path(__file__).parent / 'gerar_analise_unidade.py'
-                proc = subprocess.run([sys.executable, str(script)],
+                proc = subprocess.run([sys.executable, str(script), str(filial_dir())],
                                       capture_output=True, text=True, timeout=120,
                                       cwd=str(Path(__file__).parent))
                 ok = proc.returncode == 0
@@ -279,7 +337,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             body = self.rfile.read(length).decode('utf-8')
             try:
                 obj = _json.loads(body)  # valida que e JSON valido
-                caminho = Path(__file__).parent / 'dados.json'
+                _fdir = filial_dir()
+                caminho = _fdir / 'dados.json'
                 # ── Controle de revisão (evita 2 editores se sobrescreverem) ──
                 atual_rev = 0
                 if caminho.exists():
@@ -300,14 +359,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 # Backup do arquivo anterior antes de sobrescrever
                 if caminho.exists():
                     import shutil
-                    bkp = Path(__file__).parent / 'dados.backup.json'
+                    bkp = _fdir / 'dados.backup.json'
                     shutil.copy2(caminho, bkp)
                 with open(caminho, 'w', encoding='utf-8') as f:
                     f.write(body)
-                # Backup diario versionado (1 por dia, na pasta Backups)
+                # Backup diario versionado (1 por dia, na pasta Backups da filial)
                 try:
                     import datetime
-                    pasta_bkp = Path(__file__).parent / 'Backups'
+                    pasta_bkp = _fdir / 'Backups'
                     pasta_bkp.mkdir(exist_ok=True)
                     hoje = datetime.date.today().isoformat()
                     diario = pasta_bkp / ('dados_' + hoje + '.json')
@@ -384,18 +443,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_response(403); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
                 self.wfile.write(_json.dumps({'ok': False, 'erro': 'Sem permissão.'}).encode('utf-8')); return
             try:
+                _fdir = filial_dir()
                 fn = os.path.basename((_json.loads(body).get('filename') or ''))
-                src = Path(__file__).parent / 'Backups' / fn
+                src = _fdir / 'Backups' / fn
                 if not (fn.startswith('dados_') and fn.endswith('.json') and src.exists()):
                     self.send_response(400); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
                     self.wfile.write(_json.dumps({'ok': False, 'erro': 'Backup inválido.'}).encode('utf-8')); return
                 obj = _json.loads(src.read_text(encoding='utf-8'))
-                dst = Path(__file__).parent / 'dados.json'
+                dst = _fdir / 'dados.json'
                 atual_rev = 0
                 if dst.exists():
                     try: atual_rev = int(_json.loads(dst.read_text(encoding='utf-8')).get('_rev', 0) or 0)
                     except Exception: atual_rev = 0
-                    _sh.copy2(dst, Path(__file__).parent / 'dados.backup.json')
+                    _sh.copy2(dst, _fdir / 'dados.backup.json')
                 obj['_rev'] = atual_rev + 1
                 dst.write_text(_json.dumps(obj, ensure_ascii=False), encoding='utf-8')
                 _s = self._sessao() or {}
@@ -437,6 +497,72 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_response(500); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
                 self.wfile.write(_json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8'))
             return
+        if self.path == '/set-filial':
+            import json as _json
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length).decode('utf-8')
+            if not self._pode_editar():
+                self.send_response(403); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': False, 'erro': 'Sem permissão (somente leitura).'}).encode('utf-8')); return
+            try:
+                fid = (_json.loads(body).get('id') or '').strip()
+                d = carregar_filiais()
+                ids = [f.get('id') for f in d.get('filiais', [])]
+                if fid not in ids:
+                    self.send_response(400); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                    self.wfile.write(_json.dumps({'ok': False, 'erro': 'Filial inexistente.'}).encode('utf-8')); return
+                d['filialAtual'] = fid
+                salvar_filiais(d)
+                # garante dados.json (mesmo vazio) p/ a filial — evita herdar dados de outra
+                fd = filial_dir(fid)
+                if not (fd / 'dados.json').exists():
+                    (fd / 'dados.json').write_text(_json.dumps({'projects': [], 'nfs': [], '_rev': 0}, ensure_ascii=False), encoding='utf-8')
+                nome = next((f.get('nome') for f in d['filiais'] if f.get('id')==fid), fid)
+                _s = self._sessao() or {}
+                registrar_log('Trocou de filial', nome, _s.get('nome','equipe'), self.client_address[0])
+                self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': True, 'filialAtual': fid}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8'))
+            return
+        if self.path == '/filiais':
+            import json as _json
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length).decode('utf-8')
+            if not self._eh_host():
+                self.send_response(403); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': False, 'erro': 'Só o computador host gerencia filiais.'}).encode('utf-8')); return
+            try:
+                entrada = _json.loads(body).get('filiais', [])
+                d = carregar_filiais()
+                usados = set(); limpa = []
+                for f in entrada[:20]:
+                    nome = (f.get('nome') or '').strip()
+                    if not nome: continue
+                    cnpj = (f.get('cnpj') or '').strip()
+                    fid = (f.get('id') or '').strip() or _slug(nome)
+                    base = fid; i = 2
+                    while fid in usados: fid = base + '_' + str(i); i += 1
+                    usados.add(fid)
+                    limpa.append({'id': fid, 'nome': nome, 'cnpj': cnpj})
+                    # cria pasta + dados.json vazio p/ filial nova
+                    fd = filial_dir(fid)
+                    if not (fd / 'dados.json').exists():
+                        (fd / 'dados.json').write_text(_json.dumps({'projects': [], 'nfs': [], '_rev': 0}, ensure_ascii=False), encoding='utf-8')
+                if not limpa:
+                    limpa = [{'id': 'matriz', 'nome': 'Matriz', 'cnpj': ''}]
+                atual = d.get('filialAtual')
+                if atual not in [f['id'] for f in limpa]:
+                    atual = limpa[0]['id']
+                salvar_filiais({'filialAtual': atual, 'filiais': limpa})
+                registrar_log('Filiais atualizadas', str(len(limpa))+' filial(is)', 'Gattiboni (dono)', self.client_address[0])
+                self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': True, 'filiais': limpa, 'filialAtual': atual}, ensure_ascii=False).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
+                self.wfile.write(_json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8'))
+            return
         self.send_response(404)
         self.end_headers()
     def do_GET(self):
@@ -449,6 +575,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-type', 'text/html; charset=utf-8')
             self.end_headers(); self.wfile.write(body)
             return
+        # Arquivos separados por filial: serve a versão da filial ativa
+        _basef = self.path.split('?')[0].lstrip('/')
+        if _basef in PER_FILIAL:
+            qs = ('?' + self.path.split('?', 1)[1]) if '?' in self.path else ''
+            self.path = '/filiais/' + filial_atual_id() + '/' + _basef + qs
+            return http.server.SimpleHTTPRequestHandler.do_GET(self)
         if self.path == '/historico' or self.path.startswith('/historico?'):
             import json as _json
             rows = consultar_log(800)
@@ -461,6 +593,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             import json as _json
             s = self._sessao() or {'nome':'?','papel':'leitor','host':False}
             resp = _json.dumps({'ok': True, 'nome': s.get('nome'), 'papel': s.get('papel'), 'host': bool(s.get('host'))}, ensure_ascii=False).encode('utf-8')
+            self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers(); self.wfile.write(resp)
+            return
+        if self.path == '/filiais' or self.path.startswith('/filiais?'):
+            import json as _json
+            d = carregar_filiais()
+            resp = _json.dumps({'ok': True, 'filialAtual': filial_atual_id(), 'filiais': d.get('filiais', [])}, ensure_ascii=False).encode('utf-8')
             self.send_response(200); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers(); self.wfile.write(resp)
             return
         if self.path == '/usuarios' or self.path.startswith('/usuarios?'):
@@ -478,7 +616,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if not self._pode_editar():
                 self.send_response(403); self.send_header('Content-type','application/json; charset=utf-8'); self.end_headers()
                 self.wfile.write(_json.dumps({'ok': False, 'erro': 'Sem permissão.'}).encode('utf-8')); return
-            pasta = Path(__file__).parent / 'Backups'
+            pasta = filial_dir() / 'Backups'
             arr = []
             if pasta.exists():
                 for f in sorted(pasta.glob('dados_*.json'), reverse=True):

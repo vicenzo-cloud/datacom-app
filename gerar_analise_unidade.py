@@ -6,13 +6,16 @@ Gera analise_por_unidade.json cruzando:
 - RelatorioListagemEntradaMercadoriaResumida: nota -> unidade de negocio
 Casa pelo numero da nota. Agrupa consumo/preco por (unidade, item).
 """
-import re, json, statistics
+import re, json, statistics, sys
 from pathlib import Path
 from collections import defaultdict
 
 DOWNLOADS = Path.home() / 'Downloads'
 APP = Path(__file__).parent
-SAIDA = APP / 'analise_por_unidade.json'
+# Pasta-base dos dados: a filial ativa (passada pelo app) ou a própria pasta do app
+BASE = Path(sys.argv[1]) if len(sys.argv) > 1 else APP
+BASE.mkdir(parents=True, exist_ok=True)
+SAIDA = BASE / 'analise_por_unidade.json'
 
 # Prioriza os arquivos enviados pela app (entrada_detalhada/resumida.xls);
 # se não existirem, usa os nomes padrão do Downloads.
@@ -24,9 +27,9 @@ def _achar(preferido, *alternativos):
             return a
     return preferido  # retorna o preferido mesmo ausente (erro claro depois)
 
-ARQ_DETALHADA = _achar(APP / 'entrada_detalhada.xls',
+ARQ_DETALHADA = _achar(BASE / 'entrada_detalhada.xls',
                        DOWNLOADS / 'RelatorioListagemEntradaMercadoria (2).xls')
-ARQ_RESUMIDA  = _achar(APP / 'entrada_resumida.xls',
+ARQ_RESUMIDA  = _achar(BASE / 'entrada_resumida.xls',
                        DOWNLOADS / 'RelatorioListagemEntradaMercadoriaResumida.xls')
 print('Detalhada:', ARQ_DETALHADA.name)
 print('Resumida :', ARQ_RESUMIDA.name)
@@ -236,7 +239,7 @@ gasto_saida = {
     'totais_mes': totais_mes,
     'total_geral': round(sum(totais_mes.values()), 2),
 }
-SAIDA_GASTO = Path(__file__).parent / 'gasto_por_unidade.json'
+SAIDA_GASTO = BASE / 'gasto_por_unidade.json'
 with open(SAIDA_GASTO, 'w', encoding='utf-8') as f:
     json.dump(gasto_saida, f, ensure_ascii=False)
 print('Salvo gasto_por_unidade.json: %d meses, %d unidades, total R$ %.2f'
@@ -289,7 +292,7 @@ for uni in gasto_cat:
     cat_unidades[uni] = bloco
 
 cat_saida = {'meses': meses, 'categorias': sorted(cats_set), 'unidades': cat_unidades}
-SAIDA_CAT = Path(__file__).parent / 'gasto_por_categoria.json'
+SAIDA_CAT = BASE / 'gasto_por_categoria.json'
 with open(SAIDA_CAT, 'w', encoding='utf-8') as f:
     json.dump(cat_saida, f, ensure_ascii=False)
 print('Salvo gasto_por_categoria.json: %d categorias' % len(cats_set))
@@ -308,11 +311,11 @@ for nome, regs in compras['__TODAS__'].items():
     s = stats_item(regs)
     if s:
         precos_out[nome] = s
-SAIDA_PRECOS = Path(__file__).parent / 'analise_precos.json'
+SAIDA_PRECOS = BASE / 'analise_precos.json'
 # Backup do arquivo antigo (gerado no outro PC) antes de sobrescrever
 if SAIDA_PRECOS.exists():
     import shutil
-    shutil.copy2(SAIDA_PRECOS, Path(__file__).parent / 'analise_precos.bak.json')
+    shutil.copy2(SAIDA_PRECOS, BASE / 'analise_precos.bak.json')
 with open(SAIDA_PRECOS, 'w', encoding='utf-8') as f:
     json.dump(precos_out, f, ensure_ascii=False)
 tot_precos = sum(i['valor_total'] for i in precos_out.values())

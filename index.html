@@ -322,6 +322,11 @@ body.ro .ro-hide{display:none !important}
       <p class="eyebrow">Gestão de Projetos</p>
       <h1 id="sl1">Projetos</h1><h1 id="sl2" style="color:var(--accent)">Suprimentos</h1>
     </div>
+    <div style="padding:10px 16px 4px">
+      <div style="font-size:9px;letter-spacing:.12em;color:var(--muted2);text-transform:uppercase;margin-bottom:5px">🏢 Filial / CNPJ</div>
+      <select id="filial-sel" class="dash-filtro-sel" style="width:100%" onchange="trocarFilial(this.value)"></select>
+      <a href="#" id="filial-gerenciar" onclick="abrirFiliais();return false" style="display:none;font-size:10px;color:var(--accent);text-decoration:none;margin-top:5px">⚙ Gerenciar filiais</a>
+    </div>
     <p class="sidebar-section">Navegação</p>
     <div class="nav-item active" id="grp-dashboard" onclick="switchView('dashboard')"><span class="icon">◈</span><span class="lbl">Dashboard</span></div>
     <div class="nav-item" id="grp-notas" onclick="switchView('nf')"><span class="icon">◉</span><span class="lbl">Notas Fiscais</span><span class="cnt" id="nf-count">0</span></div>
@@ -671,6 +676,24 @@ body.ro .ro-hide{display:none !important}
   </div>
 </div>
 
+<!-- MODAL FILIAIS -->
+<div class="modal-overlay" id="modal-filiais" onclick="closeOut(event,'modal-filiais')">
+  <div class="modal" style="max-width:640px"><div class="modal-hd"><div class="modal-title">🏢 Filiais</div><button class="modal-x" onclick="closeModal('modal-filiais')">✕</button></div>
+  <div style="padding:20px">
+    <div style="background:var(--bg3);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:12px;color:#aab3ae;line-height:1.6">
+      Cada filial tem seus <strong style="color:#e2e8e4">próprios projetos, notas e análises</strong> (separados por CNPJ). Ao trocar de filial no menu, o app inteiro muda para os dados dela.<br>
+      <strong style="color:var(--amber)">A filial ativa é global</strong> — quando alguém troca, todos passam a ver a mesma filial.
+    </div>
+    <div id="filiais-lista"></div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="addLinhaFilial()">+ Adicionar filial</button>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-filiais')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarFiliaisCfg()">💾 Salvar filiais</button>
+    </div>
+  </div>
+  </div>
+</div>
+
 <!-- MODAL BACKUP -->
 <div class="modal-overlay" id="modal-backup" onclick="closeOut(event,'modal-backup')">
   <div class="modal" style="max-width:620px"><div class="modal-hd"><div class="modal-title">💾 Backup & Restauração</div><button class="modal-x" onclick="closeModal('modal-backup')">✕</button></div>
@@ -861,6 +884,67 @@ function carregarUsuarioAtual(){
   fetch('/whoami?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
     if(d&&d.ok){ window._user={nome:d.nome,papel:d.papel,host:d.host}; aplicarPermissoes(); }
   }).catch(function(){ /* preview estático: mantém default editor */ aplicarPermissoes(); });
+}
+// ── Multi-filial ──
+window._filialAtual=null; window._filiais=[];
+function carregarFiliais(){
+  fetch('/filiais?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.ok) return;
+    window._filialAtual=d.filialAtual; window._filiais=d.filiais||[];
+    var sel=document.getElementById('filial-sel');
+    if(sel){
+      sel.innerHTML=window._filiais.map(function(f){
+        return '<option value="'+f.id+'"'+(f.id===d.filialAtual?' selected':'')+'>'+(f.nome||f.id)+(f.cnpj?(' · '+f.cnpj):'')+'</option>';
+      }).join('');
+    }
+    var ger=document.getElementById('filial-gerenciar');
+    if(ger) ger.style.display=(window._user&&window._user.host)?'inline-block':'none';
+  }).catch(function(){ /* preview estático: sem filiais */ });
+}
+function trocarFilial(id){
+  if(!id || id===window._filialAtual){ return; }
+  if(!podeEditar()){ toast('Somente leitura não troca de filial.','error'); carregarFiliais(); return; }
+  fetch('/set-filial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})})
+    .then(function(r){return r.json();}).then(function(d){
+      if(d&&d.ok){ try{localStorage.removeItem('dc_v5');}catch(e){} toast('Trocando de filial…'); setTimeout(function(){location.reload();},400); }
+      else { toast((d&&d.erro)||'Erro ao trocar de filial','error'); carregarFiliais(); }
+    }).catch(function(){ toast('Erro ao trocar de filial','error'); carregarFiliais(); });
+}
+function _linhaFilialHTML(f){
+  f=f||{id:'',nome:'',cnpj:''};
+  return '<div class="frow" data-id="'+(f.id||'')+'" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">'
+    +'<input class="f-nome dash-filtro-sel" placeholder="Nome da filial" value="'+(f.nome||'').replace(/"/g,'&quot;')+'" style="flex:1">'
+    +'<input class="f-cnpj dash-filtro-sel" placeholder="CNPJ" value="'+(f.cnpj||'').replace(/"/g,'&quot;')+'" style="flex:1">'
+    +'<button class="btn btn-danger btn-sm" title="Remover da lista (dados ficam no disco)" onclick="this.closest(\'.frow\').remove()">✕</button></div>';
+}
+function abrirFiliais(){
+  fetch('/filiais?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.ok){ toast('Só o host gerencia filiais.','error'); return; }
+    var arr=d.filiais||[];
+    document.getElementById('filiais-lista').innerHTML = arr.length?arr.map(_linhaFilialHTML).join(''):_linhaFilialHTML({nome:'Matriz'});
+    openModal('modal-filiais');
+  }).catch(function(){ toast('Não consegui carregar filiais (rode pelo launcher).','error'); });
+}
+function addLinhaFilial(){
+  var box=document.getElementById('filiais-lista');
+  if(box.querySelectorAll('.frow').length>=20){ toast('Limite de filiais atingido.','error'); return; }
+  box.insertAdjacentHTML('beforeend', _linhaFilialHTML());
+}
+function salvarFiliaisCfg(){
+  var rows=[].slice.call(document.querySelectorAll('#filiais-lista .frow'));
+  var lista=[];
+  rows.forEach(function(r){
+    var nome=r.querySelector('.f-nome').value.trim();
+    var cnpj=r.querySelector('.f-cnpj').value.trim();
+    var id=r.getAttribute('data-id')||'';
+    if(nome) lista.push({id:id,nome:nome,cnpj:cnpj});
+  });
+  if(!lista.length){ toast('Cadastre ao menos uma filial.','error'); return; }
+  fetch('/filiais',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filiais:lista})})
+    .then(function(r){return r.json();}).then(function(d){
+      if(d&&d.ok){ toast('✓ Filiais salvas.'); closeModal('modal-filiais'); carregarFiliais(); }
+      else toast((d&&d.erro)||'Erro ao salvar','error');
+    }).catch(function(){ toast('Erro ao salvar filiais','error'); });
 }
 function _linhaUsuarioHTML(u){
   u=u||{nome:'',papel:'leitor',tem_senha:false};
@@ -4756,6 +4840,7 @@ function salvarMeta(){
 
 renderAll();
 carregarUsuarioAtual();
+carregarFiliais();
 
 // ── DADOS CENTRALIZADOS: o arquivo dados.json no servidor é a fonte da verdade ──
 // Todos os usuários (host + rede) carregam o mesmo estado ao abrir/recarregar.
@@ -4763,8 +4848,8 @@ carregarUsuarioAtual();
   fetch('/dados.json?t='+Date.now())
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(arquivo){
-      if(arquivo && arquivo.projects && arquivo.projects.length){
-        // O servidor é a fonte da verdade: usa sempre o estado central
+      if(arquivo && Array.isArray(arquivo.projects)){
+        // O servidor é a fonte da verdade (filial ativa): usa sempre o estado central, mesmo vazio
         S = arquivo;
         window._rev = (arquivo._rev!=null ? arquivo._rev : 0); // revisão p/ controle de concorrência
         localStorage.setItem('dc_v5', JSON.stringify(S));

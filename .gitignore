@@ -27,6 +27,10 @@ atividade.db
 # Sessões ativas (runtime, local)
 sessoes.json
 
+# Multi-filial (dados de runtime, por filial)
+filiais/
+filiais.json
+
 # Python
 __pycache__/
 *.pyc
