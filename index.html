@@ -3299,8 +3299,10 @@ function deleteNFAudit(idx){
   }catch(e){}
 })();
 load();
-// Só a Matriz abre no Dashboard de projetos. As demais filiais abrem no painel de notas.
-if((window._filialAtual||'matriz')!=='matriz'){ S.view='painel'; S.curProj=null; }
+// Padrao: ao abrir o app ou trocar de base, sempre cair no dashboard da base.
+// Matriz -> dashboard de projetos; demais filiais -> painel de notas.
+S.view = ((window._filialAtual||'matriz')==='matriz') ? 'dashboard' : 'painel';
+S.curProj = null;
 // Timestamp dos dados do localStorage ANTES das IIFEs de criacao (para comparar com o arquivo)
 var _lsTime = (S && S._savedAt) ? S._savedAt : 0;
 // NOTA: o reset destrutivo de schema foi REMOVIDO. As IIFEs abaixo usam if(!find),
