@@ -329,6 +329,7 @@ body.ro .ro-hide{display:none !important}
     </div>
     <p class="sidebar-section">Navegação</p>
     <div class="nav-item active" id="grp-dashboard" onclick="switchView('dashboard')"><span class="icon">◈</span><span class="lbl">Dashboard</span></div>
+    <div class="nav-item" id="grp-painel" onclick="switchView('painel')" style="display:none"><span class="icon">◈</span><span class="lbl">Dashboard</span></div>
     <div class="nav-item" id="grp-notas" onclick="switchView('nf')"><span class="icon">◉</span><span class="lbl">Notas Fiscais</span><span class="cnt" id="nf-count">0</span></div>
     <div class="nav-item" id="grp-analise" onclick="switchView('comp')"><span class="icon">⊞</span><span class="lbl">Análise</span></div>
     <div class="nav-item" id="grp-precos" onclick="switchView('preco')"><span class="icon">📊</span><span class="lbl">Preços &amp; Compras</span></div>
@@ -402,6 +403,30 @@ body.ro .ro-hide{display:none !important}
       </div>
 
       <!-- PROJETO -->
+      <!-- PAINEL (dashboard de notas, p/ filiais) -->
+      <div class="page" id="page-painel">
+        <div class="metrics-row">
+          <div class="mc green"><div class="mc-lbl">Total em notas</div><div class="mc-val green" id="pn-total">R$ 0</div><div class="mc-sub" id="pn-periodo"></div></div>
+          <div class="mc blue"><div class="mc-lbl">Nº de notas</div><div class="mc-val blue" id="pn-num">0</div></div>
+          <div class="mc"><div class="mc-lbl">Ticket médio</div><div class="mc-val neu" id="pn-ticket">R$ 0</div></div>
+          <div class="mc amber"><div class="mc-lbl">Fornecedores</div><div class="mc-val amber" id="pn-forn">0</div></div>
+        </div>
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-hd"><div class="card-title">Gasto por mês</div></div>
+            <div style="position:relative;height:280px"><canvas id="painel-bar-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-hd"><div class="card-title">Gasto por categoria</div></div>
+            <div style="position:relative;height:280px"><canvas id="painel-cat-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-title">Top fornecedores</div></div>
+          <div id="painel-top"></div>
+        </div>
+      </div>
+
       <div class="page" id="page-projeto">
         <div id="tc-resumo">
           <div class="metrics-row" id="proj-metrics"></div>
@@ -1315,8 +1340,11 @@ function switchNFTab(t){
 function aplicarRegrasFilial(){
   var ehMatriz=(window._filialAtual||'matriz')==='matriz';
   var dash=document.getElementById('grp-dashboard');
+  var painel=document.getElementById('grp-painel');
   var proj=document.getElementById('secao-projetos');
+  // Matriz: dashboard de projetos. Demais filiais: dashboard de notas (painel).
   if(dash) dash.style.display=ehMatriz?'flex':'none';
+  if(painel) painel.style.display=ehMatriz?'none':'flex';
   if(proj) proj.style.display=ehMatriz?'block':'none';
 }
 function renderAll(){renderSidebar();renderTopbar();updateSidebarLogo();renderPages();populateNFFilters();aplicarRegrasFilial();document.getElementById('nf-count').textContent=S.nfs.length;}
@@ -1342,6 +1370,7 @@ function renderSidebar(){
 // Grupos de navegação (compacta 12 abas em 6). Nada é removido — só reorganizado.
 var GRUPOS=[
   {g:'dashboard', views:['dashboard']},
+  {g:'painel',    views:['painel']},
   {g:'notas',     views:['nf','audit','alertas']},
   {g:'analise',   views:['comp','subestimados']},
   {g:'precos',    views:['preco','mercado','compras-dash']},
@@ -1350,6 +1379,7 @@ var GRUPOS=[
 ];
 var VIEW_INFO={
   dashboard:{t:'Dashboard',s:'Visão geral',l:'Dashboard'},
+  painel:{t:'Dashboard',s:'Visão geral das notas',l:'Dashboard'},
   nf:{t:'Notas Fiscais',s:'Relatório',l:'Notas Fiscais'},
   audit:{t:'Auditoria',s:'Integridade de dados',l:'Auditoria'},
   comp:{t:'Comparativo',s:'Análise de redução',l:'Comparativo'},
@@ -1378,7 +1408,7 @@ function renderSubnav(){
 }
 
 function renderTopbar(){
-  ['dashboard','notas','analise','precos','operacao','timeline'].forEach(function(g){var el=document.getElementById('grp-'+g);if(el)el.classList.remove('active');});
+  ['dashboard','painel','notas','analise','precos','operacao','timeline'].forEach(function(g){var el=document.getElementById('grp-'+g);if(el)el.classList.remove('active');});
   const tabs=document.getElementById('proj-tabs');
   const btnItem=document.getElementById('btn-add-item');const btnSvc=document.getElementById('btn-add-svc');const btnNF=document.getElementById('btn-add-nf');
   tabs.style.display='none';btnItem.style.display='none';btnSvc.style.display='none';btnNF.style.display='none';
@@ -1700,6 +1730,7 @@ function exportarItensAcima(){
 
 function renderPages(){
   document.getElementById('page-dashboard').classList.toggle('active',S.view==='dashboard');
+  document.getElementById('page-painel').classList.toggle('active',S.view==='painel');
   document.getElementById('page-projeto').classList.toggle('active',S.view==='projeto');
   document.getElementById('page-nf').classList.toggle('active',S.view==='nf');
   document.getElementById('page-comp').classList.toggle('active',S.view==='comp');
@@ -1715,6 +1746,7 @@ function renderPages(){
   document.getElementById('page-analista').classList.toggle('active',S.view==='analista');
   document.getElementById('page-historico').classList.toggle('active',S.view==='historico');
   if(S.view==='dashboard')renderDashboard();
+  if(S.view==='painel')renderPainel();
   if(S.view==='projeto')renderProjeto();
   if(S.view==='nf')renderNFPage();
   if(S.view==='comp')renderComparativo();
@@ -1743,6 +1775,44 @@ function setDashMes(v){ S.dashMes=v; renderDashboard(); }
 function setDashProj(v){ S.dashProj=v; renderDashboard(); }
 function limparDashFiltros(){ S.dashMes=''; S.dashProj=''; renderDashboard(); }
 
+function renderPainel(){
+  var nfs=S.nfs||[];
+  var total=nfs.reduce(function(s,n){return s+(n.valor||0);},0);
+  document.getElementById('pn-total').textContent=brl(total);
+  document.getElementById('pn-num').textContent=nfs.length;
+  document.getElementById('pn-ticket').textContent=brl(nfs.length?total/nfs.length:0);
+  var forn={}, mes={}, cat={};
+  nfs.forEach(function(n){
+    var f=(n.fornecedor||'—'); forn[f]=(forn[f]||0)+(n.valor||0);
+    var ym=(n.data||'').slice(0,7); if(ym){mes[ym]=(mes[ym]||0)+(n.valor||0);}
+    var c=(n.obs||'(sem categoria)'); cat[c]=(cat[c]||0)+(n.valor||0);
+  });
+  document.getElementById('pn-forn').textContent=Object.keys(forn).length;
+  var meses=Object.keys(mes).sort();
+  document.getElementById('pn-periodo').textContent=meses.length?(meses[0]+' a '+meses[meses.length-1]):'';
+  destroyChart('painel-bar'); destroyChart('painel-cat');
+  if(meses.length){
+    charts['painel-bar']=new Chart(document.getElementById('painel-bar-chart'),{type:'bar',
+      data:{labels:meses,datasets:[{data:meses.map(function(m){return mes[m];}),backgroundColor:'rgba(0,212,138,.55)',borderRadius:4}]},
+      options:chartOpts()});
+  }
+  var cats=Object.keys(cat).sort(function(a,b){return cat[b]-cat[a];});
+  if(cats.length){
+    charts['painel-cat']=new Chart(document.getElementById('painel-cat-chart'),{type:'bar',
+      data:{labels:cats,datasets:[{data:cats.map(function(c){return cat[c];}),backgroundColor:'rgba(77,159,255,.55)',borderRadius:4}]},
+      options:chartOpts()});
+  }
+  var top=Object.keys(forn).sort(function(a,b){return forn[b]-forn[a];}).slice(0,10);
+  var html;
+  if(!nfs.length){
+    html='<div class="empty"><div class="empty-icon">◉</div><div class="empty-title">Nenhuma nota ainda</div><div class="empty-sub">Importe notas para ver o painel.</div></div>';
+  } else {
+    html='<table class="tbl"><thead><tr><th>Fornecedor</th><th>Total</th></tr></thead><tbody>';
+    top.forEach(function(f){ html+='<tr><td>'+_escH(f)+'</td><td>'+brl(forn[f])+'</td></tr>'; });
+    html+='</tbody></table>';
+  }
+  document.getElementById('painel-top').innerHTML=html;
+}
 function renderDashboard(){
   if(S.dashMes===undefined)S.dashMes='';
   if(S.dashProj===undefined)S.dashProj='';
@@ -3229,8 +3299,8 @@ function deleteNFAudit(idx){
   }catch(e){}
 })();
 load();
-// Só a Matriz abre no Dashboard de projetos. As demais filiais abrem sempre em Notas Fiscais.
-if((window._filialAtual||'matriz')!=='matriz'){ S.view='nf'; S.curProj=null; }
+// Só a Matriz abre no Dashboard de projetos. As demais filiais abrem no painel de notas.
+if((window._filialAtual||'matriz')!=='matriz'){ S.view='painel'; S.curProj=null; }
 // Timestamp dos dados do localStorage ANTES das IIFEs de criacao (para comparar com o arquivo)
 var _lsTime = (S && S._savedAt) ? S._savedAt : 0;
 // NOTA: o reset destrutivo de schema foi REMOVIDO. As IIFEs abaixo usam if(!find),
