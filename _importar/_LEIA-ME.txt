@@ -1,0 +1,30 @@
+=========================================================
+  AUTO-IMPORTADOR DE NOTAS FISCAIS
+=========================================================
+
+COMO USAR
+---------
+1. Exporte do ERP a Resumida e a Detalhada do periodo que quer.
+2. Largue os dois arquivos .xls DENTRO da pasta da filial correta:
+
+   _importar/matriz/              -> Matriz (Vigillare)
+   _importar/filial_de_canela/    -> Filial de Canela
+   _importar/evo_wl_ltda/         -> EVO WL LTDA
+   _importar/nex_ai_ltda/         -> NEX AI LTDA
+   _importar/vigitrack/           -> VIGITRACK
+   _importar/vigitrack_filial/    -> VIGITRACK - FILIAL
+
+3. Pronto. A cada 15 minutos o sistema importa sozinho:
+   - junta Resumida + Detalhada (valor cheio da nota)
+   - PULA notas que ja existem (mesmo numero + valor) -> nao duplica
+   - move os arquivos para a subpasta 'processados/'
+
+OBSERVACOES
+-----------
+- A pasta define a filial. NAO precisa avisar ninguem.
+- Pode largar so a Resumida (usa o Valor Bruto) ou as duas (recomendado).
+- Categorias entram em branco (classifique no app ou peca ao assistente).
+- O registro de cada importacao fica em _importar/_log.txt
+- Se a mesma nota aparecer em duas filiais, a auditoria diaria avisa
+  (relatorio em Relatorios/auditoria_ultima.txt). A remocao de duplicata
+  e feita sob seu comando, nunca automatica.

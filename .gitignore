@@ -31,6 +31,10 @@ sessoes.json
 filiais/
 filiais.json
 
+# Inbox do auto-importador (runtime; mantem so o LEIA-ME)
+_importar/*/
+_importar/_log.txt
+
 # Python
 __pycache__/
 *.pyc
