@@ -529,6 +529,20 @@ body.ro .ro-hide{display:none !important}
       </div>
 
       <!-- AUDITORIA PAGE -->
+      <!-- FINANCEIRO GERADO (verificacao) -->
+      <div class="page" id="page-financeiro">
+        <div class="metrics-row">
+          <div class="mc green"><div class="mc-lbl">Gerou financeiro (Sim)</div><div class="mc-val green" id="fin-sim">0</div></div>
+          <div class="mc red"><div class="mc-lbl">Não gerou financeiro</div><div class="mc-val red" id="fin-nao">0</div></div>
+          <div class="mc"><div class="mc-lbl">Valor não gerado</div><div class="mc-val neu" id="fin-nao-valor">R$ 0</div></div>
+          <div class="mc amber"><div class="mc-lbl">Sem informação</div><div class="mc-val amber" id="fin-sem">0</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-title">Notas que NÃO geraram financeiro — verificar</div></div>
+          <div id="fin-tabela"></div>
+        </div>
+      </div>
+
       <div class="page" id="page-audit">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
           <div><p class="eyebrow" style="margin-bottom:6px">Integridade de Dados</p><h2 style="font-family:var(--serif);font-size:24px;font-weight:800;letter-spacing:-.01em">🔍 Auditoria</h2></div>
@@ -1371,7 +1385,7 @@ function renderSidebar(){
 var GRUPOS=[
   {g:'dashboard', views:['dashboard']},
   {g:'painel',    views:['painel']},
-  {g:'notas',     views:['nf','audit','alertas']},
+  {g:'notas',     views:['nf','financeiro','audit','alertas']},
   {g:'analise',   views:['comp','subestimados']},
   {g:'precos',    views:['preco','mercado','compras-dash']},
   {g:'operacao',  views:['analista','sugestoes','gastos','historico']},
@@ -1381,6 +1395,7 @@ var VIEW_INFO={
   dashboard:{t:'Dashboard',s:'Visão geral',l:'Dashboard'},
   painel:{t:'Dashboard',s:'Visão geral das notas',l:'Dashboard'},
   nf:{t:'Notas Fiscais',s:'Relatório',l:'Notas Fiscais'},
+  financeiro:{t:'Financeiro Gerado',s:'Notas a verificar',l:'Financeiro'},
   audit:{t:'Auditoria',s:'Integridade de dados',l:'Auditoria'},
   comp:{t:'Comparativo',s:'Análise de redução',l:'Comparativo'},
   subestimados:{t:'Itens Subestimados',s:'Previsto abaixo do real',l:'Subestimados'},
@@ -1733,6 +1748,7 @@ function renderPages(){
   document.getElementById('page-painel').classList.toggle('active',S.view==='painel');
   document.getElementById('page-projeto').classList.toggle('active',S.view==='projeto');
   document.getElementById('page-nf').classList.toggle('active',S.view==='nf');
+  document.getElementById('page-financeiro').classList.toggle('active',S.view==='financeiro');
   document.getElementById('page-comp').classList.toggle('active',S.view==='comp');
   document.getElementById('page-audit').classList.toggle('active',S.view==='audit');
   document.getElementById('page-preco').classList.toggle('active',S.view==='preco');
@@ -1749,6 +1765,7 @@ function renderPages(){
   if(S.view==='painel')renderPainel();
   if(S.view==='projeto')renderProjeto();
   if(S.view==='nf')renderNFPage();
+  if(S.view==='financeiro')renderFinanceiro();
   if(S.view==='comp')renderComparativo();
   if(S.view==='audit')runAuditoria();
   if(S.view==='preco')carregarAnalisePrecos();
@@ -1775,6 +1792,32 @@ function setDashMes(v){ S.dashMes=v; renderDashboard(); }
 function setDashProj(v){ S.dashProj=v; renderDashboard(); }
 function limparDashFiltros(){ S.dashMes=''; S.dashProj=''; renderDashboard(); }
 
+function renderFinanceiro(){
+  var nfs=S.nfs||[];
+  var sim=0, sem=0, naoArr=[];
+  nfs.forEach(function(n){
+    var v=(n.finGerado||'').trim();
+    if(v==='Sim') sim++;
+    else if(!v) sem++;
+    else naoArr.push(n);
+  });
+  document.getElementById('fin-sim').textContent=sim;
+  document.getElementById('fin-nao').textContent=naoArr.length;
+  document.getElementById('fin-sem').textContent=sem;
+  document.getElementById('fin-nao-valor').textContent=brl(naoArr.reduce(function(s,n){return s+(n.valor||0);},0));
+  var alvo=document.getElementById('fin-tabela');
+  if(!naoArr.length){
+    alvo.innerHTML='<div class="empty"><div class="empty-icon">✓</div><div class="empty-title">Nada a verificar</div><div class="empty-sub">Nenhuma nota com "Gerou Financeiro = Não".</div></div>';
+    return;
+  }
+  naoArr.sort(function(a,b){return (a.data||'')<(b.data||'')?1:-1;});
+  var h='<table class="tbl"><thead><tr><th>NF</th><th>Data</th><th>Fornecedor</th><th>Categoria</th><th>Valor</th></tr></thead><tbody>';
+  naoArr.forEach(function(n){
+    h+='<tr><td>'+_escH(String(n.numero||''))+'</td><td>'+_escH(n.data||'')+'</td><td>'+_escH(n.fornecedor||'')+'</td><td>'+_escH(n.obs||'')+'</td><td>'+brl(n.valor)+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  alvo.innerHTML=h;
+}
 function renderPainel(){
   var nfs=S.nfs||[];
   var total=nfs.reduce(function(s,n){return s+(n.valor||0);},0);

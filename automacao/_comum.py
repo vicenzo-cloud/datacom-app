@@ -145,7 +145,7 @@ def nfs_de_arquivos(resumidas, detalhadas):
         res += parse(p)
     for p in detalhadas:
         det += parse(p)
-    total_nota, det_forn, det_itens = {}, {}, {}
+    total_nota, det_forn, det_itens, det_fin = {}, {}, {}, {}
     for r in det:
         n = num(r)
         if not n:
@@ -154,6 +154,8 @@ def nfs_de_arquivos(resumidas, detalhadas):
             total_nota[n] = brl(r.get('Total Nota'))
         if n not in det_forn:
             det_forn[n] = (r.get('Fornecedor') or '').strip()
+        if n not in det_fin:
+            det_fin[n] = (r.get('Gerou Financeiro') or '').strip()
         esp = (r.get('Especificação') or '').strip()
         if esp:
             det_itens.setdefault(n, []).append(esp)
@@ -170,7 +172,7 @@ def nfs_de_arquivos(resumidas, detalhadas):
         nfs.append({'id': uid(), 'numero': n, 'fornecedor': forn, 'valor': valor,
                     'data': data_iso(r.get('Data emissão')),
                     'projId': '', 'obs': classificar(forn, det_itens.get(n)),
-                    'centro': '', 'det': ''})
+                    'centro': '', 'det': '', 'finGerado': det_fin.get(n, '')})
     # Se nao houve resumida mas ha detalhada, monta a partir da detalhada
     if not res and det:
         for n in sorted(total_nota):
@@ -178,6 +180,6 @@ def nfs_de_arquivos(resumidas, detalhadas):
             nfs.append({'id': uid(), 'numero': n, 'fornecedor': forn,
                         'valor': total_nota[n], 'data': '',
                         'projId': '', 'obs': classificar(forn, det_itens.get(n)),
-                        'centro': '', 'det': ''})
+                        'centro': '', 'det': '', 'finGerado': det_fin.get(n, '')})
     nfs.sort(key=lambda x: x['data'])
     return nfs
