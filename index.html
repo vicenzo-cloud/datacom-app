@@ -341,6 +341,7 @@ body.ro .ro-hide{display:none !important}
       <p class="sidebar-section">Projetos</p>
       <div id="proj-list"></div>
       <button class="btn-new-proj" onclick="openModal('modal-proj')">+ Novo projeto</button>
+      <button class="btn-new-proj" onclick="openModal('modal-import-proj')">📥 Importar planilha</button>
     </div>
     <div id="user-info" style="padding:12px 16px;margin-top:8px;border-top:1px solid var(--border);line-height:1.5"></div>
   </aside>
@@ -771,6 +772,23 @@ body.ro .ro-hide{display:none !important}
     </div>
     <button class="btn btn-primary" id="btn-importar" onclick="importarRelatorios()" style="width:100%">Processar e atualizar</button>
     <div id="imp-status" style="margin-top:14px;font-size:12px;color:#aab3ae;white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
+  </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR PLANILHA DE PROJETO -->
+<div class="modal-overlay" id="modal-import-proj" onclick="closeOut(event,'modal-import-proj')">
+  <div class="modal" style="max-width:560px"><div class="modal-hd"><div class="modal-title">📥 Importar planilha de projeto</div><button class="modal-x" onclick="closeModal('modal-import-proj')">✕</button></div>
+  <div style="padding:4px 2px;font-size:13px;color:var(--text);line-height:1.7">
+    <p style="margin-bottom:12px">Como cada planilha de projeto tem um formato, a importação é feita com o assistente (ele lê as colunas e cria o projeto certinho).</p>
+    <ol style="margin:0 0 14px 18px;color:#aab3ae">
+      <li>Salve a planilha do projeto (.xls, .xlsx ou .csv) na pasta:</li>
+    </ol>
+    <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:12px;color:var(--accent);word-break:break-all;margin-bottom:14px">_importar/_projetos/</div>
+    <ol start="2" style="margin:0 0 4px 18px;color:#aab3ae">
+      <li>Peça ao assistente: <strong style="color:var(--text)">"importa os projetos da pasta"</strong>.</li>
+    </ol>
+    <p style="margin-top:12px;color:#aab3ae">Ele confirma o mapeamento das colunas com você e o Dashboard mostra a análise (previsto × real, economia, por categoria) automaticamente.</p>
   </div>
   </div>
 </div>
