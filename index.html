@@ -360,6 +360,8 @@ body.ro .ro-hide{display:none !important}
         </div>
         <button class="btn btn-primary" id="btn-add-item" style="display:none" onclick="novoItem()">+ Material</button>
         <button class="btn btn-secondary" id="btn-add-svc" style="display:none" onclick="novoSvc()">+ Serviço</button>
+        <button class="btn btn-secondary" id="btn-exp-proj" style="display:none" onclick="exportarProjeto()">📤 Exportar</button>
+        <label class="btn btn-secondary" id="btn-imp-proj" style="display:none">📥 Importar<input type="file" accept=".xls,.xlsx,.csv" onchange="importarProjetoArquivo(event)" style="display:none"></label>
         <button class="btn btn-primary" id="btn-add-nf" style="display:none" onclick="openModal('modal-nf')">+ Nota Fiscal</button>
       </div>
     </div>
@@ -1444,7 +1446,8 @@ function renderTopbar(){
   ['dashboard','painel','notas','analise','precos','operacao','timeline'].forEach(function(g){var el=document.getElementById('grp-'+g);if(el)el.classList.remove('active');});
   const tabs=document.getElementById('proj-tabs');
   const btnItem=document.getElementById('btn-add-item');const btnSvc=document.getElementById('btn-add-svc');const btnNF=document.getElementById('btn-add-nf');
-  tabs.style.display='none';btnItem.style.display='none';btnSvc.style.display='none';btnNF.style.display='none';
+  const btnExp=document.getElementById('btn-exp-proj');const btnImp=document.getElementById('btn-imp-proj');
+  tabs.style.display='none';btnItem.style.display='none';btnSvc.style.display='none';btnNF.style.display='none';btnExp.style.display='none';btnImp.style.display='none';
   const title=document.getElementById('topbar-title');const sub=document.getElementById('topbar-sub');
   if(VIEW_INFO[S.view]){ title.childNodes[0].textContent=VIEW_INFO[S.view].t+' '; sub.textContent=VIEW_INFO[S.view].s; }
   if(S.view==='nf') btnNF.style.display='flex';
@@ -1452,6 +1455,7 @@ function renderTopbar(){
     const proj=S.projects.find(function(p){return p.id===S.curProj;});
     if(proj){title.childNodes[0].textContent=proj.nome+' ';sub.textContent=proj.cliente||'Projeto';tabs.style.display='flex';
       ['resumo','materiais','servicos'].forEach(function(t){document.getElementById('tab-'+t).classList.toggle('active',S.tab===t);});
+      btnExp.style.display='inline-flex'; if(!(window._user&&window._user.papel!=='editor')) btnImp.style.display='inline-flex';
       if(S.tab==='materiais')btnItem.style.display='flex';
       if(S.tab==='servicos')btnSvc.style.display='flex';}
   }
@@ -2035,6 +2039,59 @@ function renderDashboard(){
 }
 
 // ── PROJETO ──
+// ── Exportar / Importar projeto (planilha .xlsx) ──
+function exportarProjeto(){
+  var p=S.projects.find(function(x){return x.id===S.curProj;});
+  if(!p){toast('Abra um projeto primeiro','error');return;}
+  var rows=[];
+  (p.items||[]).forEach(function(i){rows.push({Tipo:'Material',Item:i.nome,Categoria:i.cat||'',Qtd:'',Fornecedor:'',Previsto:i.prev||0,Real:i.real||0});});
+  (p.services||[]).forEach(function(s){rows.push({Tipo:'Serviço',Item:s.nome,Categoria:s.cat||'',Qtd:s.qtd||1,Fornecedor:s.fornecedor||'',Previsto:s.prev||0,Real:s.real||0});});
+  if(!rows.length){toast('Projeto sem itens para exportar','error');return;}
+  var ws=XLSX.utils.json_to_sheet(rows,{header:['Tipo','Item','Categoria','Qtd','Fornecedor','Previsto','Real']});
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Projeto');
+  var nome=(p.nome||'projeto').replace(/[^a-z0-9]+/gi,'_').replace(/^_|_$/g,'')+'.xlsx';
+  XLSX.writeFile(wb,nome);
+  logAtividade('Projeto exportado', p.nome);
+  toast('Projeto exportado!');
+}
+function importarProjetoArquivo(ev){
+  if(!exigeEditor()){ ev.target.value=''; return; }
+  var p=S.projects.find(function(x){return x.id===S.curProj;});
+  var file=ev.target.files&&ev.target.files[0]; ev.target.value='';
+  if(!file)return;
+  if(!p){toast('Abra um projeto primeiro','error');return;}
+  function num(v){ v=String(v==null?'':v).trim().replace(/\s/g,''); if(v.indexOf(',')>=0)v=v.replace(/\./g,'').replace(',','.'); return parseFloat(v)||0; }
+  function val(r,keys){ for(var k in r){ var kn=String(k).toLowerCase().trim(); for(var j=0;j<keys.length;j++){ if(kn===keys[j]) return r[k]; } } return ''; }
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!rows.length){toast('Planilha vazia','error');return;}
+      var items=[],svcs=[];
+      rows.forEach(function(r){
+        var nome=String(val(r,['item','descrição','descricao','nome','material','serviço','servico','produto'])||'').trim();
+        if(!nome)return;
+        var tipo=String(val(r,['tipo'])||'').toLowerCase();
+        var prev=num(val(r,['previsto','prev','orçado','orcado','orcamento','orçamento']));
+        var real=num(val(r,['real','realizado','gasto']));
+        var cat=String(val(r,['categoria','cat'])||'').trim();
+        var forn=String(val(r,['fornecedor','forn'])||'').trim();
+        var qtd=num(val(r,['qtd','quantidade']))||1;
+        if(tipo.indexOf('serv')>=0){ svcs.push({id:uid(),nome:nome,qtd:qtd,fornecedor:forn,prev:prev,real:real,cat:cat,extra:false}); }
+        else { items.push({id:uid(),nome:nome,prev:prev,real:real,cat:cat,extra:false}); }
+      });
+      if(!items.length&&!svcs.length){toast('Não encontrei itens válidos (precisa da coluna Item/Descrição).','error');return;}
+      if(!confirm('Importar para "'+p.nome+'":\n'+items.length+' material(is) e '+svcs.length+' serviço(s).\n\nIsso SUBSTITUI os itens e serviços atuais deste projeto. Continuar?'))return;
+      p.items=items; p.services=svcs;
+      persist();
+      logAtividade('Projeto importado (planilha)', p.nome+' · '+items.length+' mat, '+svcs.length+' svc');
+      renderAll(); toast('Projeto importado!');
+    }catch(err){ toast('Erro ao ler planilha: '+err.message,'error'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
 function renderProjeto(){
   const proj=S.projects.find(function(p){return p.id===S.curProj;});if(!proj){switchView('dashboard');return;}
   proj.items=proj.items||[];proj.services=proj.services||[];
