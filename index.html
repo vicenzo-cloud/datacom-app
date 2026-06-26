@@ -355,6 +355,7 @@ body.ro .ro-hide{display:none !important}
         <button class="btn btn-secondary btn-sm" onclick="location.reload()" style="font-size:11px">🔄 Recarregar</button>
         <div class="tabs" id="proj-tabs" style="display:none">
           <button class="tab" id="tab-resumo" onclick="switchTab('resumo')">Resumo</button>
+          <button class="tab" id="tab-etapas" onclick="switchTab('etapas')" style="display:none">Etapas</button>
           <button class="tab" id="tab-materiais" onclick="switchTab('materiais')">Materiais</button>
           <button class="tab" id="tab-servicos" onclick="switchTab('servicos')">Serviços</button>
         </div>
@@ -439,6 +440,7 @@ body.ro .ro-hide{display:none !important}
             <div class="card"><div class="card-hd"><div class="card-title">Composição do custo real</div></div><div style="position:relative;height:220px"><canvas id="donutChartProj"></canvas></div></div>
           </div>
         </div>
+        <div id="tc-etapas" style="display:none"><div id="etapas-content"></div></div>
         <div id="tc-materiais" style="display:none"><div id="mat-content"></div></div>
         <div id="tc-servicos" style="display:none"><div id="svc-content"></div></div>
       </div>
@@ -1454,7 +1456,10 @@ function renderTopbar(){
   if(S.view==='projeto'){
     const proj=S.projects.find(function(p){return p.id===S.curProj;});
     if(proj){title.childNodes[0].textContent=proj.nome+' ';sub.textContent=proj.cliente||'Projeto';tabs.style.display='flex';
-      ['resumo','materiais','servicos'].forEach(function(t){document.getElementById('tab-'+t).classList.toggle('active',S.tab===t);});
+      var temEtapas=projTemEtapas(proj);
+      var tabEt=document.getElementById('tab-etapas'); if(tabEt) tabEt.style.display=temEtapas?'block':'none';
+      if(S.tab==='etapas' && !temEtapas) S.tab='resumo';
+      ['resumo','etapas','materiais','servicos'].forEach(function(t){var b=document.getElementById('tab-'+t);if(b)b.classList.toggle('active',S.tab===t);});
       btnExp.style.display='inline-flex'; if(!(window._user&&window._user.papel!=='editor')) btnImp.style.display='inline-flex';
       if(S.tab==='materiais')btnItem.style.display='flex';
       if(S.tab==='servicos')btnSvc.style.display='flex';}
@@ -2044,10 +2049,10 @@ function exportarProjeto(){
   var p=S.projects.find(function(x){return x.id===S.curProj;});
   if(!p){toast('Abra um projeto primeiro','error');return;}
   var rows=[];
-  (p.items||[]).forEach(function(i){rows.push({Tipo:'Material',Item:i.nome,Categoria:i.cat||'',Qtd:'',Fornecedor:'',Previsto:i.prev||0,Real:i.real||0});});
-  (p.services||[]).forEach(function(s){rows.push({Tipo:'Serviço',Item:s.nome,Categoria:s.cat||'',Qtd:s.qtd||1,Fornecedor:s.fornecedor||'',Previsto:s.prev||0,Real:s.real||0});});
+  (p.items||[]).forEach(function(i){rows.push({Etapa:i.etapa||'',Tipo:'Material',Item:i.nome,Categoria:i.cat||'',Qtd:'',Fornecedor:'',Previsto:i.prev||0,Real:i.real||0});});
+  (p.services||[]).forEach(function(s){rows.push({Etapa:s.etapa||'',Tipo:'Serviço',Item:s.nome,Categoria:s.cat||'',Qtd:s.qtd||1,Fornecedor:s.fornecedor||'',Previsto:s.prev||0,Real:s.real||0});});
   if(!rows.length){toast('Projeto sem itens para exportar','error');return;}
-  var ws=XLSX.utils.json_to_sheet(rows,{header:['Tipo','Item','Categoria','Qtd','Fornecedor','Previsto','Real']});
+  var ws=XLSX.utils.json_to_sheet(rows,{header:['Etapa','Tipo','Item','Categoria','Qtd','Fornecedor','Previsto','Real']});
   var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Projeto');
   var nome=(p.nome||'projeto').replace(/[^a-z0-9]+/gi,'_').replace(/^_|_$/g,'')+'.xlsx';
   XLSX.writeFile(wb,nome);
@@ -2078,9 +2083,10 @@ function importarProjetoArquivo(ev){
         var real=num(val(r,['real','realizado','gasto']));
         var cat=String(val(r,['categoria','cat'])||'').trim();
         var forn=String(val(r,['fornecedor','forn'])||'').trim();
+        var etapa=String(val(r,['etapa','fase'])||'').trim();
         var qtd=num(val(r,['qtd','quantidade']))||1;
-        if(tipo.indexOf('serv')>=0){ svcs.push({id:uid(),nome:nome,qtd:qtd,fornecedor:forn,prev:prev,real:real,cat:cat,extra:false}); }
-        else { items.push({id:uid(),nome:nome,prev:prev,real:real,cat:cat,extra:false}); }
+        if(tipo.indexOf('serv')>=0){ svcs.push({id:uid(),nome:nome,qtd:qtd,fornecedor:forn,prev:prev,real:real,cat:cat,extra:false,etapa:etapa}); }
+        else { items.push({id:uid(),nome:nome,prev:prev,real:real,cat:cat,extra:false,etapa:etapa}); }
       });
       if(!items.length&&!svcs.length){toast('Não encontrei itens válidos (precisa da coluna Item/Descrição).','error');return;}
       if(!confirm('Importar para "'+p.nome+'":\n'+items.length+' material(is) e '+svcs.length+' serviço(s).\n\nIsso SUBSTITUI os itens e serviços atuais deste projeto. Continuar?'))return;
@@ -2097,10 +2103,61 @@ function renderProjeto(){
   proj.items=proj.items||[];proj.services=proj.services||[];
   proj.items=proj.items.map(function(i){return Object.assign({},i,{real:isNaN(Number(i.real))?0:Number(i.real),prev:isNaN(Number(i.prev))?0:Number(i.prev)});});
   proj.services=proj.services.map(function(i){return Object.assign({},i,{real:isNaN(Number(i.real))?0:Number(i.real),prev:isNaN(Number(i.prev))?0:Number(i.prev)});});
-  ['resumo','materiais','servicos'].forEach(function(t){document.getElementById('tc-'+t).style.display=S.tab===t?'block':'none';});
+  ['resumo','etapas','materiais','servicos'].forEach(function(t){var el=document.getElementById('tc-'+t);if(el)el.style.display=S.tab===t?'block':'none';});
   if(S.tab==='resumo')renderResumo(proj);
+  if(S.tab==='etapas')renderEtapas(proj);
   if(S.tab==='materiais')renderMateriais(proj);
   if(S.tab==='servicos')renderServicos(proj);
+}
+
+// ── ETAPAS ──
+function projTemEtapas(proj){
+  return (proj.items||[]).concat(proj.services||[]).some(function(i){return (i.etapa||'').trim();});
+}
+function renderEtapas(proj){
+  var alvo=document.getElementById('etapas-content');
+  var todos=(proj.items||[]).concat(proj.services||[]);
+  var grupos={};
+  todos.forEach(function(i){ var e=(i.etapa||'Sem etapa'); (grupos[e]=grupos[e]||[]).push(i); });
+  var nomes=Object.keys(grupos).sort();
+  var prevT=todos.reduce(function(s,i){return s+(i.prev||0);},0);
+  var realT=todos.reduce(function(s,i){return s+(i.real||0);},0);
+  var diffT=realT-prevT, clsT=diffT>0?'red':'green';
+  var compradas=nomes.filter(function(e){return grupos[e].some(function(i){return (i.real||0)>0;});}).length;
+  var h='';
+  // Visão geral do projeto
+  h+='<div class="metrics-row" style="margin-bottom:14px">'
+    +'<div class="mc blue"><div class="mc-lbl">Etapas</div><div class="mc-val blue">'+nomes.length+'</div><div class="mc-sub">'+compradas+' em execução</div></div>'
+    +'<div class="mc"><div class="mc-lbl">Previsto total</div><div class="mc-val neu">'+brl(prevT)+'</div></div>'
+    +'<div class="mc '+clsT+'"><div class="mc-lbl">Real até agora</div><div class="mc-val '+clsT+'">'+brl(realT)+'</div></div>'
+    +'<div class="mc"><div class="mc-lbl">Var. (gasto vs previsto)</div><div class="mc-val '+(diffT>0?'red':'green')+'">'+(diffT>0?'+':'')+brl(diffT)+'</div><div class="mc-sub">'+(prevT?((diffT/prevT)*100).toFixed(1):'0')+'%</div></div>'
+    +'</div>';
+  h+='<div class="note-box green" style="margin-bottom:18px">As análises abaixo são por etapa (compra). O topo é o projeto inteiro somando todas as etapas.</div>';
+  // Cada etapa
+  nomes.forEach(function(e){
+    var its=grupos[e];
+    var p=its.reduce(function(s,i){return s+(i.prev||0);},0);
+    var r=its.reduce(function(s,i){return s+(i.real||0);},0);
+    var d=r-p, cls=d>0?'red':'green';
+    var executada=its.some(function(i){return (i.real||0)>0;});
+    h+='<div class="card" style="margin-bottom:14px">'
+      +'<div class="card-hd"><div class="card-title">'+_escH(e)+'</div>'
+      +'<span class="badge '+(executada?'badge-green':'badge-amber')+'">'+(executada?'Em execução / comprada':'A comprar')+'</span></div>'
+      +'<div class="metrics-row" style="margin-bottom:12px">'
+        +'<div class="mc"><div class="mc-lbl">Previsto</div><div class="mc-val neu">'+brl(p)+'</div><div class="mc-sub">'+its.length+' linhas</div></div>'
+        +'<div class="mc '+cls+'"><div class="mc-lbl">Real</div><div class="mc-val '+cls+'">'+brl(r)+'</div></div>'
+        +'<div class="mc"><div class="mc-lbl">Variação</div><div class="mc-val '+(d>0?'red':'green')+'">'+(d>0?'+':'')+brl(d)+'</div><div class="mc-sub">'+(p?((d/p)*100).toFixed(1):'0')+'%'+(d<0?' (economia)':d>0?' (acima)':'')+'</div></div>'
+        +'<div class="mc blue"><div class="mc-lbl">% do projeto</div><div class="mc-val blue">'+(prevT?((p/prevT)*100).toFixed(0):'0')+'%</div><div class="mc-sub">do previsto total</div></div>'
+      +'</div>';
+    h+='<table class="tbl"><thead><tr><th>Item</th><th>Categoria</th><th>Previsto</th><th>Real</th><th>Var.</th></tr></thead><tbody>';
+    its.slice().sort(function(a,b){return (b.prev||0)-(a.prev||0);}).forEach(function(i){
+      var iv=(i.real||0)-(i.prev||0);
+      h+='<tr><td>'+_escH(i.nome||'')+'</td><td>'+_escH(i.cat||'')+'</td><td>'+brl(i.prev)+'</td><td>'+brl(i.real)+'</td>'
+        +'<td style="color:'+(iv>0?'var(--red)':(iv<0?'var(--accent)':'var(--muted)'))+'">'+(iv>0?'+':'')+brl(iv)+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  });
+  alvo.innerHTML=h;
 }
 
 // ── RESUMO ──
