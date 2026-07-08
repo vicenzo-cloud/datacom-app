@@ -17,7 +17,8 @@ REL_DIR = os.path.join(C.BASE_DIR, 'Relatorios')
 
 
 def chave(n):
-    return (str(n.get('numero', '')).strip(), round(float(n.get('valor') or 0), 2))
+    # mesma nota = mesmo NUMERO + mesmo FORNECEDOR
+    return (str(n.get('numero', '')).strip(), C._norm(n.get('fornecedor') or ''))
 
 
 def main():

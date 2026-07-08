@@ -162,10 +162,15 @@ def nfs_de_arquivos(resumidas, detalhadas):
     nfs, vis = [], set()
     for r in res:
         n = num(r)
-        if not n or n in vis:
+        if not n:
             continue
-        vis.add(n)
         forn = limpa_forn(r.get('Fornecedor')) or limpa_forn(det_forn.get(n))
+        # Duplicata = mesmo NUMERO + mesmo FORNECEDOR. Mesmo numero de fornecedor
+        # diferente e nota distinta (entra). (fornecedor normalizado)
+        k = (n, _norm(forn))
+        if k in vis:
+            continue
+        vis.add(k)
         valor = total_nota.get(n)
         if valor is None:  # sem detalhada -> usa Valor Bruto da resumida
             valor = brl(r.get('Valor Bruto'))
