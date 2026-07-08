@@ -2401,10 +2401,11 @@ function detectAnomalies(nfs){
   const std=Math.sqrt(nfs.reduce(function(s,n){return s+(n.valor-mean)*(n.valor-mean);},0)/nfs.length);
   const threshold=mean+3*std;
 
-  // 1. Duplicatas
-  const dupeMap={};nfs.forEach(function(n){const k=n.numero+'|'+n.valor;if(!dupeMap[k])dupeMap[k]=[];dupeMap[k].push(n);});
+  // 1. Duplicatas — mesma nota = mesmo NÚMERO + mesmo FORNECEDOR
+  // (mesmo número de fornecedor diferente é nota distinta, não duplicata)
+  const dupeMap={};nfs.forEach(function(n){const k=n.numero+'|'+(n.fornecedor||'').trim().toUpperCase();if(!dupeMap[k])dupeMap[k]=[];dupeMap[k].push(n);});
   const dupes=Object.values(dupeMap).filter(function(g){return g.length>1;});
-  if(dupes.length){var dupNfs=[];dupes.forEach(function(g){g.forEach(function(n){dupNfs.push(n);});});results.push({type:'danger',sev:'high',icon:'⚠',title:'Possíveis NFs duplicadas',sub:dupes.length+' grupos com mesmo número e valor',detail:'Verifique se essas notas foram lançadas em duplicidade. Pode indicar pagamento duplo ou erro de importação.',nfsRel:dupNfs,items:dupes.slice(0,5).map(function(g){return 'NF '+g[0].numero+' — '+g[0].fornecedor+' — '+brl(g[0].valor)+' × '+g.length+'x';})});}
+  if(dupes.length){var dupNfs=[];dupes.forEach(function(g){g.forEach(function(n){dupNfs.push(n);});});results.push({type:'danger',sev:'high',icon:'⚠',title:'Possíveis NFs duplicadas',sub:dupes.length+' grupos com mesmo número e fornecedor',detail:'Verifique se essas notas foram lançadas em duplicidade. Pode indicar pagamento duplo ou erro de importação.',nfsRel:dupNfs,items:dupes.slice(0,5).map(function(g){return 'NF '+g[0].numero+' — '+g[0].fornecedor+' — '+brl(g[0].valor)+' × '+g.length+'x';})});}
 
   // 2. Outliers
   const outliers=nfs.filter(function(n){return n.valor>threshold;}).sort(function(a,b){return b.valor-a.valor;});
