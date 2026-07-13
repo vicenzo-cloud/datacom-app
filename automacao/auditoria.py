@@ -40,12 +40,16 @@ def main():
 
     # Duplicatas entre filiais
     mapa = {}
+    valor_por_chave = {}
     for fid, d in dados.items():
         for n in d.get('nfs', []):
-            mapa.setdefault(chave(n), set()).add(fid)
+            k = chave(n)
+            mapa.setdefault(k, set()).add(fid)
+            valor_por_chave[k] = n.get('valor', 0) or 0
     dups = {k: v for k, v in mapa.items() if len(v) > 1}
     w('NOTAS DUPLICADAS ENTRE FILIAIS (mesma nota em 2+ bases): %d\n' % len(dups))
-    for (numero, valor), fids in sorted(dups.items(), key=lambda x: -x[0][1])[:200]:
+    for (numero, fornecedor), fids in sorted(dups.items(), key=lambda x: -valor_por_chave[x[0]])[:200]:
+        valor = valor_por_chave[(numero, fornecedor)]
         w('  NF %-12s R$ %12.2f  ->  %s\n' % (numero, valor, ', '.join(nome[x] for x in fids)))
     if not dups:
         w('  (nenhuma — bases isoladas, OK)\n')
