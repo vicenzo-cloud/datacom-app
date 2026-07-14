@@ -3490,24 +3490,6 @@ var _lsTime = (S && S._savedAt) ? S._savedAt : 0;
 // Agora só rodam quando a filial ativa é a matriz (nas demais, base fica limpa).
 if((window._filialAtual||'matriz')==='matriz'){
 
-// Criar NF de TESTE apenas uma vez
-(function(){
-  if(S.nfs && S.nfs.length > 0 && !localStorage.getItem('dc_teste_nf_criada')){
-    var nfTeste = {
-      numero: '🧪 TESTE-DELETE-ME',
-      fornecedor: 'FORNECEDOR TESTE',
-      obs: '', // SEM CATEGORIA para aparecer na auditoria
-      valor: 999.99,
-      data: new Date().toISOString().split('T')[0],
-      auditado: false
-    };
-    // Adiciona em primeiro lugar
-    S.nfs.unshift(nfTeste);
-    persist();
-    localStorage.setItem('dc_teste_nf_criada', 'true'); // Marca como criada
-  }
-})();
-
 // Add items to CD SÃO JOSÉ DOS PINHAIS if missing
 (function(){
   var proj = S.projects.find(function(p){return p.id==='cd_s_o_jos_dos_pinha';});
