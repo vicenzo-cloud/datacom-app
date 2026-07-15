@@ -1139,8 +1139,11 @@ function saveProject(){
 function deleteProject(id){
   if(!exigeEditor())return;
   if(!confirm('Excluir projeto?'))return;
-  var _pn=(S.projects.find(function(p){return p.id===id;})||{}).nome||id;
-  logAtividade('Projeto excluído', _pn);
+  var _p=(S.projects.find(function(p){return p.id===id;})||{});
+  var _pn=_p.nome||id;
+  var _ni=(_p.items||[]).length, _ns=(_p.services||[]).length;
+  var _tot=(_p.items||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0)+(_p.services||[]).reduce(function(s,i){return s+(Number(i.real)||0);},0);
+  logAtividade('Projeto excluído', _pn+' · '+_ni+' item(ns) + '+_ns+' serviço(s) · '+brl(_tot));
   S.projects=S.projects.filter(function(p){return p.id!==id;});
   if(S.curProj===id){S.curProj=null;S.view='dashboard';}
   persist();renderAll();toast('Projeto excluído');
@@ -1267,15 +1270,21 @@ function deleteSvc(pid,sid){
 }
 
 // ── NF CRUD ──
+// Chave de duplicata = mesmo NÚMERO + mesmo FORNECEDOR (mesma regra do resto do app).
+function _nfKey(numero,forn){ return String(numero||'').trim()+'|'+(forn||'').trim().toUpperCase(); }
+function nfDuplicada(numero,forn){ var k=_nfKey(numero,forn); return S.nfs.find(function(n){return _nfKey(n.numero,n.fornecedor)===k;}); }
+
 function saveNF(){
   if(!exigeEditor())return;
   const num=document.getElementById('nf-num').value.trim();
   const forn=document.getElementById('nf-forn').value.trim();
   const val=parseFloat(document.getElementById('nf-val').value)||0;
   if(!num||!forn||!val){toast('Obrigatório','error');return;}
+  var _dup=nfDuplicada(num,forn);
+  if(_dup && !confirm('⚠ Já existe uma NF nº '+num+' do fornecedor "'+forn+'" (R$ '+brl(_dup.valor)+').\n\nDeseja adicionar mesmo assim (nota duplicada)?')) return;
   S.nfs.push({id:uid(),numero:num,fornecedor:forn,valor:val,data:document.getElementById('nf-data').value,projId:'',obs:document.getElementById('nf-obs').value.trim(),centro:'',det:''});
   persist();closeModal('modal-nf');
-  logAtividade('NF criada', 'nº '+num+' · '+forn+' · '+brl(val));
+  logAtividade('NF criada', 'nº '+num+' · '+forn+' · '+brl(val)+(_dup?' · (duplicata confirmada)':''));
   ['nf-num','nf-forn','nf-val','nf-obs'].forEach(function(id){document.getElementById(id).value='';});
   renderAll();toast('NF salva!');
 }
@@ -1294,13 +1303,22 @@ function importNF(input){
       const wb=XLSX.read(e.target.result,{type:'array'});
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
-      let n=0;
+      let n=0, dup=0;
+      // Chaves já presentes + as adicionadas nesta importação (evita duplicar dentro do próprio arquivo)
+      var vistas={}; S.nfs.forEach(function(x){vistas[_nfKey(x.numero,x.fornecedor)]=true;});
       rows.forEach(function(r){
+        const numero=String(r['NF']||r['nf']||'—').trim();
         const forn=String(r['Fornecedor']||r['fornecedor']||'').trim();
         const val=parseFloat(String(r['Valor']||r['valor']||'0').replace(',','.'));
-        if(forn&&val){S.nfs.push({id:uid(),numero:String(r['NF']||r['nf']||'—'),fornecedor:forn,valor:val,data:String(r['Data']||r['data']||''),projId:'',obs:String(r['Categoria']||r['obs']||''),centro:String(r['Centro']||r['centro']||''),det:''});n++;}
+        if(forn&&val){
+          var k=_nfKey(numero,forn);
+          if(vistas[k]){dup++;return;}
+          vistas[k]=true;
+          S.nfs.push({id:uid(),numero:numero,fornecedor:forn,valor:val,data:String(r['Data']||r['data']||''),projId:'',obs:String(r['Categoria']||r['obs']||''),centro:String(r['Centro']||r['centro']||''),det:''});n++;
+        }
       });
-      persist();logAtividade('Notas fiscais importadas (planilha)', n+' NF(s) adicionada(s)');renderAll();toast(n+' NFs importadas!');
+      persist();logAtividade('Notas fiscais importadas (planilha)', n+' NF(s) adicionada(s)'+(dup?' · '+dup+' duplicada(s) ignorada(s)':''));renderAll();
+      toast(n+' NFs importadas!'+(dup?' ('+dup+' duplicada(s) ignorada(s))':''));
     }catch(e2){toast('Erro ao importar','error');}
   };
   reader.readAsArrayBuffer(file);input.value='';
@@ -3479,276 +3497,6 @@ load();
 // Matriz -> dashboard de projetos; demais filiais -> painel de notas.
 S.view = ((window._filialAtual||'matriz')==='matriz') ? 'dashboard' : 'painel';
 S.curProj = null;
-// Timestamp dos dados do localStorage ANTES das IIFEs de criacao (para comparar com o arquivo)
-var _lsTime = (S && S._savedAt) ? S._savedAt : 0;
-// NOTA: o reset destrutivo de schema foi REMOVIDO. As IIFEs abaixo usam if(!find),
-// entao so criam projetos que faltam — nunca apagam edicoes do usuario.
-
-// ── SEEDING LEGADO: só roda na MATRIZ ──
-// Estes blocos injetam os projetos/NFs originais (hardcoded da Matriz). Antes do
-// multi-filial rodavam em qualquer filial e contaminavam as outras com dados da Matriz.
-// Agora só rodam quando a filial ativa é a matriz (nas demais, base fica limpa).
-if((window._filialAtual||'matriz')==='matriz'){
-
-// Add items to CD SÃO JOSÉ DOS PINHAIS if missing
-(function(){
-  var proj = S.projects.find(function(p){return p.id==='cd_s_o_jos_dos_pinha';});
-  if(proj && (!proj.items || proj.items.length===0)){
-    proj.items=[{id:uid(),nome:'Rack Outdoor — Intelbras',prev:2718.0,real:2348.37,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Rack Indoor — Intelbras',prev:485.0,real:455.0,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Régua Rack — Intelbras',prev:338.84,real:325.32,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Speed Dome — Hikvision',prev:6400.0,real:7000.0,'cat':'CFTV',extra:false},{id:uid(),nome:'CABO UTP CAT6 — Intelbras',prev:8599.5,real:7031.5,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Câmera Fixa Acusense — Hikvision',prev:22440.0,real:29700.0,'cat':'CFTV',extra:false},{id:uid(),nome:'NVR 32 Canais — Hikvision',prev:5000.0,real:5000.0,'cat':'CFTV',extra:false},{id:uid(),nome:'HD 12 TB — Intelbras',prev:10444.47,real:5838.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Cabo Paralelo 2x2,5mm',prev:3500.0,real:1708.0,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Cabo Óptico — Intelbras',prev:778.02,real:642.54,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Switch 16 Portas POE — Hikvision',prev:5202.66,real:5202.66,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Suporte Câmeras',prev:11550.0,real:9900.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Caixa Câmera — Intelbras',prev:551.25,real:530.95,'cat':'CFTV',extra:false},{id:uid(),nome:'Licença — Hikvision',prev:7700.0,real:7700.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Conversor de Mídia A — Intelbras',prev:1540.0,real:1540.0,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Conversor de Mídia B — Intelbras',prev:1540.0,real:1540.0,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Switch POE 24 Portas — Hikvision',prev:2544.7,real:2544.7,'cat':'CFTV',extra:false},{id:uid(),nome:'Torniquete — Foca',prev:10000.0,real:9400.0,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Controlador Facial — Hikvision',prev:7194.0,real:7194.0,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Controladora — Eduardo',prev:2100.0,real:2100.0,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Quadro de Comando',prev:1200.0,real:1200.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Patch Panel — Intelbras',prev:592.52,real:595.76,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Guia de cabo — Intelbras',prev:200.16,real:200.16,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Patch cord — Intelbras',prev:458.5,real:666.5,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Totens — Protect',prev:4000.0,real:3500.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Bateria — Intelbras',prev:4411.8,real:4235.4,'cat':'Energia',extra:false},{id:uid(),nome:'Nobreak — Intelbras',prev:2466.9,real:2368.23,'cat':'Energia',extra:false},{id:uid(),nome:'Nobreak — Intelbras',prev:2466.9,real:2024.79,'cat':'Energia',extra:false},{id:uid(),nome:'Software Acesso — Seventh',prev:1500.0,real:1372.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Acesso — Seventh',prev:720.0,real:864.0,'cat':'Software',extra:false},{id:uid(),nome:'Fonte 12V/10A — Intelbras',prev:317.88,real:241.6,'cat':'Energia',extra:false},{id:uid(),nome:'Interfone IP — Khomp',prev:4800.0,real:5616.0,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Sensor IVA Portão — Intelbras',prev:357.0,real:342.72,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Suportes para IVA',prev:800.0,real:800.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Sinaleira — DNI',prev:245.08,real:170.64,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Corneta — Khomp',prev:2500.0,real:1981.59,'cat':'Materiais',extra:false},{id:uid(),nome:'Sensor Fim de Curso Portão — Intelbras',prev:177.74,real:170.64,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Concertina',prev:500.0,real:500.0,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Estação de Trabalho CMP — Dell',prev:9573.46,real:9573.46,'cat':'Materiais',extra:false},{id:uid(),nome:'Placas',prev:0,real:2000.0,'cat':'Materiais',extra:true},{id:uid(),nome:'Central',prev:0,real:2000.0,'cat':'Materiais',extra:true}];
-    persist();
-  }
-})();
-
-// Add items to Escola Mesquita if missing
-(function(){
-  var proj = S.projects.find(function(p){return p.id==='escola_mesquita';});
-  if(proj && (!proj.items || proj.items.length===0)){
-    proj.items=[{id:uid(),nome:'Gerenciador Telas Chamada de Alunos — Dell',prev:3303.0,real:3339.31,'cat':'Materiais',extra:false},{id:uid(),nome:'Câmera Acusense 4MP Fixa — Hikvision',prev:11204.57,real:11440.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Câmera LPR — Hikvision',prev:8334.81,real:11394.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Câmeras Internas — Hikvision',prev:9460.0,real:8612.04,'cat':'CFTV',extra:false},{id:uid(),nome:'Catraca Módulo Central — Hikvision',prev:12229.5,real:11000.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Catraca Módulo Esquerda — Hikvision',prev:8185.25,real:7835.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Catraca Módulo Direita — Hikvision',prev:8185.25,real:7835.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Central alarme — Hikvision',prev:1045.7,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Sirene — Hikvision',prev:738.0,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Sensor IVP — Hikvision',prev:7678.86,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Sendor IVP Externo — Hikvision',prev:785.8,real:0.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Teclado — Hikvision',prev:874.23,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Repetidor de Sinal — Hikvision',prev:901.9,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Leitor Facial — Hikvision',prev:13000.0,real:14900.0,'cat':'CFTV',extra:false},{id:uid(),nome:'NVR 32 — Hikvision',prev:4866.72,real:4866.82,'cat':'CFTV',extra:false},{id:uid(),nome:'Suporte Facial Simples — Hikvision',prev:1204.2,real:1190.2,'cat':'CFTV',extra:false},{id:uid(),nome:'Swichs 8 Portas PoE — Hikvision',prev:2854.7,real:6250.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Bateria 12V/7Ah — Intelbras',prev:96.77,real:60.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Cabo CAT5 — Intelbras',prev:8150.0,real:9062.8,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Caixa passagem CFTV — Intelbras',prev:882.0,real:400.4,'cat':'Materiais',extra:false},{id:uid(),nome:'Chip M2M — Virtueyes',prev:16.0,real:16.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Eletroímã — Intelbras',prev:238.0,real:255.6,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Fonte de Alimentação — Intelbras',prev:539.4,real:457.8,'cat':'Materiais',extra:false},{id:uid(),nome:'Fonte Nobreak 12V/5A — Intelbras',prev:240.0,real:194.32,'cat':'Materiais',extra:false},{id:uid(),nome:'HD 6TB — Intelbras',prev:6534.12,real:3473.68,'cat':'Materiais',extra:false},{id:uid(),nome:'Kit Rádio para Elevador — Intelbras',prev:943.65,real:905.91,'cat':'Materiais',extra:false},{id:uid(),nome:'Mola Aérea — Intelbras',prev:195.12,real:187.32,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Monitor 40" — Intelbras',prev:3000.0,real:2700.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Nobreak 1500VA — Intelbras',prev:869.1,real:790.43,'cat':'Materiais',extra:false},{id:uid(),nome:'Organizador de Cabo — Intelbras',prev:97.76,real:100.1,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Patch Cord CAT5E — Intelbras',prev:374.0,real:410.5,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Patch Panel CAT5E — Intelbras',prev:354.06,real:355.4,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Rack 3U — Intelbras',prev:676.48,real:814.8,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Rack 5U — Intelbras',prev:213.64,real:213.65,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Rack 8U — Intelbras',prev:550.36,real:563.45,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Régua Rack — Intelbras',prev:381.15,real:365.95,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Switch 8P Gigabit — Intelbras',prev:156.34,real:154.27,'cat':'CFTV',extra:false},{id:uid(),nome:'Switch 24P PoE — Intelbras',prev:3129.6,real:2846.36,'cat':'CFTV',extra:false},{id:uid(),nome:'Telefone IP — Intelbras',prev:297.93,real:286.02,'cat':'Materiais',extra:false},{id:uid(),nome:'Laço Indutivo — Kalts',prev:1600.0,real:593.4,'cat':'Materiais',extra:false},{id:uid(),nome:'Detector de Veículos 2 Canais — Kalts',prev:0.0,real:694.31,'cat':'Materiais',extra:false},{id:uid(),nome:'Gerenciador de rede — Mikrotik',prev:500.0,real:436.45,'cat':'Materiais',extra:false},{id:uid(),nome:'Cancela 4m — PPA',prev:5000.0,real:4569.18,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Totem — Serralheria',prev:1500.0,real:1500.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Poste para câmeras — Serralheria',prev:2000.0,real:2000.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Poste para LPR — Serralheria',prev:1500.0,real:1500.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Postelete para câmera — Serralheria',prev:600.0,real:600.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Software Controle de Acesso Serviço Implantação — Solid Falcon',prev:3980.0,real:3980.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Usuário Extra — Solid Falcon',prev:0.0,real:40.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Notificação Whatsapp — Solid Falcon',prev:0.0,real:240.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Base Professional — Solid Falcon',prev:0.0,real:420.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Câmera LPR — Solid Falcon',prev:0.0,real:114.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Software Controle de Acesso Leitor Facial — Solid Falcon',prev:0.0,real:200.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Monitoramento Vídeo Licença — Somaseg',prev:312.0,real:2281.5,'cat':'Software',extra:false},{id:uid(),nome:'Guarda Corpo em Vidro — Vidro Arte',prev:2000.0,real:2000.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Quadro de Comando',prev:450.0,real:450.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Eletroímã 150kgf — Intelbras',prev:474.76,real:511.2,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Suporte Facial Simples — Intelbras',prev:257.14,real:246.86,'cat':'CFTV',extra:false},{id:uid(),nome:'Fonte Nobreak 12V/5A',prev:0,real:194.32,'cat':'Materiais',extra:true},{id:uid(),nome:'Conector RJ45',prev:0,real:78.09,'cat':'Materiais',extra:true},{id:uid(),nome:'Par de ativo',prev:0,real:85.68,'cat':'Materiais',extra:true},{id:uid(),nome:'ELETROIMA FE20150',prev:0,real:511.2,'cat':'Materiais',extra:true},{id:uid(),nome:'AUTOMATIZA-SUPORTE PARA VIDRO SV-20150-4671098',prev:0,real:246.86,'cat':'Materiais',extra:true},{id:uid(),nome:'SWITCH 8 PORTAS FAST',prev:0,real:99.28,'cat':'Materiais',extra:true}];
-    persist();
-  }
-})();
-
-// Add items to LIFAR TORNIQUETE if missing
-(function(){
-  var proj = S.projects.find(function(p){return p.id==='lifar_torniquete';});
-  if(proj && (!proj.items || proj.items.length===0)){
-    proj.items=[
-      {id:uid(),nome:'Leitor RFID PROX LE130 — Intelbras (x4)',prev:1183.60,real:962.64,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Interfone DS-KB8113-IME1 — Hikvision',prev:719.10,real:719.10,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Mola Aérea MH 103 — Intelbras',prev:167.20,real:153.90,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Fechadura Eletroímã FE 20150 — Intelbras',prev:300.98,real:276.91,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Cabo CAT6 (190m)',prev:1235.00,real:634.60,cat:'Cabeamento',extra:false},
-      {id:uid(),nome:'Fonte Nobreak 12V/5A FA 1250 — Intelbras (x2)',prev:480.00,real:412.64,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Bateria VRLA 12V/7Ah XB 1270 — Intelbras (x2)',prev:193.54,real:154.40,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Licença de Porta — Situator (x4)',prev:480.00,real:608.00,cat:'Software',extra:false},
-      {id:uid(),nome:'Controladora CT 3000 4PB — Intelbras',prev:1817.72,real:1478.44,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Quadro de Comando',prev:500.00,real:500.00,cat:'Infra/Transporte',extra:false},
-      {id:uid(),nome:'Switch 10P Giga PoE S1110G — Intelbras',prev:672.90,real:645.99,cat:'Infra/Transporte',extra:false}
-    ];
-    persist();
-  }
-})();
-
-// Add items to New_Print_SCA_ALMOX if missing
-(function(){
-  var proj = S.projects.find(function(p){return p.id==='new_print_sca_almox';});
-  if(proj && (!proj.items || proj.items.length===0)){
-    proj.items=[
-      {id:uid(),nome:'Câmera IP 4MP Acusense — Hikvision DS-2CD2043G2-I',prev:999.37,real:699.90,cat:'CFTV',extra:false},
-      {id:uid(),nome:'Suporte Facial — FOCA (x2)',prev:400.00,real:1556.00,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Leitor Facial CXF600 — COMMBOX (x2)',prev:5400.00,real:5400.00,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Controladora MCA10V4 — COMMBOX (x2)',prev:3980.00,real:3980.00,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Licença SafeAccess — COMMBOX (x2)',prev:960.00,real:960.00,cat:'Software',extra:false},
-      {id:uid(),nome:'Mola MH 103 — Intelbras',prev:167.20,real:153.90,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Fechadura Eletroímã FE 20150 — Intelbras',prev:300.98,real:276.91,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Fonte Nobreak 12V/5A FA 1250 — Intelbras',prev:240.00,real:206.32,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Bateria VRLA 12V/7Ah XB 1270 — Intelbras',prev:96.77,real:77.28,cat:'Controle de Acesso',extra:false}
-    ];
-    persist();
-  }
-})();
-
-
-// Rename Câmeras Perímetro → Datacom if still old name
-(function(){
-  var proj = S.projects.find(function(p){return p.id==='cam-perimetro';});
-  if(proj && (proj.nome==='Câmeras Perímetro' || proj.nome==='Cameras Perimetro')){
-    proj.nome='Datacom';
-    persist();
-  }
-})();
-
-// Backfill: registra data de inserção para projetos que ainda não têm
-(function(){
-  var mudou=false;
-  S.projects.forEach(function(p){
-    if(!p.criadoEm){ p.criadoEm = new Date().toISOString(); mudou=true; }
-  });
-  if(mudou) persist();
-})();
-
-// Migrate old keys
-(function(){
-  ['dc_v4','dc_v3','datacom_v2'].forEach(function(key){
-    try{
-      var old=localStorage.getItem(key);
-      if(old){var o=JSON.parse(old);
-        if(o.projects)o.projects.forEach(function(p){if(!S.projects.find(function(ep){return ep.id===p.id;}))S.projects.push(p);});
-        persist();}
-    }catch(e){}
-  });
-})();
-
-// Migrate intel findings from old key
-(function(){
-  var old=localStorage.getItem('dc_intel_findings');
-  if(old)try{intelFindings=Object.assign({},JSON.parse(old),intelFindings);saveFindings();}catch(e){}
-})();
-
-// Preload Câmeras Perímetro project
-(function(){
-  if(!S.projects.find(function(p){return p.id==='cam-perimetro';})){
-    S.projects.unshift({id:'cam-perimetro',nome:'Datacom',desc:'Orçamento 6 — Venda Serviço de Monitoramento',cliente:'Datacom',data:'2024-01-01',
-      items:[
-        {id:uid(),nome:'Lic. Digifort Pack 8ch (1)',prev:5740,real:6972.13,cat:'Licenças',extra:false},
-        {id:uid(),nome:'Lic. Digifort Pack 8ch (2)',prev:5740,real:6972.13,cat:'Licenças',extra:false},
-        {id:uid(),nome:'Lic. Digifort Pack 2ch',prev:1677.99,real:2037.15,cat:'Licenças',extra:false},
-        {id:uid(),nome:'Lic. Digifort 16ch Edge',prev:3719,real:4514.46,cat:'Licenças',extra:false},
-        {id:uid(),nome:'Lic. Digifort 8ch Edge',prev:2010.76,real:2440.25,cat:'Licenças',extra:false},
-        {id:uid(),nome:'Cabo CAT6 1500m',prev:11310,real:9045,cat:'Cabeamento',extra:false},
-        {id:uid(),nome:'Conector Keystone CAT6',prev:179.4,real:58.45,cat:'Conectores',extra:false},
-        {id:uid(),nome:'Patch Cord CAT6',prev:100.32,real:90,cat:'Conectores',extra:false},
-        {id:uid(),nome:'Conector RJ45 CAT6',prev:38.28,real:6.36,cat:'Conectores',extra:false},
-        {id:uid(),nome:'Cabo CAT6 500m (adicional)',prev:0,real:3015,cat:'Cabeamento',extra:true}
-      ],
-      services:[
-        {id:uid(),nome:'Suporte Câmera Térmica',qtd:12,fornecedor:'Serralheria',prev:5132.16,real:5132.16,'cat':'Infraestrutura',extra:false},
-        {id:uid(),nome:'Tubulação Galvanizada 500m',qtd:500,fornecedor:'Diversos',prev:9000,real:9000,'cat':'Infraestrutura',extra:false},
-        {id:uid(),nome:'Serviço Técnico — Instalação e Configuração',qtd:1,fornecedor:'Própria',prev:11000,real:11000,'cat':'Serviço',extra:false}
-      ]});
-    persist();
-  }
-    if(!S.projects.find(function(p){return p.id==='edificio_sharm';})){S.projects.push({id:'edificio_sharm',nome:'Edificio Sharm',desc:'',cliente:'Sharm',data:'',items:[
-      {id:uid(),nome:'NVR 32 Canais — Hikvision DS-7632NXI-K2',prev:1846.88,real:1768,cat:'CFTV',extra:false},
-      {id:uid(),nome:'HD 6TB — Seagate Skyhawk',prev:1089.10,real:1790,cat:'CFTV',extra:false},
-      {id:uid(),nome:'Camera IP 2MP (x20) — Hilook IPC-B121H-C',prev:3101.40,real:0,cat:'CFTV',extra:false},
-      {id:uid(),nome:'Switch PoE 24P — Intelbras S2328G-A',prev:1578.07,real:1578.07,cat:'CFTV',extra:false},
-      {id:uid(),nome:'Routerboard — Mikrotik RB 750GR3',prev:442,real:436.45,cat:'CFTV',extra:false},
-      {id:uid(),nome:'Controlador Facial (x6) — Hikvision',prev:4674,real:4388.76,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Mola Aerea (x5) — Intelbras MH 104A',prev:936.60,real:936.60,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Eletroima 150kgf (x5) — Intelbras FE 20150',prev:1278,real:1278,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Fonte Nobreak 12V (x5) — JFL Full Power',prev:1173.15,real:760.85,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Leitor Tag Veicular UHF (x2) — Solid',prev:5980.80,real:5980.80,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Tag UHF Interno (x100) — Solid Tag 110',prev:1091,real:1091,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Controladora 2P — Intelbras CT 3000 2PB',prev:1000.36,real:960.35,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Botoeira (x2) — Intelbras BT 3000 IN',prev:154.84,real:154.84,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Acionador Emergencia (x5) — Intelbras AS 2010',prev:643.70,real:643.70,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Quadro de Comando — Diversos',prev:352,real:352,cat:'Infraestrutura',extra:false},
-      {id:uid(),nome:'Suporte Leitor UHF (x2) — Serralheria',prev:800,real:800,cat:'Infraestrutura',extra:false}
-    ],services:[
-      {id:uid(),nome:'Tubulacao',qtd:1,fornecedor:'Estimado',prev:1800.0,real:1800.0,cat:'Servico',extra:false},
-      {id:uid(),nome:'Material Eletrico',qtd:1,fornecedor:'Estimado',prev:400.0,real:400.0,cat:'Servico',extra:false},
-      {id:uid(),nome:'Mao de Obra',qtd:1,fornecedor:'Estimado',prev:9000.0,real:9000.0,cat:'Servico',extra:false},
-      {id:uid(),nome:'Quadro de comando',qtd:1,fornecedor:'Estimado',prev:352.0,real:352.0,cat:'Servico',extra:false}
-    ]}); }
-    if(!S.projects.find(function(p){return p.id==='b_print_ceara';})){S.projects.push({id:'b_print_ceara',nome:'B_Print_Ceara',desc:'',cliente:'',data:'',items:[
-      {id:uid(),nome:'Camera IP 4MP ColorVu — Hikvision DS-2CD1T47G2H-LIU',prev:3120.40,real:2995.00,cat:'CFTV',extra:false},
-      {id:uid(),nome:'Licenca Digifort Pack 4 Canal',prev:2186.89,real:2842.96,cat:'Software',extra:false}
-    ],services:[
-      {id:uid(),nome:'Mao de obra tecnica',qtd:1,fornecedor:'Configuracao Remota',prev:1500.0,real:0.0,cat:'Servico',extra:false}
-    ]}); }
-    if(!S.projects.find(function(p){return p.id==='chandon';})){S.projects.push({id:'chandon',nome:'CHANDON',desc:'Cameras Temporarias BoM',cliente:'',data:'',items:[
-      {id:uid(),nome:'Camera IM5 WiFi 2MP (x17) — Intelbras MIBO Smart',prev:5963.77,real:4894.81,cat:'CFTV',extra:false},
-      {id:uid(),nome:'Cartao Micro SD 128GB (x17) — Intelbras WD Purple',prev:2098.82,real:3704.81,cat:'CFTV',extra:false},
-      {id:uid(),nome:'Access Point Dual Band (x6) — Intelbras WiFi 5',prev:3901.20,real:4755.72,cat:'Rede',extra:false}
-    ],services:[
-      {id:uid(),nome:'Mao de Obra - Cameras',qtd:17,fornecedor:'Vigicorp',prev:4250.0,real:4250.0,cat:'Servico',extra:false},
-      {id:uid(),nome:'Mao de Obra - Access Point',qtd:6,fornecedor:'Vigicorp',prev:3000.0,real:3000.0,cat:'Servico',extra:false}
-    ]}); }
-    if(!S.projects.find(function(p){return p.id==='darkstore';})){S.projects.push({id:'darkstore',nome:'DarkStore',desc:'Importado',cliente:'',data:'',items:[
-      {id:uid(),nome:'Camera IP 2MP (x16) — Hikvision DS-2CD1021G0-I',prev:3147.84,real:2888.32,cat:'CFTV',extra:false},
-      {id:uid(),nome:'NVR 16 Canais — Hikvision DS-7616NI-Q1',prev:840.98,real:840.98,cat:'CFTV',extra:false},
-      {id:uid(),nome:'HD 6TB — Seagate Skyhawk',prev:1279.90,real:1682.48,cat:'Materiais',extra:false},
-      {id:uid(),nome:'Caixa Passagem Externa (x6)',prev:87.24,real:82.86,cat:'Materiais',extra:false},
-      {id:uid(),nome:'Caixa Passagem Interna (x10)',prev:68.50,real:68.40,cat:'Materiais',extra:false},
-      {id:uid(),nome:'Rack 5U — Intelbras MRM 537',prev:182.49,real:204.74,cat:'Infraestrutura',extra:false},
-      {id:uid(),nome:'Cabo UTP CAT5E — Megatron (305mt)',prev:851.00,real:435.71,cat:'Cabeamento',extra:false},
-      {id:uid(),nome:'Organizador Cabo',prev:47.96,real:50.15,cat:'Cabeamento',extra:false},
-      {id:uid(),nome:'Patch Cord CAT5E (x3)',prev:27.15,real:28.38,cat:'Cabeamento',extra:false},
-      {id:uid(),nome:'Regua 8 Tomadas',prev:70.14,real:70.13,cat:'Energia',extra:false},
-      {id:uid(),nome:'Switch 16P POE + 2SFP',prev:939.97,real:939.96,cat:'Rede',extra:false},
-      {id:uid(),nome:'Central Alarme s/Fio',prev:436.54,real:0,cat:'Alarme',extra:false},
-      {id:uid(),nome:'Sirene c/Fio',prev:19.87,real:0,cat:'Alarme',extra:false},
-      {id:uid(),nome:'Teclado s/Fio Pro UHF',prev:195.64,real:0,cat:'Alarme',extra:false},
-      {id:uid(),nome:'Botao Panico s/Fio',prev:62.97,real:0,cat:'Alarme',extra:false},
-      {id:uid(),nome:'Sensor IVP PET (x16)',prev:2069.28,real:2069.28,cat:'Alarme',extra:false},
-      {id:uid(),nome:'Licenca VMS',prev:0,real:0,cat:'Software',extra:false}
-    ],services:[{id:uid(),nome:'Tubulacao Galvanizada',qtd:80,fornecedor:'',prev:2800.0,real:2800.0,cat:'Infra',extra:false},{id:uid(),nome:'Kit Eletrica Rack',qtd:1,fornecedor:'',prev:500.0,real:500.0,cat:'Infra',extra:false},{id:uid(),nome:'Mao de Obra',qtd:1,fornecedor:'',prev:2500.0,real:2500.0,cat:'Servico',extra:false}]}); }
-  if(!S.projects.find(function(p){return p.id==='escola_mesquita';})){S.projects.push({id:'escola_mesquita',nome:'Escola Mesquita',desc:'Importado',cliente:'',data:'',items:[{id:uid(),nome:'Gerenciador Telas Chamada de Alunos — Dell',prev:3303.0,real:3339.31,'cat':'Materiais',extra:false},{id:uid(),nome:'Câmera Acusense 4MP Fixa — Hikvision',prev:11204.57,real:11440.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Câmera LPR — Hikvision',prev:8334.81,real:11394.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Câmeras Internas — Hikvision',prev:9460.0,real:8612.04,'cat':'CFTV',extra:false},{id:uid(),nome:'Catraca Módulo Central — Hikvision',prev:12229.5,real:11000.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Catraca Módulo Esquerda — Hikvision',prev:8185.25,real:7835.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Catraca Módulo Direita — Hikvision',prev:8185.25,real:7835.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Central alarme — Hikvision',prev:1045.7,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Sirene — Hikvision',prev:738.0,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Sensor IVP — Hikvision',prev:7678.86,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Sendor IVP Externo — Hikvision',prev:785.8,real:0.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Teclado — Hikvision',prev:874.23,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Repetidor de Sinal — Hikvision',prev:901.9,real:0.0,'cat':'Alarme',extra:false},{id:uid(),nome:'Leitor Facial — Hikvision',prev:13000.0,real:14900.0,'cat':'CFTV',extra:false},{id:uid(),nome:'NVR 32 — Hikvision',prev:4866.72,real:4866.82,'cat':'CFTV',extra:false},{id:uid(),nome:'Suporte Facial Simples — Hikvision',prev:1204.2,real:1190.2,'cat':'CFTV',extra:false},{id:uid(),nome:'Swichs 8 Portas PoE — Hikvision',prev:2854.7,real:6250.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Bateria 12V/7Ah — Intelbras',prev:96.77,real:60.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Cabo CAT5 — Intelbras',prev:8150.0,real:9062.8,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Caixa passagem CFTV — Intelbras',prev:882.0,real:400.4,'cat':'Materiais',extra:false},{id:uid(),nome:'Chip M2M — Virtueyes',prev:16.0,real:16.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Eletroímã — Intelbras',prev:238.0,real:255.6,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Fonte de Alimentação — Intelbras',prev:539.4,real:457.8,'cat':'Materiais',extra:false},{id:uid(),nome:'Fonte Nobreak 12V/5A — Intelbras',prev:240.0,real:194.32,'cat':'Materiais',extra:false},{id:uid(),nome:'HD 6TB — Intelbras',prev:6534.12,real:3473.68,'cat':'Materiais',extra:false},{id:uid(),nome:'Kit Rádio para Elevador — Intelbras',prev:943.65,real:905.91,'cat':'Materiais',extra:false},{id:uid(),nome:'Mola Aérea — Intelbras',prev:195.12,real:187.32,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Monitor 40" — Intelbras',prev:3000.0,real:2700.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Nobreak 1500VA — Intelbras',prev:869.1,real:790.43,'cat':'Materiais',extra:false},{id:uid(),nome:'Organizador de Cabo — Intelbras',prev:97.76,real:100.1,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Patch Cord CAT5E — Intelbras',prev:374.0,real:410.5,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Patch Panel CAT5E — Intelbras',prev:354.06,real:355.4,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Rack 3U — Intelbras',prev:676.48,real:814.8,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Rack 5U — Intelbras',prev:213.64,real:213.65,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Rack 8U — Intelbras',prev:550.36,real:563.45,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Régua Rack — Intelbras',prev:381.15,real:365.95,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Switch 8P Gigabit — Intelbras',prev:156.34,real:154.27,'cat':'CFTV',extra:false},{id:uid(),nome:'Switch 24P PoE — Intelbras',prev:3129.6,real:2846.36,'cat':'CFTV',extra:false},{id:uid(),nome:'Telefone IP — Intelbras',prev:297.93,real:286.02,'cat':'Materiais',extra:false},{id:uid(),nome:'Laço Indutivo — Kalts',prev:1600.0,real:593.4,'cat':'Materiais',extra:false},{id:uid(),nome:'Detector de Veículos 2 Canais — Kalts',prev:0.0,real:694.31,'cat':'Materiais',extra:false},{id:uid(),nome:'Gerenciador de rede — Mikrotik',prev:500.0,real:436.45,'cat':'Materiais',extra:false},{id:uid(),nome:'Cancela 4m — PPA',prev:5000.0,real:4569.18,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Totem — Serralheria',prev:1500.0,real:1500.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Poste para câmeras — Serralheria',prev:2000.0,real:2000.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Poste para LPR — Serralheria',prev:1500.0,real:1500.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Postelete para câmera — Serralheria',prev:600.0,real:600.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Software Controle de Acesso Serviço Implantação — Solid Falcon',prev:3980.0,real:3980.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Usuário Extra — Solid Falcon',prev:0.0,real:40.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Notificação Whatsapp — Solid Falcon',prev:0.0,real:240.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Base Professional — Solid Falcon',prev:0.0,real:420.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Controle de Acesso Câmera LPR — Solid Falcon',prev:0.0,real:114.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Software Controle de Acesso Leitor Facial — Solid Falcon',prev:0.0,real:200.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Monitoramento Vídeo Licença — Somaseg',prev:312.0,real:2281.5,'cat':'Software',extra:false},{id:uid(),nome:'Guarda Corpo em Vidro — Vidro Arte',prev:2000.0,real:2000.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Quadro de Comando',prev:450.0,real:450.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Eletroímã 150kgf — Intelbras',prev:474.76,real:511.2,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Suporte Facial Simples — Intelbras',prev:257.14,real:246.86,'cat':'CFTV',extra:false},{id:uid(),nome:'Fonte Nobreak 12V/5A',prev:0,real:194.32,'cat':'Materiais',extra:true},{id:uid(),nome:'Conector RJ45',prev:0,real:78.09,'cat':'Materiais',extra:true},{id:uid(),nome:'Par de ativo',prev:0,real:85.68,'cat':'Materiais',extra:true},{id:uid(),nome:'ELETROIMA FE20150',prev:0,real:511.2,'cat':'Materiais',extra:true},{id:uid(),nome:'AUTOMATIZA-SUPORTE PARA VIDRO SV-20150-4671098',prev:0,real:246.86,'cat':'Materiais',extra:true},{id:uid(),nome:'SWITCH 8 PORTAS FAST',prev:0,real:99.28,'cat':'Materiais',extra:true}],services:[{id:uid(),nome:'Material Elétrico',qtd:1,fornecedor:'Estimado',prev:5000.0,real:5000.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Tubulação',qtd:600,fornecedor:'Estimado',prev:21000.0,real:21000.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Mão de Obra',qtd:1,fornecedor:'Estimado',prev:4500.0,real:4500.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Mão de Obra',qtd:1,fornecedor:'Estimado',prev:24600.0,real:24600.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Quadro de Comando',qtd:1,fornecedor:'Estimado',prev:450.0,real:450.0,'cat':'Serviço',extra:false}]}); }
-  if(!S.projects.find(function(p){return p.id==='lifar_torniquete';})){S.projects.push({id:'lifar_torniquete',nome:'LIFAR TORNIQUETE',desc:'Importado',cliente:'',data:'',items:[
-      {id:uid(),nome:'Leitor RFID PROX LE130 — Intelbras (x4)',prev:1183.60,real:962.64,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Interfone DS-KB8113-IME1 — Hikvision',prev:719.10,real:719.10,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Mola Aérea MH 103 — Intelbras',prev:167.20,real:153.90,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Fechadura Eletroímã FE 20150 — Intelbras',prev:300.98,real:276.91,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Cabo CAT6 (190m)',prev:1235.00,real:634.60,cat:'Cabeamento',extra:false},
-      {id:uid(),nome:'Fonte Nobreak 12V/5A FA 1250 — Intelbras (x2)',prev:480.00,real:412.64,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Bateria VRLA 12V/7Ah XB 1270 — Intelbras (x2)',prev:193.54,real:154.40,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Licença de Porta — Situator (x4)',prev:480.00,real:608.00,cat:'Software',extra:false},
-      {id:uid(),nome:'Controladora CT 3000 4PB — Intelbras',prev:1817.72,real:1478.44,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Quadro de Comando',prev:500.00,real:500.00,cat:'Infra/Transporte',extra:false},
-      {id:uid(),nome:'Switch 10P Giga PoE S1110G — Intelbras',prev:672.90,real:645.99,cat:'Infra/Transporte',extra:false}
-    ],services:[{id:uid(),nome:'Quadro de comando',qtd:1,fornecedor:'QUADRO DE COMANDO',prev:500.0,real:500.0,'cat':'Infra/Transporte',extra:false},{id:uid(),nome:'Material Elétrico e miscelaneas',qtd:1,fornecedor:'MATERIAL ELÉTRICO E MISCELANEAS',prev:500.0,real:500.0,'cat':'Infra/Transporte',extra:false},{id:uid(),nome:'Tubulação',qtd:15,fornecedor:'MÃO DE OBRA + TUBULAÇÃO',prev:35.0,real:35.0,'cat':'Infra/Transporte',extra:false},{id:uid(),nome:'Mão de Obra Técnica',qtd:1,fornecedor:'MÃO DE OBRA DE INSTALAÇÃO E CONFIGURAÇÃO',prev:1500.0,real:1500.0,'cat':'Serviço',extra:false}]}); }
-  if(!S.projects.find(function(p){return p.id==='alegrete';})){S.projects.push({id:'alegrete',nome:'ALEGRETE',desc:'Importado',cliente:'',data:'',items:[],services:[{id:uid(),nome:'Kit tubulação',qtd:19,fornecedor:'Estimado',prev:9500.0,real:9500.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Micelaneos e Elétrica',qtd:19,fornecedor:'Estimado',prev:5700.0,real:5700.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Instalação e configuração',qtd:19,fornecedor:'Estimado',prev:13300.0,real:9800.0,'cat':'Serviço',extra:false}]}); }
-  if(!S.projects.find(function(p){return p.id==='new_print_sca_almox';})){S.projects.push({id:'new_print_sca_almox',nome:'New_Print_SCA_ALMOX',desc:'Importado',cliente:'',data:'',items:[
-      {id:uid(),nome:'Câmera IP 4MP Acusense — Hikvision DS-2CD2043G2-I',prev:999.37,real:699.90,cat:'CFTV',extra:false},
-      {id:uid(),nome:'Suporte Facial — FOCA (x2)',prev:400.00,real:1556.00,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Leitor Facial CXF600 — COMMBOX (x2)',prev:5400.00,real:5400.00,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Controladora MCA10V4 — COMMBOX (x2)',prev:3980.00,real:3980.00,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Licença SafeAccess — COMMBOX (x2)',prev:960.00,real:960.00,cat:'Software',extra:false},
-      {id:uid(),nome:'Mola MH 103 — Intelbras',prev:167.20,real:153.90,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Fechadura Eletroímã FE 20150 — Intelbras',prev:300.98,real:276.91,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Fonte Nobreak 12V/5A FA 1250 — Intelbras',prev:240.00,real:206.32,cat:'Controle de Acesso',extra:false},
-      {id:uid(),nome:'Bateria VRLA 12V/7Ah XB 1270 — Intelbras',prev:96.77,real:77.28,cat:'Controle de Acesso',extra:false}
-    ],services:[{id:uid(),nome:'Mão de obra e configuração',qtd:1,fornecedor:'VIGICORP',prev:1800.0,real:0.0,'cat':'Serviço',extra:false}]}); }
-  if(!S.projects.find(function(p){return p.id==='cd_s_o_jos_dos_pinha';})){S.projects.push({id:'cd_s_o_jos_dos_pinha',nome:'CD SÃO JOSÉ DOS PINHAIS',desc:'Importado',cliente:'',data:'',items:[{id:uid(),nome:'Rack Outdoor — Intelbras',prev:2718.0,real:2348.37,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Rack Indoor — Intelbras',prev:485.0,real:455.0,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Régua Rack — Intelbras',prev:338.84,real:325.32,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Speed Dome — Hikvision',prev:6400.0,real:7000.0,'cat':'CFTV',extra:false},{id:uid(),nome:'CABO UTP CAT6 — Intelbras',prev:8599.5,real:7031.5,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Câmera Fixa Acusense — Hikvision',prev:22440.0,real:29700.0,'cat':'CFTV',extra:false},{id:uid(),nome:'NVR 32 Canais — Hikvision',prev:5000.0,real:5000.0,'cat':'CFTV',extra:false},{id:uid(),nome:'HD 12 TB — Intelbras',prev:10444.47,real:5838.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Cabo Paralelo 2x2,5mm',prev:3500.0,real:1708.0,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Cabo Óptico — Intelbras',prev:778.02,real:642.54,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Switch 16 Portas POE — Hikvision',prev:5202.66,real:5202.66,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Suporte Câmeras',prev:11550.0,real:9900.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Caixa Câmera — Intelbras',prev:551.25,real:530.95,'cat':'CFTV',extra:false},{id:uid(),nome:'Licença — Hikvision',prev:7700.0,real:7700.0,'cat':'CFTV',extra:false},{id:uid(),nome:'Conversor de Mídia A — Intelbras',prev:1540.0,real:1540.0,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Conversor de Mídia B — Intelbras',prev:1540.0,real:1540.0,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Switch POE 24 Portas — Hikvision',prev:2544.7,real:2544.7,'cat':'CFTV',extra:false},{id:uid(),nome:'Torniquete — Foca',prev:10000.0,real:9400.0,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Controlador Facial — Hikvision',prev:7194.0,real:7194.0,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Controladora — Eduardo',prev:2100.0,real:2100.0,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Quadro de Comando',prev:1200.0,real:1200.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Patch Panel — Intelbras',prev:592.52,real:595.76,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Guia de cabo — Intelbras',prev:200.16,real:200.16,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Patch cord — Intelbras',prev:458.5,real:666.5,'cat':'Cabeamento/Infra',extra:false},{id:uid(),nome:'Totens — Protect',prev:4000.0,real:3500.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Bateria — Intelbras',prev:4411.8,real:4235.4,'cat':'Energia',extra:false},{id:uid(),nome:'Nobreak — Intelbras',prev:2466.9,real:2368.23,'cat':'Energia',extra:false},{id:uid(),nome:'Nobreak — Intelbras',prev:2466.9,real:2024.79,'cat':'Energia',extra:false},{id:uid(),nome:'Software Acesso — Seventh',prev:1500.0,real:1372.0,'cat':'Software',extra:false},{id:uid(),nome:'Software Acesso — Seventh',prev:720.0,real:864.0,'cat':'Software',extra:false},{id:uid(),nome:'Fonte 12V/10A — Intelbras',prev:317.88,real:241.6,'cat':'Energia',extra:false},{id:uid(),nome:'Interfone IP — Khomp',prev:4800.0,real:5616.0,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Sensor IVA Portão — Intelbras',prev:357.0,real:342.72,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Suportes para IVA',prev:800.0,real:800.0,'cat':'Materiais',extra:false},{id:uid(),nome:'Sinaleira — DNI',prev:245.08,real:170.64,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Corneta — Khomp',prev:2500.0,real:1981.59,'cat':'Materiais',extra:false},{id:uid(),nome:'Sensor Fim de Curso Portão — Intelbras',prev:177.74,real:170.64,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Concertina',prev:500.0,real:500.0,'cat':'Controle de Acesso',extra:false},{id:uid(),nome:'Estação de Trabalho CMP — Dell',prev:9573.46,real:9573.46,'cat':'Materiais',extra:false},{id:uid(),nome:'Placas',prev:0,real:2000.0,'cat':'Materiais',extra:true},{id:uid(),nome:'Central',prev:0,real:2000.0,'cat':'Materiais',extra:true}],services:[{id:uid(),nome:'Tubulação Galvanizada Leve',qtd:1400,fornecedor:'',prev:49000.0,real:35000.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Suporte Câmeras',qtd:33,fornecedor:'',prev:11550.0,real:9900.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Quadro de Comando',qtd:1,fornecedor:'',prev:1200.0,real:1200.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Material Elétrico e Miscelâneas',qtd:1,fornecedor:'',prev:6000.0,real:6000.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Poste',qtd:2,fornecedor:'',prev:2000.0,real:2000.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Mão de obra civil',qtd:1,fornecedor:'',prev:5000.0,real:5000.0,'cat':'Serviço',extra:false},{id:uid(),nome:'Mão de obra e configuração',qtd:1,fornecedor:'',prev:25000.0,real:20000.0,'cat':'Serviço',extra:false}]}); }
-  S.projects.forEach(function(p){if(!p.services)p.services=[];if(!p.items)p.items=[];});
-  persist();
-})();
-
-// NOW: Add items to projects AFTER they've been created
-
-// Add items to Datacom (Câmeras Perímetro) if missing
-(function(){
-  var proj = S.projects.find(function(p){return p.id==='cam-perimetro';});
-  var temItens = proj && (proj.items||[]).some(function(i){return i.nome.includes('Lic. Digifort');});
-  if(proj && !temItens){
-    proj.items=[
-      {id:uid(),nome:'Lic. Digifort Pack 8ch (1)',prev:5740,real:6972.13,cat:'Licenças',extra:false},
-      {id:uid(),nome:'Lic. Digifort Pack 8ch (2)',prev:5740,real:6972.13,cat:'Licenças',extra:false},
-      {id:uid(),nome:'Lic. Digifort Pack 2ch',prev:1677.99,real:2037.15,cat:'Licenças',extra:false},
-      {id:uid(),nome:'Lic. Digifort 16ch Edge',prev:3719,real:4514.46,cat:'Licenças',extra:false},
-      {id:uid(),nome:'Lic. Digifort 8ch Edge',prev:2010.76,real:2440.25,cat:'Licenças',extra:false},
-      {id:uid(),nome:'Cabo CAT6 1500m',prev:11310,real:9045,cat:'Cabeamento',extra:false},
-      {id:uid(),nome:'Conector Keystone CAT6',prev:179.4,real:58.45,cat:'Conectores',extra:false},
-      {id:uid(),nome:'Patch Cord CAT6',prev:100.32,real:90,cat:'Conectores',extra:false},
-      {id:uid(),nome:'Conector RJ45 CAT6',prev:38.28,real:6.36,cat:'Conectores',extra:false},
-      {id:uid(),nome:'Cabo CAT6 500m (adicional)',prev:0,real:3015,cat:'Cabeamento',extra:true}
-    ];
-    persist();
-  }
-})();
-
-// Add items to DarkStore if missing (17 items from Excel)
-(function(){
-  var proj = S.projects.find(function(p){return p.id==='darkstore';});
-  // Check if any of the 17 items exist (by counting specific names)
-  var temCameraIP2MP = proj && (proj.items||[]).some(function(i){return i.nome.includes('Câmera IP 2MP');});
-  if(proj && !temCameraIP2MP){
-    proj.items=[
-      {id:uid(),nome:'Câmera IP 2MP — Hikvision DS-2CD1021G0-I (x16)',prev:3147.84,real:2888.32,cat:'CFTV',extra:false},
-      {id:uid(),nome:'NVR 16 Canais — Hikvision DS-7616NI-Q1',prev:840.98,real:840.98,cat:'CFTV',extra:false},
-      {id:uid(),nome:'HD 6TB — Seagate Skyhawk',prev:1279.90,real:1682.48,cat:'Materiais',extra:false},
-      {id:uid(),nome:'Caixa Passagem Externa (x6) — Intelbras VBOX 1100 E',prev:87.24,real:82.86,cat:'Materiais',extra:false},
-      {id:uid(),nome:'Caixa Passagem Interna (x10) — Intelbras VBOX 1100',prev:68.50,real:68.40,cat:'Materiais',extra:false},
-      {id:uid(),nome:'Rack 5U — Intelbras MRM 537',prev:182.49,real:204.74,cat:'Infraestrutura',extra:false},
-      {id:uid(),nome:'Cabo UTP CAT5E — Megatron (305mt)',prev:851.00,real:435.71,cat:'Cabeamento',extra:false},
-      {id:uid(),nome:'Organizador Cabo — Intelbras P40',prev:47.96,real:50.15,cat:'Cabeamento',extra:false},
-      {id:uid(),nome:'Patch Cord CAT5E (x3) — Intelbras 1.0m',prev:27.15,real:28.38,cat:'Cabeamento',extra:false},
-      {id:uid(),nome:'Régua 8 Tomadas — Intelbras EPR 208',prev:70.14,real:70.13,cat:'Energia',extra:false},
-      {id:uid(),nome:'Switch 16P POE + 2SFP — Intelbras S1118F-PA',prev:939.97,real:939.96,cat:'Rede',extra:false},
-      {id:uid(),nome:'Central Alarme s/Fio — JFL Active Full 32',prev:436.54,real:0,cat:'Alarme',extra:false},
-      {id:uid(),nome:'Sirene c/Fio — JFL SIR-120',prev:19.87,real:0,cat:'Alarme',extra:false},
-      {id:uid(),nome:'Teclado s/Fio Pro UHF — JFL TEC 510 DUO+',prev:195.64,real:0,cat:'Alarme',extra:false},
-      {id:uid(),nome:'Botão Pânico s/Fio — JFL CR4T DUO+',prev:62.97,real:0,cat:'Alarme',extra:false},
-      {id:uid(),nome:'Sensor IVP PET (x16) — JFL IRPET-520 DUO+',prev:2069.28,real:2069.28,cat:'Alarme',extra:false},
-      {id:uid(),nome:'Licença VMS — Hikvision iVMS 4200',prev:0,real:0,cat:'Software',extra:false}
-    ];
-    persist();
-  }
-})();
-
-
-} // ── fim do seeding legado (só roda na matriz) ──
 
 
 // ── BUSCA GLOBAL ──

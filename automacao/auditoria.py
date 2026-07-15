@@ -9,16 +9,57 @@ Gera um relatorio com:
 Salva em Relatorios/auditoria_<data>.txt e Relatorios/auditoria_ultima.txt
 NAO altera dados — so reporta (a remocao de duplicata e decisao do usuario).
 """
-import os, sys, datetime, io
+import os, sys, datetime, io, glob, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _comum as C
 
 REL_DIR = os.path.join(C.BASE_DIR, 'Relatorios')
 
+# Se a base encolher mais que isto de um dia pro outro, dispara alerta de anomalia.
+LIMITE_QUEDA = 0.10  # 10%
+
 
 def chave(n):
     # mesma nota = mesmo NUMERO + mesmo FORNECEDOR
     return (str(n.get('numero', '')).strip(), C._norm(n.get('fornecedor') or ''))
+
+
+def _backup_anterior(fid):
+    """Devolve os dados do backup diario mais recente ANTERIOR a hoje (ou None)."""
+    hoje = 'dados_%s.json' % datetime.date.today().isoformat()
+    bdir = os.path.join(C.FILIAIS_DIR, fid, 'Backups')
+    arqs = sorted(os.path.basename(p) for p in glob.glob(os.path.join(bdir, 'dados_*.json')))
+    anteriores = [a for a in arqs if a < hoje]
+    if not anteriores:
+        return None
+    try:
+        return json.load(open(os.path.join(bdir, anteriores[-1]), encoding='utf-8')), anteriores[-1]
+    except Exception:
+        return None
+
+
+def detectar_anomalias(filiais, nome, dados):
+    """Compara cada filial com seu backup do dia anterior e reporta quedas bruscas."""
+    alertas = []
+    for f in filiais:
+        fid = f['id']
+        atual = dados[fid].get('nfs', [])
+        n_atual = len(atual)
+        v_atual = sum(x.get('valor', 0) or 0 for x in atual)
+        prev = _backup_anterior(fid)
+        if not prev:
+            continue
+        d_prev, arq_prev = prev
+        ant = d_prev.get('nfs', [])
+        n_ant = len(ant)
+        v_ant = sum(x.get('valor', 0) or 0 for x in ant)
+        if n_ant == 0:
+            continue
+        queda_n = (n_ant - n_atual) / n_ant
+        queda_v = (v_ant - v_atual) / v_ant if v_ant else 0
+        if queda_n > LIMITE_QUEDA or queda_v > LIMITE_QUEDA:
+            alertas.append((nome[fid], arq_prev, n_ant, n_atual, v_ant, v_atual, queda_n, queda_v))
+    return alertas
 
 
 def main():
@@ -30,6 +71,18 @@ def main():
     w = out.write
     w('AUDITORIA — %s\n' % datetime.datetime.now().strftime('%d/%m/%Y %H:%M'))
     w('=' * 70 + '\n\n')
+
+    # Alertas de anomalia (queda brusca de dados x dia anterior)
+    anomalias = detectar_anomalias(filiais, nome, dados)
+    if anomalias:
+        w('!!!' + ' ALERTA DE ANOMALIA — POSSIVEL PERDA DE DADOS ' + '!!!\n')
+        w('-' * 70 + '\n')
+        for nm, arq, n_ant, n_at, v_ant, v_at, qn, qv in anomalias:
+            w('  %s: notas %d -> %d (%.0f%%)  |  valor R$ %.2f -> R$ %.2f (%.0f%%)\n'
+              % (nm, n_ant, n_at, qn * 100, v_ant, v_at, qv * 100))
+            w('     comparado com: %s\n' % arq)
+        w('  >> Verifique se a queda e legitima. Para restaurar, peca ao assistente.\n')
+        w('-' * 70 + '\n\n')
 
     # Resumo por filial
     w('RESUMO POR FILIAL\n')
