@@ -566,6 +566,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(404)
         self.end_headers()
     def do_GET(self):
+        # ── BLOQUEIO DE ARQUIVOS SENSIVEIS ──
+        # Impede o download direto de credenciais, tokens de sessao, banco de
+        # atividades, backups e codigo-fonte — mesmo por usuario ja autenticado.
+        # O frontend nao busca nenhum destes (usa endpoints /whoami, /usuarios, etc.).
+        _limpo = self.path.split('?')[0].lstrip('/')
+        _base = os.path.basename(_limpo).lower()
+        _proibidos = {'config.json', 'sessoes.json', 'atividade.db',
+                      'atividade.db-wal', 'atividade.db-shm', 'dados.backup.json',
+                      'analise_precos.bak.json', 'fornecedores_novos.json'}
+        if (_base in _proibidos or _base.endswith(('.py', '.pyw', '.bak'))
+                or _limpo.lower().startswith('filiais/') and _base == 'dados.backup.json'
+                or '/backups/' in ('/' + _limpo.lower())):
+            self.send_response(403)
+            self.send_header('Content-type', 'text/plain; charset=utf-8')
+            self.end_headers()
+            self.wfile.write('403 - acesso negado'.encode('utf-8'))
+            return
         # Arquivos do PWA são públicos (senão o celular recebe a tela de login no lugar deles)
         if self.path.split('?')[0] in ('/manifest.json', '/icon.svg', '/sw.js'):
             return http.server.SimpleHTTPRequestHandler.do_GET(self)
