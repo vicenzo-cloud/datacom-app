@@ -1,92 +1,709 @@
 {
-  "atualizado_em": "2026-07-09",
-  "fonte": "Pesquisa em distribuidores e varejistas brasileiros (KaBuM, JS Distribuidor CFTV, Best Network, Net Computadores, Winter Informática, Canal das Câmeras, Full CFTV, WAN Informática, ShopLivre, IGTech, Grupo iSeg, lojas oficiais Intelbras/JFL/Hikvision e Mercado Livre).",
+  "atualizado_em": "2026-07-17",
+  "fonte": "Pesquisa em distribuidores e varejistas brasileiros (KaBuM, JS Distribuidor CFTV, NetAlarmes, WAN Informática, Mercado Livre, Intelcenter, Eletroinfocia, CFTV Clube, UpperSeg, Igecast Seg/Segurança, Rede Loja, Amazon, Aztech Hardware, Prime Cabos, Eletrônica Santana, Dispaseg, Senatron, Tervos Distribuidora, TudoSeg CFTV, Real Energia Solar, Oficina dos Bits, Detecta Company, Casa da Segurança Cambé, Riber Shop, WAN Informática e Tecnologia, lojas oficiais Intelbras/JFL/Hikvision), Net Computadores, Tervos Distribuidora, Central das Câmeras, MicroByte Shop, Compra Gamer, MGA Virtual, BJ Seg, Tek Distribuidor, One Security, BJSeg, Syma, IG Tech Grupo, TudoSeg CFTV. Atualização de 2026-07-17.",
   "itens": [
-    {"item": "NVR HIKVISION DS-7616NI-Q1", "meu": 1768.00, "qtd": 15, "mercado": 1079.45, "fornecedor": "KaBuM", "url": "https://www.kabum.com.br/produto/318140/gravador-digital-nvr-hikvision-16-canais-ultra-hd-4k-8mp-ds-7616ni-q1", "obs": ""},
-    {"item": "SENSOR 8000 PET (IVP 8000 Pet)", "meu": 141.78, "qtd": 529, "mercado": 194.47, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3239-sensor_de_movimento_infra_vermelho_sem_fio_12mts_90_20_kg_915_mhz_a_928_mhz_intelbras_ivp_8000_pet", "obs": "Preço caiu de R$204,71 para R$194,47 em 2026-07-09."},
-    {"item": "CENTRAL AMT 2018 E SMART", "meu": 474.36, "qtd": 44, "mercado": 655.14, "fornecedor": "Intelcenter", "url": "https://www.intelcenter.com.br/alarme/central-de-alarme/central-de-alarme-amt-2018-e-smart-intelbras", "obs": "Preço subiu de R$420,71 para R$655,14 em 2026-07-08."},
-    {"item": "DVR HD 4 CANAIS MHDX 1204 C/HD 1TB", "meu": 997.01, "qtd": 21, "mercado": 579.00, "fornecedor": "Net Computadores (+ HD 1TB)", "url": "https://netcomputadores.com.br/p/4580833-intelbras-gravador-dvr-4/98741", "obs": "DVR sem HD ~R$579; com HD Purple 1TB ~+R$330. Preço caiu de R$917 em 2026-07-08."},
-    {"item": "CAMERA IP DS-2CD2043G2-I (2.8MM)", "meu": 830.00, "qtd": 187, "mercado": 793.00, "fornecedor": "Mercado Livre", "url": "https://www.mercadolivre.com.br/cmera-ip-4mp-acusense-bullet-28mm-hikvision-ds-2cd2043g2-i-cor-branco/p/MLB20255855", "obs": "Seu maior gasto — está no preço de mercado. Preço caiu de R$802 para R$793 em 2026-07-09."},
-    {"item": "CAMERA HIKVISION IP LITE DS-2CD1021G0-I 2.8MM", "meu": 189.52, "qtd": 109, "mercado": 233.91, "fornecedor": "Winter Informática", "url": "https://loja.winterinformatica.com.br/produto/camera-ip-ds-2cd1021g0-i-2-8mm-hikvision/", "obs": "Preço caiu de R$259,90 para R$233,91 em 2026-07-08."},
-    {"item": "CENTRAL ACTIVE 100 BUS (JFL)", "meu": 335.08, "qtd": 57, "mercado": 419.90, "fornecedor": "Magazine Luiza / UpperSeg", "url": "https://www.magazineluiza.com.br/central-de-alarme-active-100-bus-sem-teclado-ate-99-zonas-jfl/p/hk0k2ffd83/cj/alre/", "obs": "Preço não atualizado em 2026-07-09 (fonte bloqueou acesso)."},
-    {"item": "TECLADO XAT 8000", "meu": 288.23, "qtd": 67, "mercado": 394.26, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3153-teclado_sem_fio_para_centrais_de_alarme_intelbras_xat_8000", "obs": "Preço caiu de R$430,55 para R$394,26 em 2026-07-09 (fonte anterior Best Network fora do ar)."},
-    {"item": "SIRENE XSS 8000", "meu": 234.73, "qtd": 73, "mercado": 361.62, "fornecedor": "Segurança Shop", "url": "https://www.segurancashop.com.br/sirene-sem-fio-xss-8000-intelbras-2025-01-20-14-24-13", "obs": "Preço subiu de R$245,70 para R$361,62 em 2026-07-08."},
-    {"item": "NOBREAK ATTIV 600VA", "meu": 341.44, "qtd": 38, "mercado": 532.00, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3969-nobreak_interativo_bivolt_entrada_saida_120v_attiv_600_va_bi", "obs": "Preço subiu de R$484,50 para R$532,00 em 2026-07-08."},
-    {"item": "CAMERA VHD 1120 B (Intelbras)", "meu": 80.45, "qtd": 328, "mercado": 189.91, "fornecedor": "Prime Cabos", "url": "https://primecabos.com.br/camera-intelbras-vhd-1120-b-g5-multi-hd-com-infravermelho", "obs": "Preço caiu de R$204,99 para R$189,91 em 2026-07-09. Modelo atual é a versão G5."},
-    {"item": "CAMERA IP SPEED DOME VIP 5232 SD IA", "meu": 5832.34, "qtd": 3, "mercado": 7933.17, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-5061-speed_dome_ip_com_inteligencia_artificial_deteccao_de_face_autotracking_poe_zoom_optico_32x_intelbras_vip_5232_sd_ia_g2", "obs": "Preço subiu de R$6897 para R$7933,17 em 2026-07-09. Modelo antigo descontinuado; refere-se à versão G2 sucessora."},
-    {"item": "DVR MHDX 3116-C (16 canais)", "meu": 1041.73, "qtd": 9, "mercado": 1367.15, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4385-dvr_gravador_de_video_16_canais_h_265_intelbras_mhdx_3116_c_ate_5_0_megapixels", "obs": "Preço caiu de R$1897,25 para R$1367,15 em 2026-07-08. Verificar se inclui HD."},
-    {"item": "CAMERA MIBO IM5 (c/ Micro SD 32GB)", "meu": 359.93, "qtd": 115, "mercado": 291.51, "fornecedor": "Loja Intelbras / Mercado Livre", "url": "https://loja.intelbras.com.br/camera-wi-fi-im5s-c/p", "obs": "Preço caiu de R$526,21 para R$291,51 em 2026-07-08."},
-    {"item": "SENSOR DS 520 BUS (JFL)", "meu": 88.98, "qtd": 261, "mercado": 229.95, "fornecedor": "KaBuM", "url": "https://www.kabum.com.br/produto/258557/sensor-infravermelho-passivo-ds-520-bus-com-fio-jfl", "obs": "Sem estoque no fornecedor em 2026-07-09, mantido último valor (R$229,95)."},
-    {"item": "TECLADO TEC 300 (JFL)", "meu": 139.46, "qtd": 113, "mercado": 165.20, "fornecedor": "IGE Cast Seg", "url": "https://www.igecastseg.com.br/centrais-de-alarmeacessorios/teclado-lcd-tec-300-jfl", "obs": "Mercado varia bastante (R$120–343)."},
-    {"item": "SENSOR SL 320 DUO (JFL)", "meu": 108.11, "qtd": 145, "mercado": 151.91, "fornecedor": "UpperSeg / Tudo Forte", "url": "https://www.upperseg.com.br/alarme/sensores/magnetico/sensor-magnetico-de-abertura-sl-320-duo-jfl-sem-fio-misto-868mhz/", "obs": "Preço não atualizado em 2026-07-09 (fonte bloqueou acesso)."},
-    {"item": "CAMERA VHD 1230 B (Intelbras)", "meu": 119.53, "qtd": 89, "mercado": 171.00, "fornecedor": "Mercado Livre", "url": "https://www.mercadolivre.com.br/cmera-de-seguranca-intelbras-vhd-1230-b-multi-hd-1080p-30m-cor-branco/p/MLB27825933", "obs": "Preço caiu de R$179 para R$171 em 2026-07-09."},
-    {"item": "SENSOR IVP 3000 MW EX (Intelbras)", "meu": 459.31, "qtd": 28, "mercado": 603.37, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-2119-sensor_infravermelho_para_uso_externo_intelbras_tripla_tecnologia_micro_ondas_pet_35kg_110_ivp_3000_mw_ex", "obs": "Preço caiu de R$621,97 para R$603,37 em 2026-07-09 (fonte anterior Leroy Merlin bloqueou acesso)."},
-    {"item": "MODULO GPRS XAG 8000 (AMT 8000)", "meu": 289.10, "qtd": 38, "mercado": 331.65, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3241-modulo_transmissao_de_dados_via_gprs_intelbras_xag_8000_2g", "obs": "Preço caiu de R$338,19 para R$331,65 em 2026-07-09 (fonte anterior Intelbras bloqueou acesso)."},
-    {"item": "DVR INTELBRAS MHDX 3108 (8 canais)", "meu": 629.78, "qtd": 14, "mercado": 677.00, "fornecedor": "Mercado Livre", "url": "https://www.mercadolivre.com.br/gravador-digital-de-video-compacto-intelbras-mhdx-3108c/up/MLBU3752772663", "obs": "Preço subiu de R$664 para R$677 em 2026-07-09 (varia R$677-R$1269 conforme HD incluso; valor sem HD). Verificar se inclui HD."},
-    {"item": "CAMERA VHD 1120 D (Intelbras)", "meu": 81.80, "qtd": 123, "mercado": 164.90, "fornecedor": "KaBuM", "url": "https://www.kabum.com.br/produto/249758/camera-intelbras-vhd-1120-d-g6-dome-hd-720p-sensor-1-2-8-lente-2-8mm-hdcvi-anti-uv-menu-osd-20m-ir", "obs": "Preço caiu de R$189,90 para R$164,90 em 2026-07-09."},
-    {"item": "SENSOR XAS 8000 (Intelbras)", "meu": 111.42, "qtd": 87, "mercado": 156.47, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3151-sensor_de_abertura_magnetico_sem_fio_intelbras_xas_8000", "obs": "Preço praticamente estável (R$157 → R$156,47) em 2026-07-09."},
-    {"item": "NOBREAK ATTIV 700VA", "meu": 402.51, "qtd": 22, "mercado": 616.59, "fornecedor": "Loja Intelbras", "url": "https://loja.intelbras.com.br/nobreak-attiv-700va-bi/p", "obs": "Preço subiu de R$497 para R$616,59 em 2026-07-08."},
-    {"item": "DVR INTELBRAS MHDX 1208 (8 canais)", "meu": 534.08, "qtd": 13, "mercado": 510.21, "fornecedor": "Varejo (preço Pix)", "url": "https://www.intelbras.com/pt-br/gravador-de-video-inteligente-com-8-canais-mhdx-1208", "obs": "Praticamente no preço de mercado. Confirmado em 2026-07-09."},
-    {"item": "NVR HIKVISION DS-7616NXI-K1", "meu": 1176.97, "qtd": 7, "mercado": 1286.10, "fornecedor": "Full CFTV", "url": "https://www.fullcftv.com.br/hikvision-ds-7616nxi-k1/p/MLB28014160", "obs": ""},
-    {"item": "CENTRAL JFL ACTIVE FULL 32", "meu": 423.84, "qtd": 36, "mercado": 509.30, "fornecedor": "IGE Cast Seg", "url": "https://www.igecastseg.com.br/centrais-de-alarmeacessorios/central-jfl/central-monitoravel-active-full-32", "obs": ""},
-    {"item": "CAMERA IP SPEED DOME VIP 5225 SD IR IA", "meu": 4645.87, "qtd": 2, "mercado": 6317.50, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4621-camera_speed_dome_ip_com_inteligencia_artificial_zoom_25x_autotracking_starlight_ir_150mt_vip_5225_sd_ir_ia_g2_intelbras", "obs": "Preço subiu de R$5822 para R$6317,50 em 2026-07-09. Modelo antigo descontinuado; refere-se à versão G2 sucessora."},
-    {"item": "TECLADO JFL TEC 510 DUO", "meu": 190.13, "qtd": 37, "mercado": 183.50, "fornecedor": "Total Eletrônicos", "url": "https://www.totaleletronicos.com.br/teclado-oled-tec-510-duo-sem-fio-para-centrais-jfl", "obs": "No preço de mercado."},
-    {"item": "CENTRAL AMT 2018 E (não-SMART)", "meu": 494.98, "qtd": 17, "mercado": 746.51, "fornecedor": "Segurança Shop", "url": "https://www.segurancashop.com.br/central-de-alarme-amt-2018-e-intelbras", "obs": "Preço subiu de R$553,42 para R$746,51 em 2026-07-08."},
-    {"item": "SENSOR IRPET 520 DUO (JFL)", "meu": 125.56, "qtd": 317, "mercado": 156.00, "fornecedor": "Visio Shop", "url": "https://www.visioshop.com.br/MLB-5125882540-sensor-jfl-infravermelho-funco-pet-passivo-irpet-520-duo-_JM", "obs": ""},
-    {"item": "MODULO GPRS XG 4G (Intelbras)", "meu": 289.10, "qtd": 58, "mercado": 379.90, "fornecedor": "Segurança e Telecom", "url": "https://www.segurancaetelecom.com.br/p/modulo-de-comunicacao-4g-para-centrais-de-alarme-xg-4g", "obs": "Sem estoque em 2026-07-09, mantido último valor."},
-    {"item": "CAMERA MIBO IMX (Wi-Fi)", "meu": 255.92, "qtd": 44, "mercado": 269.91, "fornecedor": "Loja Intelbras", "url": "https://loja.intelbras.com.br/camera-de-video-wi-fi-full-hd-imx-black/p", "obs": "Preço caiu de R$284,99 para R$269,91 em 2026-07-09 (preço Pix na loja oficial Intelbras)."},
-    {"item": "MODULO GPRS JFL MGP-04 4G", "meu": 278.42, "qtd": 104, "mercado": 309.46, "fornecedor": "Tudo Forte", "url": "https://www.tudoforte.com.br/modulo-gprs-mgp-4-jfl", "obs": "Sem estoque em 2026-07-09, mantido último valor."},
-    {"item": "CENTRAL ACTIVE 8W (JFL)", "meu": 277.82, "qtd": 6, "mercado": 362.99, "fornecedor": "Canal das Câmeras (Mercado Livre)", "url": "https://www.canaldascameras.com/MLB-5251264798-central-de-alarme-prot-active-8w-com-tecnologia-duo-jfl-_JM", "obs": "Preço caiu de R$436,91 para R$362,99 em 2026-07-09. Agora com o SKU exato Active 8W."},
-    {"item": "CAMERA VHD 3230 B (Intelbras)", "meu": 234.50, "qtd": 48, "mercado": 337.35, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4585-camera_bullet_multi_hd_hdcvi_ahd_m_hdtvi_e_analogico_1_2_8_3_6mm_30m_98o_1080p_vhd_3230_b_g7", "obs": "Preço subiu de R$225 para R$337,35 em 2026-07-09 (fonte anterior UpperSeg bloqueou acesso). Mercado ainda varia muito."},
-    {"item": "SENSOR IVP 7000 EX (Intelbras)", "meu": 303.08, "qtd": 20, "mercado": 398.15, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4779-sensor_infravermelho_tripla_tecnologia_micro_ondas_pet_30kg_110o_intelbras_ivp_7000_mw_ex", "obs": "Preço subiu de R$304,89 para R$398,15 em 2026-07-09 (fonte anterior Visio Shop com erro de conexão)."},
-    {"item": "SENSOR LZ 520 DUO (JFL)", "meu": 132.33, "qtd": 43, "mercado": 159.00, "fornecedor": "CommallTech", "url": "https://commalltech.mercadoshops.com.br/MLB-3836236931-sensor-presenca-infravermelho-pet-20kg-lz-520-duo-jfl-_JM", "obs": ""},
-    {"item": "SENSOR IVP 5311 MW PET (Intelbras)", "meu": 121.46, "qtd": 45, "mercado": 191.61, "fornecedor": "Equipe Informática", "url": "https://www.equipeclub.com.br/sensor-presenca-cfio-alarme-intelbras-ivp-5311-mw-pet", "obs": "Praticamente estável (R$190,50 → R$191,61) em 2026-07-09."},
-    {"item": "CAMERA VHD 3230 D (Intelbras)", "meu": 174.96, "qtd": 55, "mercado": 323.67, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4615-camera_dome_multi_hd_hdcvi_ahd_m_hdtvi_e_analogico_2_8mm_30mts_109o_1080p_vhd_3230_d_g7", "obs": "Preço subiu de R$250 para R$323,67 em 2026-07-09 (fonte anterior UpperSeg bloqueou acesso). Mercado ainda varia."},
-    {"item": "NVR HIKVISION DS-7632NXI-K2 (32 canais)", "meu": 2490.00, "qtd": 2, "mercado": 3001.48, "fornecedor": "WAN Informática", "url": "https://www.waninformatica.com.br/wan/produto/m/nvr-hikvision-32ch-8mp-ds-7632nxi-k2-analiticos-7928", "obs": "Preço caiu de R$3196,59 para R$3001,48 em 2026-07-08."},
-    {"item": "SENSOR IVA 7100 QUAD (barreira)", "meu": 321.91, "qtd": 13, "mercado": 409.65, "fornecedor": "Riber Shop", "url": "https://ribershop.com.br/produtos/detalhes/4541039/sensor-de-barreira-infravermelho-ativo-iva-7100-quad-intelbras-pc/", "obs": "Preço subiu de R$315,50 para R$409,65 em 2026-07-09 (preço Pix com 10% desconto)."},
-    {"item": "CONTROLE ACESSO FACIAL DS-K1T673DX (Hikvision)", "meu": 1490.00, "qtd": 2, "mercado": 1501.00, "fornecedor": "BJSEG", "url": "https://bjseg.com.br/produto/1857874/controle-acesso-facial-hikvision-ds-k1t673dx", "obs": "Praticamente estável (R$1472,41 → R$1501,00) em 2026-07-09. No preço de mercado."},
-    {"item": "SENSOR IVA 3070 X (barreira)", "meu": 160.51, "qtd": 29, "mercado": 245.93, "fornecedor": "NetAlarmes", "url": "https://www.netalarmes.com.br/sensor-infravermelho-ativo-de-barreira-iva-3070-x-intelbras", "obs": "Preço subiu de R$231,30 para R$245,93 em 2026-07-09 (fonte anterior IGTech com erro de conexão)."},
-    {"item": "CENTRAL 8000 L (AMT 8000 Lite)", "meu": 463.11, "qtd": 46, "mercado": 705.50, "fornecedor": "Grupo iSeg", "url": "https://www.grupoiseg.com.br/MLB-3126234993-central-de-alarme-residencial-intelbras-amt-8000-lite-_JM", "obs": "Assumindo AMT 8000 Lite. Confirmado em 2026-07-09."},
-    {"item": "CAMERA IP BULLET VIP 3240 IA (Intelbras)", "meu": 728.80, "qtd": 7, "mercado": 888.41, "fornecedor": "Infomaster / Magazine Luiza", "url": "https://infomasterbrasil.com.br/camera-ip-de-video-bullet-vip-3240-ia-g2-intelbras-4570004-p7535", "obs": "Sem estoque em 2026-07-09, mantido último valor."},
-    {"item": "MINI RACK 5U x 350MM", "meu": 424.09, "qtd": 36, "mercado": 199.90, "fornecedor": "Protec Informática", "url": "https://www.protecolimpia.com.br/produto/mini-rack-de-parede-5u-x-19p-x-350mm/61", "obs": "Preço caiu de R$400 para R$199,90 em 2026-07-09 (fonte anterior Info Rack fora do ar). Commodity; mercado varia bastante."},
-    {"item": "SWITCH HIKVISION DS-3E1510P-SI (8P PoE)", "meu": 565.46, "qtd": 4, "mercado": 989.45, "fornecedor": "Mercado Livre", "url": "https://www.mercadolivre.com.br/switch-hikvision-gigabit-ds-3e1510p-si/p/MLB47352592", "obs": "Preço caiu de R$1499 para R$989,45 em 2026-07-09 (nova cotação WAN de R$1954,56 descartada por destoar bastante). Conferir variante; você comprou bem abaixo."},
-    {"item": "SWITCH INTELBRAS S1010F-P (10P/8 PoE)", "meu": 406.92, "qtd": 11, "mercado": 563.82, "fornecedor": "NetAlarmes", "url": "https://www.netalarmes.com.br/switch-10-portas-fast-ethernet-com-8-portas-poe-intelbras-s1010f-p", "obs": "Preço subiu de R$506,87 para R$563,82 em 2026-07-09 (fonte anterior Grupo iSeg com falha SSL)."},
-    {"item": "ROTEADOR INTELBRAS AP 1250 AC MAX", "meu": 742.68, "qtd": 4, "mercado": 977.65, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4203-roteador_access_point_de_alta_potencia_450_m_e_1200mbps_wi_fi_marketing_intelbras_ap_1250_ac_max", "obs": "Preço caiu de R$1079 para R$977,65 em 2026-07-09 (fonte anterior EasyTech com falha SSL)."},
-    {"item": "SWITCH HIKVISION DS-3E1318P-SI (16P PoE)", "meu": 1335.34, "qtd": 2, "mercado": 1250.00, "fornecedor": "Câmeras Hik", "url": "https://www.camerashik.com.br/switch-hikvision-gerenciavel-ds-3e1318p-eim-16-portas-poe/p/MLB33794300", "obs": "Variantes SI/EI variam de preço. Confirmado em 2026-07-09."},
-    {"item": "CONTROLE ACESSO FACIAL SS 3542 MF W (Intelbras)", "meu": 1462.80, "qtd": 1, "mercado": 1995.00, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4815-controlador_de_acesso_facial_com_biometria_digital_c_leitor_rfid_13_56_wi_fi_intelbras_ss_3542_mf_w", "obs": "Preço confirmado em 2026-07-09 (fonte anterior Equipvision fora do ar)."},
-    {"item": "CENTRAL 8000 P (AMT 8000 Pro)", "meu": 645.16, "qtd": 6, "mercado": 850.37, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4689-central_de_alarme_64_zonas_s_fio_rj45_ou_wi_fi_com_sirene_monitorado_via_app_celular_intelbras_amt_8000_pro", "obs": "Assumindo AMT 8000 Pro."},
-    {"item": "CAMERA IP VIP 1220 B FULL COLOR (Intelbras)", "meu": 127.20, "qtd": 21, "mercado": 130.00, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4553-camera_de_seguranca_ip_bullet_infra_20mt_ip67_poe_1080p_vip_1220_b_full_color_g4", "obs": "Sem estoque em 2026-07-09, mantido último valor. No preço de distribuidor (varejo chega a R$340)."},
-    {"item": "FECHADURA ELETROIMA FE 20150 (Intelbras)", "meu": 255.60, "qtd": 14, "mercado": 329.55, "fornecedor": "Eletrônica Santana", "url": "https://www.eletronicasantana.com.br/fechadura-eletroima-sem-sensor-fe-20150-4671095-intelbras/p", "obs": "Preço subiu de R$279 para R$329,55 em 2026-07-09 (fonte anterior Equipvision indisponível)."},
-    {"item": "CENTRAL JFL ACTIVE 20", "meu": 228.75, "qtd": 17, "mercado": 246.38, "fornecedor": "NetAlarmes", "url": "https://www.netalarmes.com.br/central-de-alarme-jfl-monitorada-active-20-para-ate-32-zonas", "obs": "Praticamente estável (R$240 → R$246,38) em 2026-07-09 (fonte anterior BJ Seg bloqueou acesso). Varia por versão (Bus/Ethernet/GPRS)."},
-    {"item": "CAMERA IP DS-2CD1021G2-LIU (Hikvision)", "meu": 239.00, "qtd": 12, "mercado": 239.00, "fornecedor": "UpperSeg", "url": "https://www.upperseg.com.br/cftv/cameras-de-seguranca/cameras-ip/camera-ip-com-fio/camera-ip-poe-hikvision-ds-2cd1023g2-liuf-full-hd-1080p-infravermelho-30-metros/", "obs": "Preço não atualizado em 2026-07-09. Referência do modelo similar 1023G2 (~R$226–239)."},
-    {"item": "CAMERA IP DOME DS-2CD1127G2H-LIU ColorVu (Hikvision)", "meu": 369.11, "qtd": 45, "mercado": 393.45, "fornecedor": "Dicomp", "url": "https://loja.dicomp.com.br/camera-ip-dome-hikvision-ds-2cd1127g2h-liu-2mp-28mm-poe-30-metros-colorvu/31445/p", "obs": "Preço não atualizado em 2026-07-09."},
-    {"item": "CAMERA IP DOME DS-2CD3166G2-IS 6MP AcuSense (Hikvision)", "meu": 1230.00, "qtd": 1, "mercado": 1583.12, "fornecedor": "Aztech Hardware", "url": "https://www.aztech.com.br/camera-ip-dome-6mp-28mm-poe-40-metros-acusense-ds-2cd3166g2-is-hikvision", "obs": "Preço caiu de R$1799 para R$1583,12 em 2026-07-08."},
-    {"item": "SENSOR IVP 1000 PET S/FIO (Intelbras)", "meu": 93.00, "qtd": 58, "mercado": 104.50, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4275-sensor_de_presenca_sem_fio_com_bateria_lithium_cr123a_3v_ook_intelbras_ivp_1000_pet_sf_20kg", "obs": "Preço caiu de R$145,71 para R$104,50 em 2026-07-08."},
-    {"item": "SENSOR IVP 1000 PET C/FIO (Intelbras)", "meu": 32.35, "qtd": 192, "mercado": 39.90, "fornecedor": "Mercado Livre", "url": "https://lista.mercadolivre.com.br/sensor-infra-vermelho-ivp-1000-pet-com-fio-intelbras", "obs": "Sem estoque em 2026-07-09, mantido último valor. Modelo com fio (baixo custo)."},
-    {"item": "SENSOR DSE 830 I (JFL)", "meu": 250.92, "qtd": 12, "mercado": 253.19, "fornecedor": "MadeiraMadeira", "url": "https://www.madeiramadeira.com.br/duplo-sensor-digital-externo-com-fio-para-alarme-dse-830-jfl-1134799.html", "obs": "Sem estoque em 2026-07-09, mantido último valor."},
-    {"item": "SENSOR DSE-830I DUO+ (JFL)", "meu": 335.09, "qtd": 5, "mercado": 335.00, "fornecedor": "OJ Distribuidora", "url": "https://www.ojdistribuidora.com.br/sensor-infravermelho-externo-sem-fio-pet-dse-830i-duo-jfl-r-branco/", "obs": "No preço de mercado em 2026-07-09 (fonte anterior Total Eletrônicos indisponível). Varia R$253–369."},
-    {"item": "TECLADO XAT 4000 LCD (Intelbras)", "meu": 201.67, "qtd": 8, "mercado": 270.87, "fornecedor": "JS Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-2774-teclado_digital_lcd_intelbras_para_central_de_alarme_monitoradas_xat_4000_lcd", "obs": "Preço caiu de R$280 para R$270,87 em 2026-07-09 (fonte anterior Total Eletrônicos indisponível). Mercado varia (R$200–640)."},
-    {"item": "SENSOR IVP 3011 CORTINA (Intelbras)", "meu": 154.10, "qtd": 10, "mercado": 111.92, "fornecedor": "CFTV Clube", "url": "https://www.cftvclube.com.br/alarmes/sensor-infravermelho-passivo-intelbras-ivp-3011-cortina", "obs": "Preço caiu de R$172,90 para R$111,92 em 2026-07-09 (fonte anterior Raip fora do ar); queda relevante, vale conferir se é o mesmo SKU."},
-    {"item": "SENSOR IRA-315 DIGITAL (JFL)", "meu": 130.13, "qtd": 28, "mercado": 170.00, "fornecedor": "SatFrota", "url": "https://www.satfrota.com.br/produtos/sensor-de-barreira-ativo-ira-315-digital-jfl/", "obs": "Sem estoque em 2026-07-09, mantido último valor."},
-    {"item": "CENTRAL ALARME AX PRO DS-PWA64-L-WE (Hikvision)", "meu": 654.00, "qtd": 1, "mercado": 740.91, "fornecedor": "TekDistribuidor", "url": "https://www.tekdistribuidor.com.br/central-de-alarme-64-zonas-hikvision-ax-pro-ds-pwa64-l-we", "obs": "Sem estoque em múltiplos fornecedores em 2026-07-09, mantido último valor."},
-    {"item": "CAMERA IP VIP 3250 AL IA (Intelbras)", "meu": 705.17, "qtd": 2, "mercado": 853.20, "fornecedor": "Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3069", "obs": "Sem estoque em 2026-07-09, mantido último valor."},
-    {"item": "BOTOEIRA INFRAVERMELHO BT 4000 (Intelbras)", "meu": 165.78, "qtd": 12, "mercado": 249.90, "fornecedor": "WAF Segurança", "url": "https://www.loja.wafseguranca.com.br/acionador-de-abertura-por-proximidade-inox-bt-4000-intelbras/p/MLB29266356", "obs": ""},
-    {"item": "SENSOR IRD 640 PET (JFL)", "meu": 87.19, "qtd": 13, "mercado": 117.61, "fornecedor": "Canal das Câmeras", "url": "https://www.canaldascameras.com/MLB-1881267128-sensor-de-presenca-infra-passivo-jfl-ird-640-pet-30-kg-ivp-_JM", "obs": "Confirmado em 2026-07-09."},
-    {"item": "LEITOR RFID PROX LE 130 MF (Intelbras)", "meu": 240.66, "qtd": 4, "mercado": 284.14, "fornecedor": "Distribuidor CFTV", "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-2909-leitor_de_cartao_intelbras_rfid_13_56_mhz_le_130_mf", "obs": "Sem estoque em 2026-07-09, mantido último valor."},
-    {"item": "SENSOR IRA 260 DIGITAL (JFL)", "meu": 153.66, "qtd": 5, "mercado": 209.30, "fornecedor": "NetAlarmes", "url": "https://www.netalarmes.com.br/sensor-de-barreira-infravermelho-ativo-ira-260-digital-60-metros-jfl", "obs": "Preço subiu de R$140 para R$209,30 em 2026-07-09 (fonte anterior Total Eletrônicos indisponível). Mercado ainda varia."},
-    {"item": "CAMERA IP BULLET VIP 3430 B IA (Intelbras)", "meu": 628.25, "qtd": 1, "mercado": 825.59, "fornecedor": "Segurança e Telecom", "url": "https://www.segurancaetelecom.com.br/p/camera-bullet-com-resolucao-4-mp-vip-3430-b-ia", "obs": "Preço subiu de R$804,29 para R$825,59 em 2026-07-09 (preço Pix com 7% desconto; site oficial Intelbras bloqueou acesso)."},
-    {"item": "DVR INTELBRAS MHDX 3004 (4 canais)", "meu": 390.95, "qtd": 1, "mercado": 524.00, "fornecedor": "Mercado Livre", "url": "https://lista.mercadolivre.com.br/mhdx-3004", "obs": "Preço não atualizado em 2026-07-09. Sem HD."},
-    {"item": "SENSOR IVA 3110 X (barreira)", "meu": 180.63, "qtd": 2, "mercado": 235.35, "fornecedor": "Total Eletrônicos", "url": "https://www.totaleletronicos.com.br/sensor-ativo-de-barreira-iva-3110-x-intelbras-110-metros", "obs": "Preço caiu de R$261,50 para R$235,35 em 2026-07-09 (preço Pix)."},
-    {"item": "SENSOR IVP 7001 MW PET (Intelbras)", "meu": 169.98, "qtd": 2, "mercado": 264.08, "fornecedor": "NetAlarmes", "url": "https://www.netalarmes.com.br/sensor-de-movimento-passivo-intelbras-ivp-7001-mw-pet", "obs": ""},
-    {"item": "SENSOR IVP 5001 PET (Intelbras)", "meu": 51.17, "qtd": 10, "mercado": 69.90, "fornecedor": "Sete Eletrônica", "url": "https://www.seteeletronica.com.br/sensor-de-movimento-infravermelho-passivo-ivp-5001-pet-intelbras/p", "obs": ""},
-    {"item": "TECLADO AX PRO DS-PK1-E-WE (Hikvision)", "meu": 215.00, "qtd": 1, "mercado": 328.38, "fornecedor": "MadeiraMadeira", "url": "https://www.madeiramadeira.com.br/teclado-p-alarme-sem-fio-hikvision-ds-pk1-e-we-p-ax-pro-ds-pwa64-l-we-793145176.html", "obs": ""},
-    {"item": "SENSOR DUAL TEC 550 (JFL)", "meu": 126.25, "qtd": 5, "mercado": 179.59, "fornecedor": "Alarme Center", "url": "https://alarmecenter.com/produto/sensor-infravermelho-passivo-com-funcao-pet-dual-tec-550-jfl/", "obs": ""},
-    {"item": "SENSOR LZ-550 (JFL)", "meu": 113.72, "qtd": 3, "mercado": 97.76, "fornecedor": "UpperSeg", "url": "https://www.upperseg.com.br/alarme/sensores/ivp/sensor-ivp-infravermelho-passivo-pet-dupla-tecnologia-micro-ondas-e-pir-quad-lz-550-jfl/", "obs": "Preço caiu de R$119,70 para R$97,76 em 2026-07-09 (fonte anterior Lemanti fora do ar, preço Pix)."},
-    {"item": "SENSOR IRD 650 DUO (JFL)", "meu": 164.60, "qtd": 1, "mercado": 215.99, "fornecedor": "Canal das Câmeras", "url": "https://www.canaldascameras.com/MLB-1881265178-sensor-de-presenca-passivo-sem-fio-jfl-ird-650-duo-30kg-ivp-_JM", "obs": "Preço subiu de R$158,25 para R$215,99 em 2026-07-09."},
-    {"item": "BOTOEIRA / ACIONADOR AS 2010 (Intelbras)", "meu": 123.38, "qtd": 1, "mercado": 180.50, "fornecedor": "Visio Shop", "url": "https://www.visioshop.com.br/acionador-de-emergncia-rearmavel-as-2010-intelbras/p/MLB34113388", "obs": ""},
-    {"item": "SENSOR DE PORTA ABERTA PA-110 (JFL)", "meu": 131.65, "qtd": 1, "mercado": 118.71, "fornecedor": "Total Eletrônicos", "url": "https://www.totaleletronicos.com.br/sensor-de-porta-aberta-com-acionamento-de-portao-pa-110-jfl", "obs": "Preço caiu de R$131,90 para R$118,71 em 2026-07-09 (preço Pix)."},
-    {"item": "SENSOR MAGNETICO AX PRO DS-PDMCS-EG2-WE (Hikvision)", "meu": 119.00, "qtd": 2, "mercado": 179.34, "fornecedor": "WAN Informática", "url": "https://www.waninformatica.com.br/wan/produto/m/sensor-magnetico-sem-fio-ax-pro-ds-pdmcs-eg2-we-hikvision-7589", "obs": "Preço subiu de R$140,97 para R$179,34 em 2026-07-08."},
-    {"item": "SENSOR IVP 5000 LD (Intelbras)", "meu": 47.28, "qtd": 2, "mercado": 72.55, "fornecedor": "Tudo Forte", "url": "https://www.tudoforte.com.br/sensor-infravermelho-passivo-ivp-5000-ld-intelbras-sem-fio-antissabotagem-deteccao-ate-12m-bateria-longa-duracao", "obs": "Preço subiu de R$63,78 para R$72,55 em 2026-07-09 (preço Pix com 10% desconto; verificar se é o mesmo SKU, página descreve versão sem fio)."}
+    {
+      "item": "NVR HIKVISION DS-7616NI-Q1",
+      "meu": 1768.0,
+      "qtd": 15,
+      "mercado": 1079.45,
+      "fornecedor": "KaBuM",
+      "url": "https://www.kabum.com.br/produto/318140/gravador-digital-nvr-hikvision-16-canais-ultra-hd-4k-8mp-ds-7616ni-q1",
+      "obs": "preço caiu levemente (de R$1108,62 para R$1079,45), à vista no PIX Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR 8000 PET (IVP 8000 Pet)",
+      "meu": 141.78,
+      "qtd": 529,
+      "mercado": 195.81,
+      "fornecedor": "Intelcenter",
+      "url": "https://www.intelcenter.com.br/seguranca-eletronica/sensor-passivo-sem-fio-ivp-8000-pet",
+      "obs": "preço estável, à vista com desconto Pix Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CENTRAL AMT 2018 E SMART",
+      "meu": 474.36,
+      "qtd": 44,
+      "mercado": 650.85,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4521-central_de_alarme_monitorada_28_zonas_ethernet_intelbras_teclado_rf_433mhz_amt_2018_e_smart",
+      "obs": "preço caiu (de R$672,86 para R$650,85), à vista Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA HIKVISION IP LITE DS-2CD1021G0-I 2.8MM",
+      "meu": 189.52,
+      "qtd": 109,
+      "mercado": 219.59,
+      "fornecedor": "Tervos Distribuidora",
+      "url": "https://loja.tervos.com.br/ds-2cd1021g0-i-2-8mm-camera-hikvision-bullet-ip-infra-2mp",
+      "obs": "preço caiu (de R$245,90 para R$219,59), 46 unidades em estoque Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CENTRAL ACTIVE 100 BUS (JFL)",
+      "meu": 335.08,
+      "qtd": 57,
+      "mercado": 419.9,
+      "fornecedor": "Igecast Segurança",
+      "url": "https://www.igecastseg.com.br/centrais-de-alarmeacessorios/central-jfl/central-monitoravel-active-100-bus",
+      "obs": "preço estável, em estoque Atualizado em 2026-07-17."
+    },
+    {
+      "item": "TECLADO XAT 8000",
+      "meu": 288.23,
+      "qtd": 67,
+      "mercado": 379.74,
+      "fornecedor": "KaBuM",
+      "url": "https://www.kabum.com.br/produto/197496/teclado-sem-fio-para-centrais-de-alarme-xat-8000-intelbras",
+      "obs": "preço estável, à vista no PIX Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SIRENE XSS 8000",
+      "meu": 234.73,
+      "qtd": 73,
+      "mercado": 293.32,
+      "fornecedor": "Dispaseg",
+      "url": "https://dispaseg.com.br/sirene-sem-fio-xss-8000",
+      "obs": "preço caiu significativamente (de R$361,62 para R$293,32) Atualizado em 2026-07-17."
+    },
+    {
+      "item": "NOBREAK ATTIV 600VA",
+      "meu": 341.44,
+      "qtd": 38,
+      "mercado": 499.99,
+      "fornecedor": "Detecta Company",
+      "url": "https://www.detectacompany.com.br/nobreak-intelbras-attiv-600",
+      "obs": "preço estável, em estoque Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA VHD 1120 B (Intelbras)",
+      "meu": 80.45,
+      "qtd": 328,
+      "mercado": 199.9,
+      "fornecedor": "Prime Cabos",
+      "url": "https://primecabos.com.br/camera-intelbras-vhd-1120-b-g5-multi-hd-com-infravermelho",
+      "obs": "preço estável (também disponível a R$189,91 via boleto) Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA IP SPEED DOME VIP 5232 SD IA",
+      "meu": 5832.34,
+      "qtd": 3,
+      "mercado": 6654.88,
+      "fornecedor": "Central das Câmeras",
+      "url": "https://centraldascameras.com.br/produtos/detalhes/4570024/camera-speed-dome-vip-5232-sd-ia-g2-intelbras-pc/",
+      "obs": "preço estável, 5% desconto no Pix (preço cheio R$7005,14) Atualizado em 2026-07-17."
+    },
+    {
+      "item": "DVR MHDX 3116-C (16 canais)",
+      "meu": 1041.73,
+      "qtd": 9,
+      "mercado": 1367.15,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4385-dvr_gravador_de_video_16_canais_h_265_intelbras_mhdx_3116_c_ate_5_0_megapixels",
+      "obs": "preço estável Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA MIBO IM5 (c/ Micro SD 32GB)",
+      "meu": 359.93,
+      "qtd": 115,
+      "mercado": 520.22,
+      "fornecedor": "Central das Câmeras",
+      "url": "https://centraldascameras.com.br/produtos/detalhes/4565611/camera-mibo-infra-im5-s-c-wifi-full-hd-com-microsd-32gb-intelbras-plantec-pc/",
+      "obs": "preço caiu (de R$578,64 para R$520,22), pix Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR DS 520 BUS (JFL)",
+      "meu": 88.98,
+      "qtd": 261,
+      "mercado": 109.0,
+      "fornecedor": "Net Computadores",
+      "url": "https://netcomputadores.com.br/p/ds520bus-jfl-sensor-infravermelho-passivo/107053",
+      "obs": "preço caiu bastante (de R$148,50 para R$109,00), à vista Pix/boleto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "TECLADO TEC 300 (JFL)",
+      "meu": 139.46,
+      "qtd": 113,
+      "mercado": 165.2,
+      "fornecedor": "Igecast Segurança",
+      "url": "https://www.igecastseg.com.br/centrais-de-alarmeacessorios/teclado-lcd-tec-300-jfl",
+      "obs": "preço caiu bastante, de R$252,67 para R$165,20 Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR SL 320 DUO (JFL)",
+      "meu": 108.11,
+      "qtd": 145,
+      "mercado": 128.63,
+      "fornecedor": "Mercado Livre",
+      "url": "https://produto.mercadolivre.com.br/MLB-4835798832-sensor-abertura-sl-320-duo-40308-jfl-_JM",
+      "obs": "preço caiu, de R$151,91 para R$128,63 Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA VHD 1230 B (Intelbras)",
+      "meu": 119.53,
+      "qtd": 89,
+      "mercado": 166.25,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4437-camera_de_seguranca_bullet_multi_hd_4x1_ip67_98_ir_30mts_full_hd_1080p_intelbras_vhd_1230_b_g7",
+      "obs": "preço estável Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVP 3000 MW EX (Intelbras)",
+      "meu": 459.31,
+      "qtd": 28,
+      "mercado": 607.92,
+      "fornecedor": "Intelcenter",
+      "url": "https://www.intelcenter.com.br/seguranca-eletronica/sensor-passivo-ivp-3000-mw-ex",
+      "obs": "preço estável Atualizado em 2026-07-17."
+    },
+    {
+      "item": "MODULO GPRS XAG 8000 (AMT 8000)",
+      "meu": 289.1,
+      "qtd": 38,
+      "mercado": 342.96,
+      "fornecedor": "CFTV Clube",
+      "url": "https://www.cftvclube.com.br/alarmes/modulo-gprs-intelbras-xag-8000",
+      "obs": "preço estável, à vista depósito bancário Atualizado em 2026-07-17."
+    },
+    {
+      "item": "DVR INTELBRAS MHDX 3108 (8 canais)",
+      "meu": 629.78,
+      "qtd": 14,
+      "mercado": 929.6,
+      "fornecedor": "NetAlarmes",
+      "url": "https://www.netalarmes.com.br/dvr-intelbras-8-canais-mhdx-3108-c-5-mp-lite-multi-hd",
+      "obs": "preço estável (sem HD) Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA VHD 1120 D (Intelbras)",
+      "meu": 81.8,
+      "qtd": 123,
+      "mercado": 156.66,
+      "fornecedor": "KaBuM",
+      "url": "https://www.kabum.com.br/produto/249758/camera-intelbras-vhd-1120-d-g6-dome-hd-720p-sensor-1-2-8-lente-2-8mm-hdcvi-anti-uv-menu-osd-20m-ir",
+      "obs": "preço caiu levemente (de R$164,90 para R$156,66), Pix Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR XAS 8000 (Intelbras)",
+      "meu": 111.42,
+      "qtd": 87,
+      "mercado": 156.47,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3151-sensor_de_abertura_magnetico_sem_fio_intelbras_xas_8000",
+      "obs": "preço caiu levemente (de R$164,71 para R$156,47), à vista Atualizado em 2026-07-17."
+    },
+    {
+      "item": "NOBREAK ATTIV 700VA",
+      "meu": 402.51,
+      "qtd": 22,
+      "mercado": 616.59,
+      "fornecedor": "Loja Oficial Intelbras",
+      "url": "https://loja.intelbras.com.br/nobreak-attiv-700va-bi/p",
+      "obs": "preço estável Atualizado em 2026-07-17."
+    },
+    {
+      "item": "DVR INTELBRAS MHDX 1208 (8 canais)",
+      "meu": 534.08,
+      "qtd": 13,
+      "mercado": 791.77,
+      "fornecedor": "CFTV Clube",
+      "url": "https://www.cftvclube.com.br/dvr-intelbras-mhdx-1208-08-canais",
+      "obs": "preço caiu vs R$828,24, à vista Pix/depósito Atualizado em 2026-07-17."
+    },
+    {
+      "item": "NVR HIKVISION DS-7616NXI-K1",
+      "meu": 1176.97,
+      "qtd": 7,
+      "mercado": 2010.29,
+      "fornecedor": "WAN Informática",
+      "url": "https://www.waninformatica.com.br/wan/produto/m/nvr-hikvision-16ch-8mp-ds-7616nxi-k1-analiticos-7927",
+      "obs": "preço estável Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CENTRAL JFL ACTIVE FULL 32",
+      "meu": 423.84,
+      "qtd": 36,
+      "mercado": 509.3,
+      "fornecedor": "Igecast Seg",
+      "url": "https://www.igecastseg.com.br/centrais-de-alarmeacessorios/central-jfl/central-monitoravel-active-full-32",
+      "obs": "preço estável, em estoque Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA IP SPEED DOME VIP 5225 SD IR IA",
+      "meu": 4645.87,
+      "qtd": 2,
+      "mercado": 6317.5,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4621-camera_speed_dome_ip_com_inteligencia_artificial_zoom_25x_autotracking_starlight_ir_150mt_vip_5225_sd_ir_ia_g2_intelbras",
+      "obs": "leve queda vs R$6650, à vista Atualizado em 2026-07-17."
+    },
+    {
+      "item": "TECLADO JFL TEC 510 DUO",
+      "meu": 190.13,
+      "qtd": 37,
+      "mercado": 262.0,
+      "fornecedor": "Mercado Livre",
+      "url": "https://produto.mercadolivre.com.br/MLB-5144293904-teclado-jfl-entrada-dados-p-central-alarmes-tec-510-duo-_JM",
+      "obs": "preço estável, parcelamento sem juros Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CENTRAL AMT 2018 E (não-SMART)",
+      "meu": 494.98,
+      "qtd": 17,
+      "mercado": 675.36,
+      "fornecedor": "Central das Câmeras",
+      "url": "https://centraldascameras.com.br/produtos/detalhes/4390179/central-de-alarme-monitorada-amt-2018-e-intelbras-pc/",
+      "obs": "preço caiu vs R$725,13, à vista Pix, versão não-SMART confirmada Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IRPET 520 DUO (JFL)",
+      "meu": 125.56,
+      "qtd": 317,
+      "mercado": 167.01,
+      "fornecedor": "NetAlarmes",
+      "url": "https://www.netalarmes.com.br/alarme/sensores/sensor-de-presenca-infravermelho/sensor-infravermelho-ir-pet-520-duo-jfl",
+      "obs": "preço subiu vs R$132,15, à vista Pix/boleto, em estoque Atualizado em 2026-07-17."
+    },
+    {
+      "item": "MODULO GPRS XG 4G (Intelbras)",
+      "meu": 289.1,
+      "qtd": 58,
+      "mercado": 372.45,
+      "fornecedor": "IG Tech Grupo",
+      "url": "https://www.igtechgrupo.com.br/alarmes/acessorios/discadora-e-comunicadores/modulo-de-comunicacao-xg-4g-intelbras-para-centrais-de-alarme-amt-8000-pro-e-lite-1000-2018-e",
+      "obs": "preço caiu vs R$435,87, à vista Pix, em estoque Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA MIBO IMX (Wi-Fi)",
+      "meu": 255.92,
+      "qtd": 44,
+      "mercado": 248.65,
+      "fornecedor": "MicroByte Shop",
+      "url": "https://microbyteshop.com.br/produtos/detalhes/4565515/camera-ip-mibo-imx-c-wi-fi-full-hd-black-intelbras-pc/",
+      "obs": "preço caiu vs R$299,99, à vista Pix, em estoque Atualizado em 2026-07-17."
+    },
+    {
+      "item": "MODULO GPRS JFL MGP-04 4G",
+      "meu": 278.42,
+      "qtd": 104,
+      "mercado": 284.91,
+      "fornecedor": "TudoSeg CFTV",
+      "url": "https://www.tudosegcftv.com.br/alarme-residencial/acessorios-alarme/modulo-gprs-jfl-mgp-04-para-centrais-monitoraveis-active",
+      "obs": "preço estável (R$299,90 cheio, R$284,91 à vista) Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CENTRAL ACTIVE 8W (JFL)",
+      "meu": 277.82,
+      "qtd": 6,
+      "mercado": 312.32,
+      "fornecedor": "Mercado Livre",
+      "url": "https://www.mercadolivre.com.br/alarme-e-sensor-jfl-active-08-w/p/MLB39966790",
+      "obs": "preço estável Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA VHD 3230 B (Intelbras)",
+      "meu": 234.5,
+      "qtd": 48,
+      "mercado": 240.18,
+      "fornecedor": "Compra Gamer",
+      "url": "https://www.compragamer.com.br/produto/seguranca/cameras/com-fio/bullet/camera-intelbras-vhd-3230-b-g6-bullet-multihd-1080p-infravermelho-30m/12851",
+      "obs": "preço caiu vs R$355,10, à vista Pix Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVP 7000 EX (Intelbras)",
+      "meu": 303.08,
+      "qtd": 20,
+      "mercado": 337.5,
+      "fornecedor": "MGA Virtual",
+      "url": "https://www.mgavirtual.com.br/sensor-ivp-7000-ex-p3589",
+      "obs": "preço subiu vs R$277,07; R$337,50 à vista/pix (10% off) Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR LZ 520 DUO (JFL)",
+      "meu": 132.33,
+      "qtd": 43,
+      "mercado": 285.23,
+      "fornecedor": "KaBuM",
+      "url": "https://www.kabum.com.br/produto/668899/sensor-alarme-12mt-20kg-s-fio-ir-lz-520-duo-41949-jfl",
+      "obs": "preço estável, à vista no PIX Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVP 5311 MW PET (Intelbras)",
+      "meu": 121.46,
+      "qtd": 45,
+      "mercado": 170.31,
+      "fornecedor": "NetAlarmes",
+      "url": "https://www.netalarmes.com.br/sensor-de-presenca-infravermelho-ivp-5311-mw-pet-intelbras",
+      "obs": "leve queda vs R$175,13, à vista/pix Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA VHD 3230 D (Intelbras)",
+      "meu": 174.96,
+      "qtd": 55,
+      "mercado": 332.33,
+      "fornecedor": "NetAlarmes",
+      "url": "https://www.netalarmes.com.br/camera-dome-intelbras-vhd-3230-d-multi-hd-30mt-ip67",
+      "obs": "leve queda vs R$340,71, à vista Atualizado em 2026-07-17."
+    },
+    {
+      "item": "NVR HIKVISION DS-7632NXI-K2 (32 canais)",
+      "meu": 2490.0,
+      "qtd": 2,
+      "mercado": 3001.48,
+      "fornecedor": "WAN Informática",
+      "url": "https://www.waninformatica.com.br/wan/produto/m/nvr-hikvision-32ch-8mp-ds-7632nxi-k2-analiticos-7928",
+      "obs": "alta expressiva vs R$2165,05 (~+38%); vale reconferir, KaBuM cobra ainda mais (~R$5382) Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVA 7100 QUAD (barreira)",
+      "meu": 321.91,
+      "qtd": 13,
+      "mercado": 461.07,
+      "fornecedor": "NetAlarmes",
+      "url": "https://www.netalarmes.com.br/alarme/sensores/sensor-ativo-de-barreira/sensor-infravermelho-ativo-intelbras-iva-7100-quad-4-feixes",
+      "obs": "alta vs R$409,65 (~+12,5%), à vista Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CONTROLE ACESSO FACIAL DS-K1T673DX (Hikvision)",
+      "meu": 1490.0,
+      "qtd": 2,
+      "mercado": 1501.0,
+      "fornecedor": "BJ Seg",
+      "url": "https://bjseg.com.br/produto/1857874/controle-acesso-facial-hikvision-ds-k1t673dx",
+      "obs": "queda vs R$1751,11 (~-14%), via PIX/transferência Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVA 3070 X (barreira)",
+      "meu": 160.51,
+      "qtd": 29,
+      "mercado": 245.93,
+      "fornecedor": "NetAlarmes",
+      "url": "https://www.netalarmes.com.br/sensor-infravermelho-ativo-de-barreira-iva-3070-x-intelbras",
+      "obs": "leve alta vs R$237,50, à vista/pix Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CENTRAL 8000 L (AMT 8000 Lite)",
+      "meu": 463.11,
+      "qtd": 46,
+      "mercado": 650.87,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4519-central_de_alarme_64_zonas_com_sirene_s_fio_rj45_monitorado_via_app_celular_intelbras_amt_8000_lite",
+      "obs": "preço estável, pagamento imediato/pix Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA IP BULLET VIP 3240 IA (Intelbras)",
+      "meu": 728.8,
+      "qtd": 7,
+      "mercado": 988.07,
+      "fornecedor": "KaBuM",
+      "url": "https://www.kabum.com.br/produto/180137/camera-ip-intelbras-bullet-vip-3240-ia-2mp-1-2-8-pol-2-8mm-inteligencia-artificial-microfone-cartao-sd",
+      "obs": "leve queda vs R$1004,36, à vista no PIX Atualizado em 2026-07-17."
+    },
+    {
+      "item": "MINI RACK 5U x 350MM",
+      "meu": 424.09,
+      "qtd": 36,
+      "mercado": 117.63,
+      "fornecedor": "Tek Distribuidor",
+      "url": "https://www.tekdistribuidor.com.br/mini-rack-5u-x-350mm-max-eletron-porta-com-visor-acrilico-preto",
+      "obs": "queda vs R$133,61 (~-12%), modelo Max Eletron Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SWITCH INTELBRAS S1010F-P (10P/8 PoE)",
+      "meu": 406.92,
+      "qtd": 11,
+      "mercado": 563.82,
+      "fornecedor": "NetAlarmes",
+      "url": "https://www.netalarmes.com.br/switch-10-portas-fast-ethernet-com-8-portas-poe-intelbras-s1010f-p",
+      "obs": "preço estável, à vista pix/boleto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "ROTEADOR INTELBRAS AP 1250 AC MAX",
+      "meu": 742.68,
+      "qtd": 4,
+      "mercado": 977.65,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4203-roteador_access_point_de_alta_potencia_450_m_e_1200mbps_wi_fi_marketing_intelbras_ap_1250_ac_max",
+      "obs": "preço estável, pix/à vista Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SWITCH HIKVISION DS-3E1318P-SI (16P PoE)",
+      "meu": 1335.34,
+      "qtd": 2,
+      "mercado": 2052.96,
+      "fornecedor": "Real Energia Solar",
+      "url": "https://www.realenergiasolar.com.br/produto/ds-3e1318p-si-v2/",
+      "obs": "preço estável Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CONTROLE ACESSO FACIAL SS 3542 MF W (Intelbras)",
+      "meu": 1462.8,
+      "qtd": 1,
+      "mercado": 1995.0,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4815-controlador_de_acesso_facial_com_biometria_digital_c_leitor_rfid_13_56_wi_fi_intelbras_ss_3542_mf_w",
+      "obs": "preço estável, pix/à vista Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CENTRAL 8000 P (AMT 8000 Pro)",
+      "meu": 645.16,
+      "qtd": 6,
+      "mercado": 850.37,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4689-central_de_alarme_64_zonas_s_fio_rj45_ou_wi_fi_com_sirene_monitorado_via_app_celular_intelbras_amt_8000_pro",
+      "obs": "preço estável, pix/à vista Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA IP VIP 1220 B FULL COLOR (Intelbras)",
+      "meu": 127.2,
+      "qtd": 21,
+      "mercado": 420.96,
+      "fornecedor": "One Security",
+      "url": "https://www.lojaonesecurity.com.br/camera-bullet-vip-1220-b-full-color-g4",
+      "obs": "preço caiu vs R$474,93; item esgotado na maioria dos distribuidores BR no momento Atualizado em 2026-07-17."
+    },
+    {
+      "item": "FECHADURA ELETROIMA FE 20150 (Intelbras)",
+      "meu": 255.6,
+      "qtd": 14,
+      "mercado": 375.92,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3345-fechadura_eletroima_150_kg_fe_20150_porta_abrir_para_dentro_com_sensor",
+      "obs": "preço estável, pix/à vista Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CENTRAL JFL ACTIVE 20",
+      "meu": 228.75,
+      "qtd": 17,
+      "mercado": 254.8,
+      "fornecedor": "Igecast Seg",
+      "url": "https://www.igecastseg.com.br/centrais-de-choque/central-monitoravel-active-20-ethernet",
+      "obs": "preço caiu (era R$323,10), em estoque Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA IP DS-2CD1021G2-LIU (Hikvision)",
+      "meu": 239.0,
+      "qtd": 12,
+      "mercado": 323.55,
+      "fornecedor": "BJSeg",
+      "url": "https://www.bjseg.com.br/camera-hikvision-ip-1080p-bullet-ds-2cd1021g2-liu-28mm",
+      "obs": "preço subiu levemente (era R$318,94), à vista pix/boleto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA IP DOME DS-2CD3166G2-IS 6MP AcuSense (Hikvision)",
+      "meu": 1230.0,
+      "qtd": 1,
+      "mercado": 1597.23,
+      "fornecedor": "Syma",
+      "url": "https://www.syma.com.br/camera-ip-hikvision-dome-6mp-ds-2cd3166g2-is-ir40-2-8.html",
+      "obs": "preço subiu levemente (era R$1583,12), 269 unidades em estoque Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVP 1000 PET S/FIO (Intelbras)",
+      "meu": 93.0,
+      "qtd": 58,
+      "mercado": 104.5,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-4275-sensor_de_presenca_sem_fio_com_bateria_lithium_cr123a_3v_ivp_1000_pet_sf_20kg",
+      "obs": "preço caiu (era R$110,00), à vista com desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVP 1000 PET C/FIO (Intelbras)",
+      "meu": 32.35,
+      "qtd": 192,
+      "mercado": 48.39,
+      "fornecedor": "KaBuM",
+      "url": "https://www.kabum.com.br/produto/699025/sensor-de-presenca-infravermelho-ivp-1000-pet-intelbras-com-fio-pet-immunity-ate-20kg-alcance-de-12m",
+      "obs": "preço caiu (era R$51,21), pix, em estoque Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR DSE 830 I (JFL)",
+      "meu": 250.92,
+      "qtd": 12,
+      "mercado": 299.9,
+      "fornecedor": "Igecast Seg",
+      "url": "https://www.igecastseg.com.br/centrais-de-alarmeacessorios/sensor-infravermelho-passivo-dse-830i-jfl",
+      "obs": "preço estável Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR DSE-830I DUO+ (JFL)",
+      "meu": 335.09,
+      "qtd": 5,
+      "mercado": 607.05,
+      "fornecedor": "KaBuM",
+      "url": "https://www.kabum.com.br/produto/949498/sensor-alarme-12mt-30kg-s-fio-area-externa-dse-830i-duo-",
+      "obs": "estável, à vista no PIX 20% desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "TECLADO XAT 4000 LCD (Intelbras)",
+      "meu": 201.67,
+      "qtd": 8,
+      "mercado": 270.87,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-2774-teclado_digital_lcd_intelbras_para_central_de_alarme_monitoradas_xat_4000_lcd",
+      "obs": "estável, à vista com desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVP 3011 CORTINA (Intelbras)",
+      "meu": 154.1,
+      "qtd": 10,
+      "mercado": 106.88,
+      "fornecedor": "NetAlarmes",
+      "url": "https://www.netalarmes.com.br/sensor-infravermelho-passivo-ivp-3011-cortina-intelbras",
+      "obs": "estável, à vista com desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IRA-315 DIGITAL (JFL)",
+      "meu": 130.13,
+      "qtd": 28,
+      "mercado": 190.05,
+      "fornecedor": "NetAlarmes",
+      "url": "https://www.netalarmes.com.br/sensor-de-barreira-perimetral-ativo-infra-ira-315-digital-duplo-feixe-60-metros-jfl",
+      "obs": "estável, à vista pix/boleto 5% desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CENTRAL ALARME AX PRO DS-PWA64-L-WE (Hikvision)",
+      "meu": 654.0,
+      "qtd": 1,
+      "mercado": 985.56,
+      "fornecedor": "WAN Informática e Tecnologia",
+      "url": "https://www.waninformatica.com.br/wan/produto/m/central-de-alarme-s-fio-ax-pro-panel-ds-pwa64-l-we-hikvision-7586",
+      "obs": "caiu bastante vs R$1409,47; concorrentes menores estavam esgotados Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA IP VIP 3250 AL IA (Intelbras)",
+      "meu": 705.17,
+      "qtd": 2,
+      "mercado": 859.42,
+      "fornecedor": "Rede Loja",
+      "url": "https://redeloja.com.br/produto/camera-bullet-vip-3250-al-ia-2mp-intelbras-1738685233557.1",
+      "obs": "estável, à vista no PIX 10% desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "BOTOEIRA INFRAVERMELHO BT 4000 (Intelbras)",
+      "meu": 165.78,
+      "qtd": 12,
+      "mercado": 218.5,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3193-acionador_botoeira_de_abertura_por_sensor_infravermelho_bt_4000",
+      "obs": "estável, à vista com desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IRD 640 PET (JFL)",
+      "meu": 87.19,
+      "qtd": 13,
+      "mercado": 146.85,
+      "fornecedor": "KaBuM",
+      "url": "https://www.kabum.com.br/produto/209576/sensor-duplo-infravermelho-ird-640-pet-jfl",
+      "obs": "estável, à vista pix/boleto 20% desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "LEITOR RFID PROX LE 130 MF (Intelbras)",
+      "meu": 240.66,
+      "qtd": 4,
+      "mercado": 386.15,
+      "fornecedor": "Eletroinfocia",
+      "url": "https://www.eletroinfocia.com.br/leitor-de-cartao-rfid-prox-le-130-mf-intelbras",
+      "obs": "estável, à vista no pix 5% desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IRA 260 DIGITAL (JFL)",
+      "meu": 153.66,
+      "qtd": 5,
+      "mercado": 209.3,
+      "fornecedor": "NetAlarmes",
+      "url": "https://www.netalarmes.com.br/sensor-de-barreira-infravermelho-ativo-ira-260-digital-60-metros-jfl",
+      "obs": "estável, à vista com desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "CAMERA IP BULLET VIP 3430 B IA (Intelbras)",
+      "meu": 628.25,
+      "qtd": 1,
+      "mercado": 929.99,
+      "fornecedor": "Oficina dos Bits",
+      "url": "https://www.oficinadosbits.com.br/produto/camera-de-seguranca-bullet-intelbras-vip-3430-b-ia-infravermelho-funcao-starlight-quad-hd-1440p-protecao-ip67/",
+      "obs": "estável, à vista no PIX 10% desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "DVR INTELBRAS MHDX 3004 (4 canais)",
+      "meu": 390.95,
+      "qtd": 1,
+      "mercado": 508.2,
+      "fornecedor": "KaBuM",
+      "url": "https://www.kabum.com.br/produto/527320/dvr-mhdx-3004-c-intelbras-4-canais-full-hd-1080p-stand-alone",
+      "obs": "caiu vs R$526,83, à vista pix/boleto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVA 3110 X (barreira)",
+      "meu": 180.63,
+      "qtd": 2,
+      "mercado": 251.85,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-1450-sensor_ativo_de_barreira_duplo_feixe_intelbras_110mts_iva_3110_x",
+      "obs": "preço caiu levemente (era R$255,23), à vista/Pix Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVP 7001 MW PET (Intelbras)",
+      "meu": 169.98,
+      "qtd": 2,
+      "mercado": 264.08,
+      "fornecedor": "NetAlarmes",
+      "url": "https://www.netalarmes.com.br/sensor-de-movimento-passivo-intelbras-ivp-7001-mw-pet",
+      "obs": "preço estável, à vista/Pix Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVP 5001 PET (Intelbras)",
+      "meu": 51.17,
+      "qtd": 10,
+      "mercado": 68.88,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-1908-sensor_infra_vermelho_passivo_intelbras_pet_20kg_12mts_90_ivp_5001_pet",
+      "obs": "preço subiu levemente (era R$65,46), à vista com desconto Atualizado em 2026-07-17."
+    },
+    {
+      "item": "TECLADO AX PRO DS-PK1-E-WE (Hikvision)",
+      "meu": 215.0,
+      "qtd": 1,
+      "mercado": 344.98,
+      "fornecedor": "KaBuM",
+      "url": "https://www.kabum.com.br/produto/459815/teclado-hikvision-led-touch-screen-ax-pro-868-wifi-ds-pk1-e-we",
+      "obs": "queda forte de preço (era R$481,59), à vista/Pix Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR DUAL TEC 550 (JFL)",
+      "meu": 126.25,
+      "qtd": 5,
+      "mercado": 199.9,
+      "fornecedor": "IGE Cast Seg",
+      "url": "https://www.igecastseg.com.br/centrais-de-alarmeacessorios/sensor-infravermelho-passivo-dual-tec-550",
+      "obs": "preço estável, em estoque Atualizado em 2026-07-17."
+    },
+    {
+      "item": "BOTOEIRA / ACIONADOR AS 2010 (Intelbras)",
+      "meu": 123.38,
+      "qtd": 1,
+      "mercado": 170.17,
+      "fornecedor": "JS Distribuidor CFTV",
+      "url": "https://www.distribuidorcftv.com.br/loja/produto-240387-3259-acionador_de_emergencia_rearmavel_intelbras_as_2010",
+      "obs": "preço levemente abaixo do anterior (era R$174,90), à vista/Pix Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR MAGNETICO AX PRO DS-PDMCS-EG2-WE (Hikvision)",
+      "meu": 119.0,
+      "qtd": 2,
+      "mercado": 179.34,
+      "fornecedor": "WAN Informática e Tecnologia",
+      "url": "https://www.waninformatica.com.br/wan/produto/m/sensor-magnetico-sem-fio-ax-pro-ds-pdmcs-eg2-we-hikvision-7589",
+      "obs": "preço estável Atualizado em 2026-07-17."
+    },
+    {
+      "item": "SENSOR IVP 5000 LD (Intelbras)",
+      "meu": 47.28,
+      "qtd": 2,
+      "mercado": 72.55,
+      "fornecedor": "Tudo Forte",
+      "url": "https://www.tudoforte.com.br/sensor-infravermelho-passivo-ivp-5000-ld-intelbras-sem-fio-antissabotagem-deteccao-ate-12m-bateria-longa-duracao",
+      "obs": "preço subiu (era R$61,66), à vista/Pix ou boleto Atualizado em 2026-07-17."
+    }
   ],
   "sob_cotacao": [
     "SERVIDOR INVU 7016 FT (gravação/IA)",
@@ -99,27 +716,240 @@
     "CANCELA IMECOTRON CA-600",
     "Câmeras Hikvision ColorVu sem preço público BRL — só aparecem em € no exterior (DS-2CD1T47G2-LIU, DS-2CD2347G2H-LISU, DS-2CD2047G2-LU, DS-2CD1047G2H-LIU). Referência em € (~R$600–800) sugere que você está no preço ou abaixo.",
     "Controle facial Hikvision DS-K1T342MFWX e módulo ASI6213S",
-    "Switch gerenciável 48P PoE S2352G / CPE WOM 5A (kit)"
+    "Switch gerenciável 48P PoE S2352G / CPE WOM 5A (kit)",
+    "SWITCH HIKVISION DS-3E1510P-SI (8P PoE) — sem preço público confiável em 2026-07-16 (Compragamer, WebContinental, HDStore, S1 Distribuidora sem estoque ou sem preço exibido)",
+    "CAMERA IP DOME DS-2CD1127G2H-LIU ColorVu (Hikvision) — sem preço público confiável em 2026-07-16 (Dicomp, KaBuM, HDStore, CFTV Clube esgotados ou sem preço exibido)",
+    "SENSOR LZ-550 (JFL) — sem preço público confiável em 2026-07-16 (esgotado em UpperSeg, Tudo Forte, Amazon e NetAlarmes)",
+    "DVR HD 4 CANAIS MHDX 1204 C/HD 1TB",
+    "CAMERA IP DS-2CD2043G2-I (2.8MM)",
+    "SENSOR IRD 650 DUO (JFL)",
+    "SENSOR DE PORTA ABERTA PA-110 (JFL)"
   ],
   "fornecedores_novos": [
-    {"nome": "JS Distribuidor CFTV", "local": "São Paulo - SP", "tel": "(11) 3337-3050", "whatsapp": "(11) 94721-0029", "email": "distribuidorcftv@uol.com.br", "site": "distribuidorcftv.com.br", "obs": "Distribuidor de CFTV/segurança eletrônica."},
-    {"nome": "Dicomp Distribuidora", "local": "Maringá - PR", "tel": "", "whatsapp": "(44) 4009-2826", "email": "", "site": "dicomp.com.br", "obs": "Distribuidor nacional (CFTV, redes, telefonia)."},
-    {"nome": "GrupoTek (TekDistribuidor)", "local": "Anápolis - GO", "tel": "(62) 3324-0908", "whatsapp": "(62) 3771-0334", "email": "contato@tekdistribuidor.com.br", "site": "tekdistribuidor.com.br", "obs": "Tecnologia, segurança e redes."},
-    {"nome": "IGTech Grupo", "local": "Londrina - PR", "tel": "(43) 3304-0353", "whatsapp": "(43) 99166-4810", "email": "igtech.londrina@gmail.com", "site": "igtechgrupo.com.br", "obs": "Câmeras, alarmes, redes e automação."},
-    {"nome": "UpperSeg", "local": "Londrina - PR", "tel": "(43) 3024-5144", "whatsapp": "(43) 3024-5144", "email": "", "site": "upperseg.com.br", "obs": "Distribuidora de segurança eletrônica."},
-    {"nome": "Intelcenter (Loja Intelbras)", "local": "Curitiba - PR", "tel": "(41) 3088-2233", "whatsapp": "(41) 3088-2233", "email": "contato@intelcenter.com.br", "site": "intelcenter.com.br", "obs": "Revenda oficial Intelbras."},
-    {"nome": "Aztech Hardware", "local": "Brasil (online)", "tel": "(16) 3262-2225", "whatsapp": "(16) 99333-5601", "email": "contato@aztech.com.br", "site": "aztech.com.br", "obs": "Informática e networking."},
-    {"nome": "Net Computadores", "local": "São Pedro - SP", "tel": "(19) 3481-2667", "whatsapp": "", "email": "compras@netcomputadores.com.br", "site": "netcomputadores.com.br", "obs": "Hardware corporativo / TI."},
-    {"nome": "Tudo Forte", "local": "Fortaleza - CE / SP", "tel": "(85) 3052-1135", "whatsapp": "(11) 3522-8255", "email": "", "site": "tudoforte.com.br", "obs": "Loja de segurança eletrônica."},
-    {"nome": "Best Network", "local": "São Paulo - SP (Sta. Ifigênia)", "tel": "", "whatsapp": "", "email": "marketing@bestnetwork.com.br", "site": "bestnetwork.com.br", "obs": "Telefone/WhatsApp no site (loja física em SP)."},
-    {"nome": "Segurança e Telecom", "local": "Blumenau - SC", "tel": "", "whatsapp": "", "email": "vendas@segurancaetelecom.com.br", "site": "segurancaetelecom.com.br", "obs": "Parceiro credenciado Intelbras."},
-    {"nome": "Winter Informática", "local": "Brasil (online)", "tel": "", "whatsapp": "", "email": "comercial@winterinformatica.com.br", "site": "winterinformatica.com.br", "obs": "Telefone via formulário/site."},
-    {"nome": "Full CFTV", "local": "SP", "tel": "(11) 3116-7088", "whatsapp": "", "email": "", "site": "fullcftv.com.br", "obs": "Confirmar contato no site."},
-    {"nome": "Canal das Câmeras", "local": "São Paulo - SP", "tel": "", "whatsapp": "", "email": "vendas@canaldascameras.com.br", "site": "lojacanaldascameras.com.br", "obs": "Loja de equipamentos de segurança."},
-    {"nome": "Grupo iSeg", "local": "Brasil (online)", "tel": "", "whatsapp": "", "email": "", "site": "grupoiseg.com.br", "obs": "Confirmar contato no site."},
-    {"nome": "Satis Distribuidora", "local": "São Paulo - SP", "tel": "(11) 2275-0847", "whatsapp": "(11) 93348-2712", "email": "vendas@satisdistribuidora.com.br", "site": "satisdistribuidora.com.br", "obs": "Distribuidor de segurança eletrônica, Hikvision e JFL. Área do revendedor no site. Treinamento técnico incluído."},
-    {"nome": "Sol Atacadista da Tecnologia", "local": "Brasília - DF (12 unidades)", "tel": "(61) 4020-6090", "whatsapp": "(61) 4020-6090", "email": "sol@solatacadista.com.br", "site": "solatacadista.com.br", "obs": "Atacadista com 12 unidades em 6 estados. Exige CNPJ. Cadastro via formulário no site."},
-    {"nome": "Forzon Distribuidora", "local": "São Paulo - SP", "tel": "(11) 2344-8886", "whatsapp": "", "email": "loja@forzon.com.br", "site": "forzon.com.br", "obs": "Distribuidor oficial Hikvision desde 2008. Condições especiais para instaladores e revendedores. CNPJ: 14.720.519/0001-59."},
-    {"nome": "Mazer Distribuidora", "local": "Porto Alegre - RS (filiais em SC, PR, ES)", "tel": "(51) 2101-2100", "whatsapp": "(51) 2101-2100", "email": "", "site": "mazer.com.br", "obs": "Atacadista Intelbras para revendedores e integradores. Cadastro em /cliente/cadastro. Exige CNPJ."}
+    {
+      "nome": "JS Distribuidor CFTV",
+      "local": "São Paulo - SP",
+      "tel": "(11) 3337-3050",
+      "whatsapp": "(11) 94721-0029",
+      "email": "distribuidorcftv@uol.com.br",
+      "site": "distribuidorcftv.com.br",
+      "obs": "Distribuidor de CFTV/segurança eletrônica."
+    },
+    {
+      "nome": "Dicomp Distribuidora",
+      "local": "Maringá - PR",
+      "tel": "",
+      "whatsapp": "(44) 4009-2826",
+      "email": "",
+      "site": "dicomp.com.br",
+      "obs": "Distribuidor nacional (CFTV, redes, telefonia)."
+    },
+    {
+      "nome": "GrupoTek (TekDistribuidor)",
+      "local": "Anápolis - GO",
+      "tel": "(62) 3324-0908",
+      "whatsapp": "(62) 3771-0334",
+      "email": "contato@tekdistribuidor.com.br",
+      "site": "tekdistribuidor.com.br",
+      "obs": "Tecnologia, segurança e redes."
+    },
+    {
+      "nome": "IGTech Grupo",
+      "local": "Londrina - PR",
+      "tel": "(43) 3304-0353",
+      "whatsapp": "(43) 99166-4810",
+      "email": "igtech.londrina@gmail.com",
+      "site": "igtechgrupo.com.br",
+      "obs": "Câmeras, alarmes, redes e automação."
+    },
+    {
+      "nome": "UpperSeg",
+      "local": "Londrina - PR",
+      "tel": "(43) 3024-5144",
+      "whatsapp": "(43) 3024-5144",
+      "email": "",
+      "site": "upperseg.com.br",
+      "obs": "Distribuidora de segurança eletrônica."
+    },
+    {
+      "nome": "Intelcenter (Loja Intelbras)",
+      "local": "Curitiba - PR",
+      "tel": "(41) 3088-2233",
+      "whatsapp": "(41) 3088-2233",
+      "email": "contato@intelcenter.com.br",
+      "site": "intelcenter.com.br",
+      "obs": "Revenda oficial Intelbras."
+    },
+    {
+      "nome": "Aztech Hardware",
+      "local": "Brasil (online)",
+      "tel": "(16) 3262-2225",
+      "whatsapp": "(16) 99333-5601",
+      "email": "contato@aztech.com.br",
+      "site": "aztech.com.br",
+      "obs": "Informática e networking."
+    },
+    {
+      "nome": "Net Computadores",
+      "local": "São Pedro - SP",
+      "tel": "(19) 3481-2667",
+      "whatsapp": "",
+      "email": "compras@netcomputadores.com.br",
+      "site": "netcomputadores.com.br",
+      "obs": "Hardware corporativo / TI."
+    },
+    {
+      "nome": "Tudo Forte",
+      "local": "Fortaleza - CE / SP",
+      "tel": "(85) 3052-1135",
+      "whatsapp": "(11) 3522-8255",
+      "email": "",
+      "site": "tudoforte.com.br",
+      "obs": "Loja de segurança eletrônica."
+    },
+    {
+      "nome": "Best Network",
+      "local": "São Paulo - SP (Sta. Ifigênia)",
+      "tel": "",
+      "whatsapp": "",
+      "email": "marketing@bestnetwork.com.br",
+      "site": "bestnetwork.com.br",
+      "obs": "Telefone/WhatsApp no site (loja física em SP)."
+    },
+    {
+      "nome": "Segurança e Telecom",
+      "local": "Blumenau - SC",
+      "tel": "",
+      "whatsapp": "",
+      "email": "vendas@segurancaetelecom.com.br",
+      "site": "segurancaetelecom.com.br",
+      "obs": "Parceiro credenciado Intelbras."
+    },
+    {
+      "nome": "Winter Informática",
+      "local": "Brasil (online)",
+      "tel": "",
+      "whatsapp": "",
+      "email": "comercial@winterinformatica.com.br",
+      "site": "winterinformatica.com.br",
+      "obs": "Telefone via formulário/site."
+    },
+    {
+      "nome": "Full CFTV",
+      "local": "SP",
+      "tel": "(11) 3116-7088",
+      "whatsapp": "",
+      "email": "",
+      "site": "fullcftv.com.br",
+      "obs": "Confirmar contato no site."
+    },
+    {
+      "nome": "Canal das Câmeras",
+      "local": "São Paulo - SP",
+      "tel": "",
+      "whatsapp": "",
+      "email": "vendas@canaldascameras.com.br",
+      "site": "lojacanaldascameras.com.br",
+      "obs": "Loja de equipamentos de segurança."
+    },
+    {
+      "nome": "Grupo iSeg",
+      "local": "Brasil (online)",
+      "tel": "",
+      "whatsapp": "",
+      "email": "",
+      "site": "grupoiseg.com.br",
+      "obs": "Confirmar contato no site."
+    },
+    {
+      "nome": "Satis Distribuidora",
+      "local": "São Paulo - SP",
+      "tel": "(11) 2275-0847",
+      "whatsapp": "(11) 93348-2712",
+      "email": "vendas@satisdistribuidora.com.br",
+      "site": "satisdistribuidora.com.br",
+      "obs": "Distribuidor de segurança eletrônica, Hikvision e JFL. Área do revendedor no site. Treinamento técnico incluído."
+    },
+    {
+      "nome": "Sol Atacadista da Tecnologia",
+      "local": "Brasília - DF (12 unidades)",
+      "tel": "(61) 4020-6090",
+      "whatsapp": "(61) 4020-6090",
+      "email": "sol@solatacadista.com.br",
+      "site": "solatacadista.com.br",
+      "obs": "Atacadista com 12 unidades em 6 estados. Exige CNPJ. Cadastro via formulário no site."
+    },
+    {
+      "nome": "Forzon Distribuidora",
+      "local": "São Paulo - SP",
+      "tel": "(11) 2344-8886",
+      "whatsapp": "",
+      "email": "loja@forzon.com.br",
+      "site": "forzon.com.br",
+      "obs": "Distribuidor oficial Hikvision desde 2008. Condições especiais para instaladores e revendedores. CNPJ: 14.720.519/0001-59."
+    },
+    {
+      "nome": "Mazer Distribuidora",
+      "local": "Porto Alegre - RS (filiais em SC, PR, ES)",
+      "tel": "(51) 2101-2100",
+      "whatsapp": "(51) 2101-2100",
+      "email": "",
+      "site": "mazer.com.br",
+      "obs": "Atacadista Intelbras para revendedores e integradores. Cadastro em /cliente/cadastro. Exige CNPJ."
+    },
+    {
+      "nome": "ZN Distribuidora",
+      "local": "São Paulo - SP (Zona Norte/Limão)",
+      "tel": "(11) 3932-1586",
+      "whatsapp": "(11) 2574-2120",
+      "email": "contato@zndistribuidora.com.br",
+      "site": "zndistribuidora.com.br",
+      "obs": "Distribuidora autorizada Peccinin e revendedora Hikvision. CNPJ 12.150.755/0001-51."
+    },
+    {
+      "nome": "Oriohm Distribuidora",
+      "local": "Santa Catarina (Balneário Camboriú, Blumenau, Joinville, Itapema, Criciúma)",
+      "tel": "(47) 3366-3755",
+      "whatsapp": "(47) 3366-3755",
+      "email": "vendas@oriohm.com.br",
+      "site": "oriohm.com.br",
+      "obs": "Distribuidor autorizado Hikvision e JFL Alarmes. Cadastro via formulário em /sejacliente."
+    },
+    {
+      "nome": "PrimeTec Segurança Eletrônica (Positivo Segurança)",
+      "local": "São Paulo - SP / São José do Rio Preto - SP",
+      "tel": "(17) 99156-2408",
+      "whatsapp": "(17) 99156-2408",
+      "email": "contato@positivoseguranca.com.br",
+      "site": "positivoseguranca.com.br",
+      "obs": "Distribuidora autorizada Positivo SEG, atacado de CFTV nacional/importado."
+    },
+    {
+      "nome": "AFC Distribuidora",
+      "local": "Empresa de São Paulo/SP",
+      "tel": "(11) 4817-7172 / WhatsApp (11) 91405-7339",
+      "whatsapp": "(11) 4817-7172 / WhatsApp (11) 91405-7339",
+      "email": "contato@afcdistribuidora.com.br",
+      "site": "www.afcdistribuidora.com.br",
+      "obs": "Empresa de São Paulo/SP, também atua com equipamentos de TV via satélite além de CFTV."
+    },
+    {
+      "nome": "Viaseg Importadora e Distribuidora de Equipamentos de Segurança",
+      "local": "Sediada em Toledo/PR",
+      "tel": "(45) 3055-3252",
+      "whatsapp": "(45) 3055-3252",
+      "email": "não listado explicitamente no site (contato via WhatsApp)",
+      "site": "www.viasegpr.com.br",
+      "obs": "Sediada em Toledo/PR, atuando desde 2004; CNPJ não confirmado via site."
+    },
+    {
+      "nome": "Atacado das Câmeras",
+      "local": "Sediada em Jundiaí/SP",
+      "tel": "(11) 4815-0810 / WhatsApp (11) 94058-8676 e (11) 99637-3787",
+      "whatsapp": "(11) 4815-0810 / WhatsApp (11) 94058-8676 e (11) 99637-3787",
+      "email": "atacadodascameras@gmail.com",
+      "site": "www.atacadodascameras.com.br",
+      "obs": "Sediada em Jundiaí/SP, ativa desde 2016; também vende via Shopee."
+    }
   ]
 }
