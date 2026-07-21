@@ -335,7 +335,7 @@ body.ro .ro-hide{display:none !important}
     <div class="nav-item" id="grp-precos" onclick="switchView('preco')"><span class="icon">📊</span><span class="lbl">Preços &amp; Compras</span></div>
     <div class="nav-item" id="grp-operacao" onclick="switchView('analista')"><span class="icon">🧠</span><span class="lbl">Operação</span></div>
     <div class="nav-item" id="grp-timeline" onclick="switchView('timeline')"><span class="icon">⟳</span><span class="lbl">Timeline</span></div>
-    <div class="nav-item" id="grp-bom" onclick="switchView('bom-gramado')"><span class="icon">📋</span><span class="lbl">BoM Gramado</span></div>
+    <div class="nav-item" id="grp-bom" onclick="switchView('bom-gramado')"><span class="icon">📋</span><span class="lbl">Alterações Projetos</span></div>
     <!-- badge auditoria preservado (oculto) p/ compatibilidade -->
     <span id="audit-count" style="display:none"></span>
     <div id="secao-projetos">
@@ -1458,7 +1458,7 @@ var VIEW_INFO={
   analista:{t:'Analista',s:'Diagnóstico automático (regras, local)',l:'Analista'},
   historico:{t:'Histórico',s:'Registro de atividades',l:'Histórico'},
   timeline:{t:'Timeline',s:'Linha do tempo',l:'Timeline'},
-  'bom-gramado':{t:'Relatório BoM — Prefeitura de Gramado',s:'Gerado da planilha do Google Sheets',l:'BoM Gramado'}
+  'bom-gramado':{t:'Alterações Projetos',s:'Relatório BoM — Prefeitura de Gramado (planilha do Google)',l:'Alterações Projetos'}
 };
 function grupoDoView(v){ for(var i=0;i<GRUPOS.length;i++){ if(GRUPOS[i].views.indexOf(v)>=0) return GRUPOS[i].g; } return null; }
 
