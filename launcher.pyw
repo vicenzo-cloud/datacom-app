@@ -606,6 +606,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-type', 'application/json; charset=utf-8')
             self.end_headers(); self.wfile.write(resp)
             return
+        if self.path == '/relatorio-bom' or self.path.startswith('/relatorio-bom?'):
+            # Devolve o relatorio BoM mais recente (gerado a partir da planilha do Google).
+            import json as _json, glob as _glob, datetime as _dtb
+            try:
+                pasta = Path(__file__).parent / 'Relatorios'
+                arqs = sorted(_glob.glob(str(pasta / 'bom_gramado_*.txt')))
+                if not arqs:
+                    resp = _json.dumps({'ok': True, 'vazio': True, 'content': '', 'gerado': ''}).encode('utf-8')
+                else:
+                    ultimo = arqs[-1]
+                    conteudo = open(ultimo, encoding='utf-8-sig').read()
+                    ts = _dtb.datetime.fromtimestamp(os.path.getmtime(ultimo)).strftime('%d/%m/%Y %H:%M')
+                    resp = _json.dumps({'ok': True, 'vazio': False, 'content': conteudo,
+                                        'gerado': ts, 'arquivo': os.path.basename(ultimo)}, ensure_ascii=False).encode('utf-8')
+                self.send_response(200)
+            except Exception as e:
+                resp = _json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8')
+                self.send_response(500)
+            self.send_header('Content-type', 'application/json; charset=utf-8')
+            self.end_headers(); self.wfile.write(resp)
+            return
         if self.path == '/whoami' or self.path.startswith('/whoami?'):
             import json as _json
             s = self._sessao() or {'nome':'?','papel':'leitor','host':False}

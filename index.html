@@ -335,6 +335,7 @@ body.ro .ro-hide{display:none !important}
     <div class="nav-item" id="grp-precos" onclick="switchView('preco')"><span class="icon">📊</span><span class="lbl">Preços &amp; Compras</span></div>
     <div class="nav-item" id="grp-operacao" onclick="switchView('analista')"><span class="icon">🧠</span><span class="lbl">Operação</span></div>
     <div class="nav-item" id="grp-timeline" onclick="switchView('timeline')"><span class="icon">⟳</span><span class="lbl">Timeline</span></div>
+    <div class="nav-item" id="grp-bom" onclick="switchView('bom-gramado')"><span class="icon">📋</span><span class="lbl">BoM Gramado</span></div>
     <!-- badge auditoria preservado (oculto) p/ compatibilidade -->
     <span id="audit-count" style="display:none"></span>
     <div id="secao-projetos">
@@ -691,6 +692,14 @@ body.ro .ro-hide{display:none !important}
           <button class="btn btn-secondary btn-sm ro-hide" onclick="abrirBackup()">💾 Backup</button>
         </div>
         <div id="historico-content"></div>
+      </div>
+
+      <!-- RELATORIO BoM PREFEITURA DE GRAMADO (gerado da planilha do Google) -->
+      <div class="page" id="page-bom-gramado">
+        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">📋 Relatório BoM — Prefeitura de Gramado</h2>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Gerado automaticamente a partir da planilha do Google Sheets. Atualizado quando a planilha é editada.</p>
+        <div style="margin-bottom:16px"><button class="btn btn-secondary btn-sm" onclick="renderBomGramado()">🔄 Atualizar</button></div>
+        <div id="bom-gramado-content"></div>
       </div>
 
     </div>
@@ -1429,7 +1438,8 @@ var GRUPOS=[
   {g:'analise',   views:['comp','subestimados']},
   {g:'precos',    views:['preco','mercado','compras-dash']},
   {g:'operacao',  views:['analista','sugestoes','gastos','historico']},
-  {g:'timeline',  views:['timeline']}
+  {g:'timeline',  views:['timeline']},
+  {g:'bom',       views:['bom-gramado']}
 ];
 var VIEW_INFO={
   dashboard:{t:'Dashboard',s:'Visão geral',l:'Dashboard'},
@@ -1447,7 +1457,8 @@ var VIEW_INFO={
   gastos:{t:'Gastos por Unidade',s:'Por unidade e mês a mês',l:'Gastos/Unidade'},
   analista:{t:'Analista',s:'Diagnóstico automático (regras, local)',l:'Analista'},
   historico:{t:'Histórico',s:'Registro de atividades',l:'Histórico'},
-  timeline:{t:'Timeline',s:'Linha do tempo',l:'Timeline'}
+  timeline:{t:'Timeline',s:'Linha do tempo',l:'Timeline'},
+  'bom-gramado':{t:'Relatório BoM — Prefeitura de Gramado',s:'Gerado da planilha do Google Sheets',l:'BoM Gramado'}
 };
 function grupoDoView(v){ for(var i=0;i<GRUPOS.length;i++){ if(GRUPOS[i].views.indexOf(v)>=0) return GRUPOS[i].g; } return null; }
 
@@ -1463,7 +1474,7 @@ function renderSubnav(){
 }
 
 function renderTopbar(){
-  ['dashboard','painel','notas','analise','precos','operacao','timeline'].forEach(function(g){var el=document.getElementById('grp-'+g);if(el)el.classList.remove('active');});
+  ['dashboard','painel','notas','analise','precos','operacao','timeline','bom'].forEach(function(g){var el=document.getElementById('grp-'+g);if(el)el.classList.remove('active');});
   const tabs=document.getElementById('proj-tabs');
   const btnItem=document.getElementById('btn-add-item');const btnSvc=document.getElementById('btn-add-svc');const btnNF=document.getElementById('btn-add-nf');
   const btnExp=document.getElementById('btn-exp-proj');const btnImp=document.getElementById('btn-imp-proj');
@@ -1806,6 +1817,7 @@ function renderPages(){
   document.getElementById('page-mercado').classList.toggle('active',S.view==='mercado');
   document.getElementById('page-analista').classList.toggle('active',S.view==='analista');
   document.getElementById('page-historico').classList.toggle('active',S.view==='historico');
+  document.getElementById('page-bom-gramado').classList.toggle('active',S.view==='bom-gramado');
   if(S.view==='dashboard')renderDashboard();
   if(S.view==='painel')renderPainel();
   if(S.view==='projeto')renderProjeto();
@@ -1823,6 +1835,21 @@ function renderPages(){
   if(S.view==='mercado')renderMercado();
   if(S.view==='analista')renderAnalista();
   if(S.view==='historico')renderHistorico();
+  if(S.view==='bom-gramado')renderBomGramado();
+}
+
+// ── RELATORIO BoM PREFEITURA DE GRAMADO ──
+function renderBomGramado(){
+  var alvo=document.getElementById('bom-gramado-content');
+  if(!alvo) return;
+  alvo.innerHTML='<div style="color:var(--muted);padding:20px">Carregando relatório...</div>';
+  fetch('/relatorio-bom?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok){ alvo.innerHTML='<div style="color:var(--red);padding:20px">Erro ao carregar: '+(d.erro||'?')+'</div>'; return; }
+    if(d.vazio){ alvo.innerHTML='<div style="color:var(--muted);padding:20px">Nenhum relatório gerado ainda. Ele é criado automaticamente quando a planilha do Google é editada.</div>'; return; }
+    var esc=function(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
+    alvo.innerHTML='<div style="color:var(--muted2);font-size:11px;margin-bottom:10px">Gerado em '+esc(d.gerado)+' · '+esc(d.arquivo||'')+'</div>'
+      +'<pre style="background:var(--bg2);border:1px solid var(--border,#2a2f2d);border-radius:10px;padding:18px;overflow-x:auto;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;line-height:1.55;white-space:pre;color:var(--text,#e2e8e4)">'+esc(d.content)+'</pre>';
+  }).catch(function(){ alvo.innerHTML='<div style="color:var(--red);padding:20px">Falha ao buscar o relatório.</div>'; });
 }
 
 // ── DASHBOARD ──
