@@ -145,7 +145,7 @@ def nfs_de_arquivos(resumidas, detalhadas):
         res += parse(p)
     for p in detalhadas:
         det += parse(p)
-    total_nota, det_forn, det_itens, det_fin = {}, {}, {}, {}
+    total_nota, det_forn, det_itens, det_fin, det_status = {}, {}, {}, {}, {}
     for r in det:
         n = num(r)
         if not n:
@@ -156,13 +156,25 @@ def nfs_de_arquivos(resumidas, detalhadas):
             det_forn[n] = (r.get('Fornecedor') or '').strip()
         if n not in det_fin:
             det_fin[n] = (r.get('Gerou Financeiro') or '').strip()
+        st = (r.get('Status') or '').strip()
+        # Se QUALQUER linha da nota estiver como cancelada, a nota inteira é cancelada.
+        if 'CANCEL' in _norm(st) or 'CANCEL' in _norm(det_status.get(n, '')):
+            det_status[n] = 'Cancelada'
+        elif n not in det_status:
+            det_status[n] = st
         esp = (r.get('Especificação') or '').strip()
         if esp:
             det_itens.setdefault(n, []).append(esp)
+
+    def _cancelada(n):
+        return 'CANCEL' in _norm(det_status.get(n, ''))
+
     nfs, vis = [], set()
     for r in res:
         n = num(r)
         if not n:
+            continue
+        if _cancelada(n):  # nota cancelada no ERP não entra no app
             continue
         forn = limpa_forn(r.get('Fornecedor')) or limpa_forn(det_forn.get(n))
         # Duplicata = mesmo NUMERO + mesmo FORNECEDOR. Mesmo numero de fornecedor
@@ -181,6 +193,8 @@ def nfs_de_arquivos(resumidas, detalhadas):
     # Se nao houve resumida mas ha detalhada, monta a partir da detalhada
     if not res and det:
         for n in sorted(total_nota):
+            if _cancelada(n):  # nota cancelada no ERP não entra
+                continue
             forn = limpa_forn(det_forn.get(n))
             nfs.append({'id': uid(), 'numero': n, 'fornecedor': forn,
                         'valor': total_nota[n], 'data': '',
