@@ -30,9 +30,9 @@ def log(msg):
 
 
 def chave(n):
-    # Duplicata = mesmo NUMERO + mesmo FORNECEDOR (numero repetido de outro
-    # fornecedor e nota distinta e deve entrar).
-    return (str(n.get('numero', '')).strip(), C._norm(n.get('fornecedor') or ''))
+    # Duplicata = mesmo NUMERO + mesmo CNPJ (mesma empresa mesmo com nome fantasia
+    # x razao social). Sem CNPJ, cai no fallback numero + fornecedor.
+    return C.chave_nf(n)
 
 
 def processar_filial(fid):

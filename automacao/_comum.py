@@ -110,6 +110,17 @@ def num(r):
     return (r.get('Número nota') or r.get('Número nota') or '').strip()
 
 
+def chave_nf(n):
+    """Chave de identidade de uma NF para deduplicação.
+    Prioriza NÚMERO + CNPJ (pega nome fantasia x razão social da mesma empresa).
+    Sem CNPJ, cai no fallback NÚMERO + FORNECEDOR normalizado."""
+    numero = str(n.get('numero', '')).strip()
+    cnpj = (n.get('cnpj') or '').strip()
+    if cnpj:
+        return (numero, 'CNPJ:' + cnpj)
+    return (numero, _norm(n.get('fornecedor') or ''))
+
+
 def carregar_filiais():
     try:
         d = json.load(open(FILIAIS_JSON, encoding='utf-8'))
@@ -145,7 +156,7 @@ def nfs_de_arquivos(resumidas, detalhadas):
         res += parse(p)
     for p in detalhadas:
         det += parse(p)
-    total_nota, det_forn, det_itens, det_fin, det_status = {}, {}, {}, {}, {}
+    total_nota, det_forn, det_itens, det_fin, det_status, det_cnpj = {}, {}, {}, {}, {}, {}
     for r in det:
         n = num(r)
         if not n:
@@ -154,6 +165,8 @@ def nfs_de_arquivos(resumidas, detalhadas):
             total_nota[n] = brl(r.get('Total Nota'))
         if n not in det_forn:
             det_forn[n] = (r.get('Fornecedor') or '').strip()
+        if not det_cnpj.get(n):
+            det_cnpj[n] = (r.get('CNPJ') or '').strip()
         if n not in det_fin:
             det_fin[n] = (r.get('Gerou Financeiro') or '').strip()
         st = (r.get('Status') or '').strip()
@@ -177,9 +190,10 @@ def nfs_de_arquivos(resumidas, detalhadas):
         if _cancelada(n):  # nota cancelada no ERP não entra no app
             continue
         forn = limpa_forn(r.get('Fornecedor')) or limpa_forn(det_forn.get(n))
-        # Duplicata = mesmo NUMERO + mesmo FORNECEDOR. Mesmo numero de fornecedor
-        # diferente e nota distinta (entra). (fornecedor normalizado)
-        k = (n, _norm(forn))
+        cnpj = (r.get('CNPJ') or '').strip() or det_cnpj.get(n, '')
+        # Duplicata = mesmo NUMERO + mesmo CNPJ (mesma empresa, mesmo nome fantasia
+        # ou razao social). Sem CNPJ, cai no fallback numero + fornecedor.
+        k = (n, cnpj) if cnpj else (n, _norm(forn))
         if k in vis:
             continue
         vis.add(k)
@@ -189,7 +203,7 @@ def nfs_de_arquivos(resumidas, detalhadas):
         nfs.append({'id': uid(), 'numero': n, 'fornecedor': forn, 'valor': valor,
                     'data': data_iso(r.get('Data emissão')),
                     'projId': '', 'obs': classificar(forn, det_itens.get(n)),
-                    'centro': '', 'det': '', 'finGerado': det_fin.get(n, '')})
+                    'centro': '', 'det': '', 'cnpj': cnpj, 'finGerado': det_fin.get(n, '')})
     # Se nao houve resumida mas ha detalhada, monta a partir da detalhada
     if not res and det:
         for n in sorted(total_nota):
@@ -199,6 +213,6 @@ def nfs_de_arquivos(resumidas, detalhadas):
             nfs.append({'id': uid(), 'numero': n, 'fornecedor': forn,
                         'valor': total_nota[n], 'data': '',
                         'projId': '', 'obs': classificar(forn, det_itens.get(n)),
-                        'centro': '', 'det': '', 'finGerado': det_fin.get(n, '')})
+                        'centro': '', 'det': '', 'cnpj': det_cnpj.get(n, ''), 'finGerado': det_fin.get(n, '')})
     nfs.sort(key=lambda x: x['data'])
     return nfs
