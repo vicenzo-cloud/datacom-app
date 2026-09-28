@@ -607,11 +607,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers(); self.wfile.write(resp)
             return
         if self.path == '/relatorio-bom' or self.path.startswith('/relatorio-bom?'):
-            # Devolve o relatorio BoM mais recente (gerado a partir da planilha do Google).
+            # Devolve o relatorio BoM mais recente de um projeto (gerado a partir da planilha do Google).
             import json as _json, glob as _glob, datetime as _dtb
+            from urllib.parse import urlparse, parse_qs
             try:
+                qs = parse_qs(urlparse(self.path).query)
+                slug = (qs.get('projeto') or ['gramado'])[0]
+                slug = ''.join(c for c in slug if c.isalnum() or c == '_') or 'gramado'
                 pasta = Path(__file__).parent / 'Relatorios'
-                arqs = sorted(_glob.glob(str(pasta / 'bom_gramado_*.txt')))
+                arqs = sorted(_glob.glob(str(pasta / ('bom_%s_*.txt' % slug))))
                 if not arqs:
                     resp = _json.dumps({'ok': True, 'vazio': True, 'content': '', 'gerado': ''}).encode('utf-8')
                 else:
@@ -620,6 +624,36 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     ts = _dtb.datetime.fromtimestamp(os.path.getmtime(ultimo)).strftime('%d/%m/%Y %H:%M')
                     resp = _json.dumps({'ok': True, 'vazio': False, 'content': conteudo,
                                         'gerado': ts, 'arquivo': os.path.basename(ultimo)}, ensure_ascii=False).encode('utf-8')
+                self.send_response(200)
+            except Exception as e:
+                resp = _json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8')
+                self.send_response(500)
+            self.send_header('Content-type', 'application/json; charset=utf-8')
+            self.end_headers(); self.wfile.write(resp)
+            return
+        if self.path == '/bom-projetos' or self.path.startswith('/bom-projetos?'):
+            # Lista os projetos BoM monitorados (planilhas do Google com "BoM" no nome).
+            import json as _json, glob as _glob, datetime as _dtb
+            try:
+                pasta = Path(__file__).parent / 'Relatorios'
+                estado_path = pasta / '.bom_watch_all_state.json'
+                estado = {}
+                if estado_path.exists():
+                    estado = _json.loads(estado_path.read_text(encoding='utf-8'))
+                projetos = []
+                for file_id, info in estado.items():
+                    slug = info.get('slug')
+                    if not slug:
+                        continue
+                    arqs = sorted(_glob.glob(str(pasta / ('bom_%s_*.txt' % slug))))
+                    gerado = ''
+                    if arqs:
+                        gerado = _dtb.datetime.fromtimestamp(os.path.getmtime(arqs[-1])).strftime('%d/%m/%Y %H:%M')
+                    projetos.append({'slug': slug, 'titulo': info.get('title', slug),
+                                      'temRelatorio': bool(arqs), 'gerado': gerado,
+                                      'viewUrl': info.get('viewUrl', '')})
+                projetos.sort(key=lambda p: p['titulo'])
+                resp = _json.dumps({'ok': True, 'projetos': projetos}, ensure_ascii=False).encode('utf-8')
                 self.send_response(200)
             except Exception as e:
                 resp = _json.dumps({'ok': False, 'erro': str(e)}).encode('utf-8')

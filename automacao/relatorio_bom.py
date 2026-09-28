@@ -1,24 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-Gera o relatório da BoM (Prefeitura de Gramado) a partir do conteúdo da planilha
+Gera o relatório de uma BoM (planilha de projeto) a partir do conteúdo baixado
 do Google Sheets, com DIFF (antes/depois) em relação à última versão vista.
 
 NÃO acessa o Google diretamente (isso é feito pela tarefa do Claude Code, que tem
 o conector autenticado). Este script recebe o conteúdo já baixado e cuida de:
   - parsear a tabela (Previsto x Efetivo)
   - comparar com o snapshot anterior e listar o que mudou (antes -> depois)
-  - gerar Relatorios/bom_gramado_<data>.txt
-  - manter Relatorios/.bom_gramado_snapshot.json (linhas + modifiedTime)
+  - gerar Relatorios/bom_<slug>_<data>.txt
+  - manter Relatorios/.bom_<slug>_snapshot.json (itens + modifiedTime)
+
+Cada planilha de projeto (BoM) tem seu próprio slug, para não sobrescrever o
+relatório/snapshot de outro projeto.
 
 Uso:
-  python relatorio_bom.py <arquivo_conteudo> <modified_time>
+  python relatorio_bom.py <arquivo_conteudo> <modified_time> [slug] [titulo]
 """
 import os, sys, json, datetime
-from collections import defaultdict
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REL_DIR = os.path.join(BASE_DIR, 'Relatorios')
-SNAP = os.path.join(REL_DIR, '.bom_gramado_snapshot.json')
 
 
 def _brl(s):
@@ -45,7 +49,7 @@ def carregar_conteudo(caminho):
 
 
 def parse(txt):
-    """Devolve (itens, totais, fornecedores, assinaturas_de_linha)."""
+    """Devolve (itens_ordenados, totais, itens_por_chave)."""
     rows = []
     for ln in txt.splitlines():
         if '|' not in ln:
@@ -75,8 +79,8 @@ def parse(txt):
 
     tot_prev = tot_efet = tot_desp = 0.0
     itens = []
-    forn = {}
-    sigs = []
+    porchave = {}
+    ocorrencias = {}
     for r in rows[hi + 1:]:
         if ci_eq >= len(r):
             continue
@@ -88,113 +92,120 @@ def parse(txt):
             continue
         fo = cell(r, ci_fo)
         tot_prev += p; tot_efet += e; tot_desp += dm
-        itens.append((eq, fo, p, e))
-        forn[fo] = forn.get(fo, 0) + p
-        # assinatura da linha (para o diff antes/depois)
-        sigs.append(' | '.join([
-            eq, cell(r, ci_ma), cell(r, ci_mo), fo,
-            'Qtd=' + cell(r, ci_q), 'prev=' + _fmt(p), 'efet=' + _fmt(e), 'despM=' + _fmt(dm)
-        ]))
-    itens.sort(key=lambda x: -x[2])
-    return itens, (tot_prev, tot_efet, tot_desp), forn, sigs
+        item = {'eq': eq, 'marca': cell(r, ci_ma), 'modelo': cell(r, ci_mo), 'fornecedor': fo,
+                'qtd': cell(r, ci_q), 'prev': p, 'efet': e, 'desp': dm}
+        itens.append(item)
+        # linhas com o mesmo equipamento/marca/modelo/fornecedor são itens distintos
+        # (ex.: mesma câmera comprada em fases diferentes do projeto) — não podem
+        # se sobrescrever no dicionário, por isso a numeração de ocorrência (#2, #3, ...).
+        base = ' | '.join([eq, cell(r, ci_ma), cell(r, ci_mo), fo])
+        ocorrencias[base] = ocorrencias.get(base, 0) + 1
+        n = ocorrencias[base]
+        chave = base if n == 1 else base + ' #%d' % n
+        porchave[chave] = item
+    itens.sort(key=lambda x: -x['prev'])
+    return itens, (tot_prev, tot_efet, tot_desp), porchave
 
 
-def _key(sig):
-    # chave = Equipamento | Marca | Modelo (3 primeiros campos)
-    return ' | '.join(sig.split(' | ')[:3])
+def _rotulo(chave, item):
+    partes = [item['eq']]
+    if item['fornecedor']:
+        partes.append('(' + item['fornecedor'] + ')')
+    return ' '.join(partes)
 
 
-def bloco_diff(prev_sigs, cur_sigs, prev_ts):
-    """Monta a seção 'antes -> depois'."""
-    L = ['ALTERAÇÕES DESDE A ÚLTIMA VERSÃO' + (' (base de ' + prev_ts + ')' if prev_ts else '')]
-    if prev_sigs is None:
-        L.append('  (primeira versão registrada — as alterações futuras aparecerão aqui)')
+def _linha_item(item, so_previsto=False):
+    partes = ['previsto ' + _fmt(item['prev'])]
+    if not so_previsto and item['efet']:
+        partes.append('efetivo ' + _fmt(item['efet']))
+    if item['desp']:
+        partes.append('desp.mensal ' + _fmt(item['desp']))
+    return ', '.join(partes)
+
+
+def bloco_mudancas(prev_itens, cur_itens, prev_ts):
+    """Lista o que mudou, item por item, em linguagem direta."""
+    L = []
+    if prev_itens is None:
+        if not cur_itens:
+            L.append('PRIMEIRO REGISTRO — planilha sem itens com valor ainda.')
+        elif len(cur_itens) <= 20:
+            L.append('ITENS DESTA VERSÃO (primeiro registro — mudanças futuras aparecerão aqui):')
+            for chave, item in cur_itens.items():
+                L.append('  • ' + _rotulo(chave, item) + ' — ' + _linha_item(item))
+        else:
+            L.append('PRIMEIRO REGISTRO: %d itens com valor (lista grande demais para exibir aqui — mudanças futuras aparecerão item a item).' % len(cur_itens))
         return L
-    prev_set, cur_set = set(prev_sigs), set(cur_sigs)
-    removed = [s for s in prev_sigs if s not in cur_set]
-    added = [s for s in cur_sigs if s not in prev_set]
-    if not removed and not added:
-        L.append('  (sem alterações de conteúdo desde a última versão)')
+
+    L.append('MUDANÇAS DESDE ' + (prev_ts or 'A ÚLTIMA VERSÃO'))
+    chaves_prev, chaves_cur = set(prev_itens), set(cur_itens)
+    alterados = [k for k in (chaves_prev & chaves_cur)
+                 if (prev_itens[k]['prev'], prev_itens[k]['efet'], prev_itens[k]['desp'], prev_itens[k]['qtd'])
+                 != (cur_itens[k]['prev'], cur_itens[k]['efet'], cur_itens[k]['desp'], cur_itens[k]['qtd'])]
+    novos = [k for k in chaves_cur - chaves_prev]
+    removidos = [k for k in chaves_prev - chaves_cur]
+
+    if not alterados and not novos and not removidos:
+        L.append('  (nada mudou)')
         return L
-    rem_by, add_by = defaultdict(list), defaultdict(list)
-    for s in removed:
-        rem_by[_key(s)].append(s)
-    for s in added:
-        add_by[_key(s)].append(s)
-    alterados, removidos, novos = [], [], []
-    for k in set(list(rem_by) + list(add_by)):
-        r, a = rem_by[k], add_by[k]
-        n = min(len(r), len(a))
-        for i in range(n):
-            alterados.append((r[i], a[i]))
-        removidos += r[n:]
-        novos += a[n:]
-    if alterados:
-        L.append('  ITENS ALTERADOS: %d' % len(alterados))
-        for antes, depois in alterados[:40]:
-            L.append('   • ' + _key(antes))
-            L.append('       antes:  ' + antes.split(' | ', 3)[3])
-            L.append('       depois: ' + depois.split(' | ', 3)[3])
-    if novos:
-        L.append('  ITENS NOVOS: %d' % len(novos))
-        for s in novos[:40]:
-            L.append('   + ' + s)
-    if removidos:
-        L.append('  ITENS REMOVIDOS: %d' % len(removidos))
-        for s in removidos[:40]:
-            L.append('   - ' + s)
+
+    for k in alterados:
+        antes, depois = prev_itens[k], cur_itens[k]
+        L.append('  • ' + _rotulo(k, depois))
+        if antes['qtd'] != depois['qtd']:
+            L.append('      quantidade: %s → %s' % (antes['qtd'] or '-', depois['qtd'] or '-'))
+        if antes['prev'] != depois['prev']:
+            L.append('      previsto:   %s → %s' % (_fmt(antes['prev']), _fmt(depois['prev'])))
+        if antes['efet'] != depois['efet']:
+            L.append('      efetivo:    %s → %s' % (_fmt(antes['efet']), _fmt(depois['efet'])))
+        if antes['desp'] != depois['desp']:
+            L.append('      desp.mensal: %s → %s' % (_fmt(antes['desp']), _fmt(depois['desp'])))
+    for k in novos:
+        L.append('  + ' + _rotulo(k, cur_itens[k]) + ' — ' + _linha_item(cur_itens[k]))
+    for k in removidos:
+        L.append('  − ' + _rotulo(k, prev_itens[k]) + ' (estava: ' + _linha_item(prev_itens[k]) + ')')
     return L
 
 
 def main():
     if len(sys.argv) < 3:
-        print('uso: relatorio_bom.py <arquivo_conteudo> <modified_time>')
+        print('uso: relatorio_bom.py <arquivo_conteudo> <modified_time> [slug] [titulo]')
         sys.exit(2)
     caminho, mtime = sys.argv[1], sys.argv[2]
+    slug = sys.argv[3] if len(sys.argv) > 3 else 'gramado'
+    titulo = sys.argv[4] if len(sys.argv) > 4 else 'PREFEITURA DE GRAMADO'
+    snap = os.path.join(REL_DIR, '.bom_%s_snapshot.json' % slug)
     txt = carregar_conteudo(caminho)
-    itens, (tot_prev, tot_efet, tot_desp), forn, sigs = parse(txt)
+    itens, (tot_prev, tot_efet, tot_desp), porchave = parse(txt)
 
-    # snapshot anterior (para o diff)
-    prev_sigs, prev_ts = None, ''
-    if os.path.exists(SNAP):
+    # snapshot anterior (para o diff) — só entende o formato novo (itens_por_chave);
+    # um snapshot no formato antigo (sigs) é tratado como "sem histórico" uma vez.
+    prev_itens, prev_ts = None, ''
+    if os.path.exists(snap):
         try:
-            snap = json.load(open(SNAP, encoding='utf-8'))
-            prev_sigs = snap.get('sigs')
-            prev_ts = snap.get('savedAt', '')
+            snap_j = json.load(open(snap, encoding='utf-8'))
+            prev_itens = snap_j.get('itens')
+            prev_ts = snap_j.get('savedAt', '')
         except Exception:
-            prev_sigs = None
+            prev_itens = None
 
     L = []
-    L.append('RELATORIO BoM — PREFEITURA DE GRAMADO')
+    L.append('RELATORIO BoM — ' + titulo.upper())
     L.append('Gerado em: ' + datetime.datetime.now().strftime('%d/%m/%Y %H:%M') + '  (fonte: Google Sheets)')
+    L.append('Total previsto: %s   |   Total efetivo: %s (%.1f%% executado)' %
+              (_fmt(tot_prev), _fmt(tot_efet), (100 * tot_efet / tot_prev if tot_prev else 0)))
     L.append('=' * 64)
     L.append('')
-    L.append('RESUMO')
-    L.append('  Linhas com valor:            %d' % len(itens))
-    L.append('  Total PREVISTO (investim.):  ' + _fmt(tot_prev))
-    L.append('  Total EFETIVO (ja gasto):    ' + _fmt(tot_efet))
-    L.append('  %% executado do orcamento:    %.1f%%' % (100 * tot_efet / tot_prev if tot_prev else 0))
-    L.append('  Despesa mensal prevista:     ' + _fmt(tot_desp))
-    L.append('')
-    L += bloco_diff(prev_sigs, sigs, prev_ts)
-    L.append('')
-    L.append('TOP 12 ITENS POR CUSTO PREVISTO')
-    for eq, fo, p, e in itens[:12]:
-        L.append('  %-42s prev %14s' % (eq[:42], _fmt(p)))
-    L.append('')
-    L.append('TOP 8 FORNECEDORES/ORIGEM (por previsto)')
-    for fo, v in sorted(forn.items(), key=lambda x: -x[1])[:8]:
-        if fo:
-            L.append('  %-30s %16s' % (fo[:30], _fmt(v)))
+    L += bloco_mudancas(prev_itens, porchave, prev_ts)
     rep = '\n'.join(L)
 
     os.makedirs(REL_DIR, exist_ok=True)
     hoje = datetime.date.today().isoformat()
-    destino = os.path.join(REL_DIR, 'bom_gramado_%s.txt' % hoje)
+    destino = os.path.join(REL_DIR, 'bom_%s_%s.txt' % (slug, hoje))
     open(destino, 'w', encoding='utf-8-sig').write(rep)
     # salva o novo snapshot (vira o "antes" da próxima vez)
-    json.dump({'modifiedTime': mtime, 'savedAt': datetime.datetime.now().strftime('%d/%m/%Y %H:%M'), 'sigs': sigs},
-              open(SNAP, 'w', encoding='utf-8'), ensure_ascii=False)
+    json.dump({'modifiedTime': mtime, 'savedAt': datetime.datetime.now().strftime('%d/%m/%Y %H:%M'), 'itens': porchave},
+              open(snap, 'w', encoding='utf-8'), ensure_ascii=False)
     print('Relatorio gerado: %s' % os.path.basename(destino))
     print(rep)
 

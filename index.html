@@ -694,11 +694,12 @@ body.ro .ro-hide{display:none !important}
         <div id="historico-content"></div>
       </div>
 
-      <!-- RELATORIO BoM PREFEITURA DE GRAMADO (gerado da planilha do Google) -->
+      <!-- ALTERAÇÕES DE PROJETOS: relatorios BoM (gerados das planilhas do Google) -->
       <div class="page" id="page-bom-gramado">
-        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">📋 Relatório BoM — Prefeitura de Gramado</h2>
-        <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Gerado automaticamente a partir da planilha do Google Sheets. Atualizado quando a planilha é editada.</p>
-        <div style="margin-bottom:16px"><button class="btn btn-secondary btn-sm" onclick="renderBomGramado()">🔄 Atualizar</button></div>
+        <h2 style="font-family:var(--serif);font-size:24px;font-weight:800;margin-bottom:6px">📋 Alterações de Projetos (BoM)</h2>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:16px">Um relatório por planilha BoM do Google Sheets, gerado automaticamente quando a planilha é editada.</p>
+        <div id="bom-projetos-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px"></div>
+        <div style="margin-bottom:16px"><button class="btn btn-secondary btn-sm" onclick="renderBomProjetos(true)">🔄 Atualizar</button></div>
         <div id="bom-gramado-content"></div>
       </div>
 
@@ -1458,7 +1459,7 @@ var VIEW_INFO={
   analista:{t:'Analista',s:'Diagnóstico automático (regras, local)',l:'Analista'},
   historico:{t:'Histórico',s:'Registro de atividades',l:'Histórico'},
   timeline:{t:'Timeline',s:'Linha do tempo',l:'Timeline'},
-  'bom-gramado':{t:'Alterações Projetos',s:'Relatório BoM — Prefeitura de Gramado (planilha do Google)',l:'Alterações Projetos'}
+  'bom-gramado':{t:'Alterações Projetos',s:'Relatórios BoM das planilhas do Google (um por projeto)',l:'Alterações Projetos'}
 };
 function grupoDoView(v){ for(var i=0;i<GRUPOS.length;i++){ if(GRUPOS[i].views.indexOf(v)>=0) return GRUPOS[i].g; } return null; }
 
@@ -1835,17 +1836,38 @@ function renderPages(){
   if(S.view==='mercado')renderMercado();
   if(S.view==='analista')renderAnalista();
   if(S.view==='historico')renderHistorico();
-  if(S.view==='bom-gramado')renderBomGramado();
+  if(S.view==='bom-gramado')renderBomProjetos();
 }
 
-// ── RELATORIO BoM PREFEITURA DE GRAMADO ──
-function renderBomGramado(){
+// ── ALTERAÇÕES DE PROJETOS: lista de BoMs + relatorio do projeto selecionado ──
+function renderBomProjetos(forcar){
+  var lista=document.getElementById('bom-projetos-list');
+  if(!lista) return;
+  fetch('/bom-projetos?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok || !d.projetos || !d.projetos.length){
+      lista.innerHTML='';
+      if(!S.bomSlug) renderBomGramado(null);
+      return;
+    }
+    if(!S.bomSlug || !d.projetos.some(function(p){return p.slug===S.bomSlug;})) S.bomSlug=d.projetos[0].slug;
+    lista.innerHTML=d.projetos.map(function(p){
+      var ac=p.slug===S.bomSlug?'active':'';
+      return '<div class="proj-item '+ac+'" style="display:inline-flex" onclick="selecionarBomProjeto(\''+p.slug+'\')">'
+        +'<span class="proj-dot"></span><span class="proj-name">'+p.titulo+'</span>'
+        +(p.temRelatorio?'':'<span class="proj-sub" style="color:var(--muted2)">sem relatório ainda</span>')+'</div>';
+    }).join('');
+    renderBomGramado(S.bomSlug, forcar);
+  }).catch(function(){ lista.innerHTML='<div style="color:var(--red);padding:10px">Falha ao listar projetos.</div>'; });
+}
+function selecionarBomProjeto(slug){ S.bomSlug=slug; renderBomProjetos(); }
+function renderBomGramado(slug, forcar){
   var alvo=document.getElementById('bom-gramado-content');
   if(!alvo) return;
+  if(!slug){ alvo.innerHTML='<div style="color:var(--muted);padding:20px">Nenhum projeto BoM monitorado ainda.</div>'; return; }
   alvo.innerHTML='<div style="color:var(--muted);padding:20px">Carregando relatório...</div>';
-  fetch('/relatorio-bom?t='+Date.now()).then(function(r){return r.json();}).then(function(d){
+  fetch('/relatorio-bom?projeto='+encodeURIComponent(slug)+'&t='+Date.now()).then(function(r){return r.json();}).then(function(d){
     if(!d.ok){ alvo.innerHTML='<div style="color:var(--red);padding:20px">Erro ao carregar: '+(d.erro||'?')+'</div>'; return; }
-    if(d.vazio){ alvo.innerHTML='<div style="color:var(--muted);padding:20px">Nenhum relatório gerado ainda. Ele é criado automaticamente quando a planilha do Google é editada.</div>'; return; }
+    if(d.vazio){ alvo.innerHTML='<div style="color:var(--muted);padding:20px">Nenhum relatório gerado ainda para este projeto. Ele é criado automaticamente quando a planilha do Google é editada.</div>'; return; }
     var esc=function(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
     alvo.innerHTML='<div style="color:var(--muted2);font-size:11px;margin-bottom:10px">Gerado em '+esc(d.gerado)+' · '+esc(d.arquivo||'')+'</div>'
       +'<pre style="background:var(--bg2);border:1px solid var(--border,#2a2f2d);border-radius:10px;padding:18px;overflow-x:auto;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;line-height:1.55;white-space:pre;color:var(--text,#e2e8e4)">'+esc(d.content)+'</pre>';
