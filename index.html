@@ -957,6 +957,16 @@ function toast(msg,type){type=type||'success';const el=document.getElementById('
 function logAtividade(acao, detalhe){
   try{ fetch('/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:String(acao||''), detalhe:String(detalhe||'')})}).catch(function(){}); }catch(e){}
 }
+// ── Login vencido (acesso pela rede): qualquer 401 recarrega a página → tela de login ──
+(function(){
+  var _f = window.fetch, _indo = false;
+  window.fetch = function(){
+    return _f.apply(this, arguments).then(function(r){
+      if(r.status===401 && !_indo){ _indo=true; location.reload(); }
+      return r;
+    });
+  };
+})();
 // ── Usuário/permissões ──
 window._user = {nome:'Gattiboni (dono)', papel:'editor', host:true};
 function podeEditar(){ return !window._user || window._user.papel==='editor'; }

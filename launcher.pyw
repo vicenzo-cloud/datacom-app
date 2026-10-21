@@ -241,6 +241,11 @@ fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:J
 class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
+    def end_headers(self):
+        # Sem isso o navegador da rede mostrava a pagina guardada em cache mesmo
+        # com o login vencido, e nunca aparecia a tela de login.
+        self.send_header('Cache-Control', 'no-cache')
+        super().end_headers()
     def _autenticado(self):
         ip = self.client_address[0]
         if ip in ('127.0.0.1', '::1', 'localhost'):
@@ -272,7 +277,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 registrar_log('Acesso pela rede (login OK)', user['nome']+' · papel: '+user['papel'], user['nome'], self.client_address[0])
                 resp = _json.dumps({'ok': True, 'nome': user['nome'], 'papel': user['papel']}).encode('utf-8')
                 self.send_response(200)
-                self.send_header('Set-Cookie', 'dc_session=' + tok + '; Path=/; Max-Age=86400; SameSite=Lax')
+                # 30 dias (antes era 1 dia: o login vencia e as telas davam "Unexpected token '<'")
+                self.send_header('Set-Cookie', 'dc_session=' + tok + '; Path=/; Max-Age=2592000; SameSite=Lax')
                 self.send_header('Content-type', 'application/json; charset=utf-8')
                 self.end_headers(); self.wfile.write(resp)
             else:
@@ -587,6 +593,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self.path.split('?')[0] in ('/manifest.json', '/icon.svg', '/sw.js'):
             return http.server.SimpleHTTPRequestHandler.do_GET(self)
         if not self._autenticado():
+            _p = self.path.split('?')[0]
+            if _p not in ('/', '/index.html'):
+                # Dados/arquivos pedidos pela pagina: 401 (a pagina volta pro login)
+                self.send_response(401)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.end_headers(); self.wfile.write(b'{"ok": false, "erro": "login"}')
+                return
             body = LOGIN_HTML.encode('utf-8')
             self.send_response(200)
             self.send_header('Content-type', 'text/html; charset=utf-8')
