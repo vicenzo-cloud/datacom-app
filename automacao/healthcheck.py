@@ -34,13 +34,9 @@ def no_ar():
 def main():
     if no_ar():
         return  # tudo certo, silencioso
-    log('App fora do ar — reiniciando launcher...')
-    try:
-        subprocess.Popen([PYW, LAUNCHER], cwd=C.BASE_DIR,
-                         creationflags=getattr(subprocess, 'DETACHED_PROCESS', 0))
-        log('launcher disparado.')
-    except Exception as e:
-        log('ERRO ao reiniciar: %s' % e)
+    # Nao reabre mais o app sozinho: o Vicenzo abre quando quiser.
+    # (Antes reiniciava o launcher aqui, e o app reabria toda vez que era fechado.)
+    log('App fechado (nao reaberto automaticamente).')
 
 
 if __name__ == '__main__':
